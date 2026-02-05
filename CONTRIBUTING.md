@@ -102,20 +102,32 @@ npm run test:integration
 ```
 arit-toolkit/
 ├── src/
-│   ├── extension.ts          # Entry point
-│   ├── core/                  # Core infrastructure
-│   │   ├── logger.ts
-│   │   ├── configManager.ts
-│   │   └── commandRegistry.ts
-│   ├── features/              # Feature modules
+│   ├── extension.ts              # Entry point
+│   ├── types/
+│   │   └── index.ts              # Shared TypeScript types
+│   ├── core/                     # Core infrastructure
+│   │   ├── index.ts              # Barrel export
+│   │   ├── logger.ts             # Centralized logging
+│   │   ├── configManager.ts      # Configuration handling
+│   │   └── commandRegistry.ts    # Command registration
+│   ├── features/                 # Feature modules
+│   │   ├── index.ts              # Feature registration
 │   │   └── timestampedFile/
-│   │       ├── command.ts
-│   │       ├── utils.ts
-│   │       └── constants.ts
-│   └── types/                 # TypeScript types
+│   │       ├── index.ts          # Feature barrel export
+│   │       ├── command.ts        # Command handlers
+│   │       ├── utils.ts          # Pure utility functions
+│   │       └── constants.ts      # Command IDs and constants
+│   └── utils/
+│       └── index.ts              # Shared utilities
 ├── test/
-│   ├── unit/                  # Unit tests (Vitest)
-│   └── integration/           # Integration tests
+│   ├── unit/                     # Unit tests (Vitest)
+│   │   └── features/
+│   │       └── timestampedFile/
+│   │           └── utils.test.ts
+│   └── integration/              # Integration tests (VS Code)
+│       └── suite/
+│           ├── index.ts
+│           └── extension.test.ts
 └── ...
 ```
 
