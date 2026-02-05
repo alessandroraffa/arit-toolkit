@@ -11,6 +11,8 @@ A collection of productivity utilities for Visual Studio Code.
 
 ## Features
 
+All timestamps are generated in **UTC timezone**.
+
 ### Timestamped File Creator
 
 Create new files with automatic timestamp prefixes. Perfect for:
@@ -23,9 +25,10 @@ Create new files with automatic timestamp prefixes. Perfect for:
 **Usage:**
 
 - Right-click on a folder in Explorer → "ARIT: New File with Timestamp"
-- Or use keyboard shortcut: `Ctrl+Alt+N` (Windows/Linux) / `Cmd+Alt+N` (macOS)
+- Keyboard shortcut: `Ctrl+Alt+N` / `Cmd+Alt+N` (when Explorer is focused)
+- Command Palette: "ARIT: New File with Timestamp"
 
-**Example output:** `202602051430-meeting-notes.md`
+**Example:** Creates `202602051430-meeting-notes.md`
 
 ### Prefix Creation Timestamp
 
@@ -35,7 +38,9 @@ Add the file's creation timestamp as a prefix to existing files. Useful for orga
 
 - Right-click on a file in Explorer → "ARIT: Prefix Creation Timestamp"
 
-**Example:** `report.pdf` → `202602051430-report.pdf` (using the file's actual creation date)
+**Example:** `report.pdf` → `202602051430-report.pdf` (uses the file's actual creation date)
+
+> **Note:** This feature is only available via the Explorer context menu.
 
 ## Installation
 
@@ -53,6 +58,8 @@ Add the file's creation timestamp as a prefix to existing files. Useful for orga
 
 ## Configuration
 
+Both features share the same timestamp configuration:
+
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `arit.timestampFormat` | `YYYYMMDDHHmm` | Format for the timestamp prefix |
@@ -61,18 +68,20 @@ Add the file's creation timestamp as a prefix to existing files. Useful for orga
 
 ### Timestamp Formats
 
-| Format | Example Output |
-|--------|----------------|
-| `YYYYMMDDHHmm` | `202602051430` |
-| `YYYYMMDD` | `20260205` |
-| `YYYYMMDDHHmmss` | `20260205143022` |
-| `ISO` | `2026-02-05T14-30-22-000Z` |
+| Format | Example Output | Description |
+|--------|----------------|-------------|
+| `YYYYMMDDHHmm` | `202602051430` | Year, month, day, hour, minute |
+| `YYYYMMDD` | `20260205` | Year, month, day only |
+| `YYYYMMDDHHmmss` | `20260205143022` | Full timestamp with seconds |
+| `ISO` | `2026-02-05T14-30-22-123Z` | ISO 8601 format (with milliseconds) |
 
 ## Keyboard Shortcuts
 
-| Command | Windows/Linux | macOS |
-|---------|---------------|-------|
-| New File with Timestamp | `Ctrl+Alt+N` | `Cmd+Alt+N` |
+| Command | Windows/Linux | macOS | Context |
+|---------|---------------|-------|---------|
+| New File with Timestamp | `Ctrl+Alt+N` | `Cmd+Alt+N` | Explorer focused |
+
+> **Note:** The "Prefix Creation Timestamp" command is only available via the Explorer context menu (right-click on a file).
 
 ## Requirements
 
