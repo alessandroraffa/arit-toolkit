@@ -137,7 +137,7 @@ describe('statusBarItem', () => {
   });
 
   describe('updateStatusBarItem - single-root disabled', () => {
-    it('should have warning background when disabled', () => {
+    it('should have dimmed foreground when disabled', () => {
       mockStateManager.isEnabled = false;
       const item = createStatusBarItem(
         mockStateManager as any,
@@ -147,7 +147,8 @@ describe('statusBarItem', () => {
         mockLogger as any
       );
 
-      expect(item.backgroundColor).toBeInstanceOf(ThemeColor);
+      expect(item.backgroundColor).toBeUndefined();
+      expect(item.color).toBeInstanceOf(ThemeColor);
     });
 
     it('should have tooltip with disabled status', () => {

@@ -44,8 +44,10 @@ export function updateStatusBarItem(
 
   if (stateManager.isEnabled) {
     item.backgroundColor = undefined;
+    item.color = undefined;
   } else {
-    item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+    item.backgroundColor = undefined;
+    item.color = new vscode.ThemeColor('disabledForeground');
   }
 
   item.tooltip = buildSingleRootTooltip(stateManager.isEnabled, config);
