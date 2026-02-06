@@ -8,6 +8,7 @@ export default defineConfig({
     include: ['test/unit/**/*.test.ts'],
     exclude: ['test/integration/**', 'test/e2e/**'],
     globals: true,
+    setupFiles: ['test/unit/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
