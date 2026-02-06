@@ -154,12 +154,12 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.10.0",
     "@types/vscode": "^1.85.0",
-    "@vitest/coverage-v8": "^2.1.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
     "@vscode/vsce": "^3.2.0",
     "conventional-changelog-conventionalcommits": "^9.1.0",
-    "esbuild": "^0.24.0",
+    "esbuild": "^0.27.3",
     "eslint": "^9.18.0",
     "globals": "^15.14.0",
     "husky": "^9.1.7",
@@ -170,7 +170,7 @@
     "semantic-release-vsce": "^6.0.23",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.20.0",
-    "vitest": "^2.1.0"
+    "vitest": "^4.0.18"
   },
   "lint-staged": {
     "src/**/*.ts": [
