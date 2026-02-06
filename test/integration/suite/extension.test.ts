@@ -25,6 +25,14 @@ suite('Extension Test Suite', () => {
     );
   });
 
+  test('Toggle command should be registered', async () => {
+    const commands = await vscode.commands.getCommands(true);
+    assert.ok(
+      commands.includes('arit.toggleEnabled'),
+      'Command arit.toggleEnabled should be registered'
+    );
+  });
+
   test('Configuration should have default values', () => {
     const config = vscode.workspace.getConfiguration('arit');
 

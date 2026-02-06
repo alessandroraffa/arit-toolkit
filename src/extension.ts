@@ -1,5 +1,5 @@
 import type * as vscode from 'vscode';
-import { Logger, ConfigManager, CommandRegistry } from './core';
+import { Logger, ConfigManager, CommandRegistry, ExtensionStateManager } from './core';
 import { registerAllFeatures } from './features';
 
 let logger: Logger | undefined;
@@ -19,10 +19,17 @@ export function activate(context: vscode.ExtensionContext): void {
 
   logger.info('ARIT Toolkit is activating...');
 
-  const commandRegistry = new CommandRegistry(context);
+  // Create extension state manager for workspace-level enable/disable
+  const stateManager = new ExtensionStateManager(logger);
+  context.subscriptions.push(stateManager);
+
+  const commandRegistry = new CommandRegistry(context, stateManager);
 
   // Register all features
-  registerAllFeatures(commandRegistry, configManager, logger);
+  registerAllFeatures(commandRegistry, stateManager, configManager, logger, context);
+
+  // Initialize state manager (reads config file, shows onboarding if needed)
+  void stateManager.initialize();
 
   logger.info('ARIT Toolkit activated successfully');
 }

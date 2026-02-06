@@ -47,6 +47,11 @@
         "command": "arit.prefixTimestampToFile",
         "title": "ARIT: Prefix Creation Timestamp",
         "icon": "$(calendar)"
+      },
+      {
+        "command": "arit.toggleEnabled",
+        "title": "ARIT: Toggle Extension (Enable/Disable)",
+        "icon": "$(tools)"
       }
     ],
     "menus": {
@@ -70,6 +75,9 @@
         {
           "command": "arit.prefixTimestampToFile",
           "when": "false"
+        },
+        {
+          "command": "arit.toggleEnabled"
         }
       ]
     },
