@@ -5,24 +5,31 @@ import type { ConfigManager } from '../../core/configManager';
 import type { Logger } from '../../core/logger';
 import { generateTimestamp } from './utils';
 
+function resolveFolder(uri?: vscode.Uri): string {
+  return uri?.fsPath ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+}
+
+function logAndShowError(logger: Logger, operation: string, error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  logger.error(`Failed to ${operation}`, message);
+  void vscode.window.showErrorMessage(
+    `ARIT: Failed to ${operation}. See output for details.`
+  );
+}
+
 export function createTimestampedFileCommand(
   config: ConfigManager,
   logger: Logger
 ): (uri?: vscode.Uri) => Promise<void> {
   return async (uri?: vscode.Uri): Promise<void> => {
     try {
-      const timestamp = generateTimestamp(config.timestampFormat);
-      const separator = config.timestampSeparator;
-
-      const folderPath =
-        uri?.fsPath ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
-
+      const folderPath = resolveFolder(uri);
       if (!folderPath) {
         void vscode.window.showErrorMessage('ARIT: No folder selected or workspace open');
         return;
       }
 
-      const prefix = `${timestamp}${separator}`;
+      const prefix = `${generateTimestamp(config.timestampFormat)}${config.timestampSeparator}`;
       const fileName = await vscode.window.showInputBox({
         prompt: 'Enter file name',
         value: prefix,
@@ -34,19 +41,12 @@ export function createTimestampedFileCommand(
         return;
       }
 
-      const filePath = path.join(folderPath, fileName);
-      const fileUri = vscode.Uri.file(filePath);
-
+      const fileUri = vscode.Uri.file(path.join(folderPath, fileName));
       await vscode.workspace.fs.writeFile(fileUri, new Uint8Array());
       await vscode.window.showTextDocument(fileUri);
-
       logger.info(`Created timestamped file: ${fileName}`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error('Failed to create timestamped file', errorMessage);
-      void vscode.window.showErrorMessage(
-        'ARIT: Failed to create file. See output for details.'
-      );
+      logAndShowError(logger, 'create file', error);
     }
   };
 }
@@ -62,16 +62,12 @@ export function prefixTimestampToFileCommand(
         return;
       }
 
-      const filePath = uri.fsPath;
-      const stats = await fs.promises.stat(filePath);
-      const creationDate = stats.birthtime;
-
-      const timestamp = generateTimestamp(config.timestampFormat, creationDate);
-      const separator = config.timestampSeparator;
-
-      const dirPath = path.dirname(filePath);
-      const originalName = path.basename(filePath);
-      const newName = `${timestamp}${separator}${originalName}`;
+      const timestamp = generateTimestamp(
+        config.timestampFormat,
+        (await fs.promises.stat(uri.fsPath)).birthtime
+      );
+      const originalName = path.basename(uri.fsPath);
+      const newName = `${timestamp}${config.timestampSeparator}${originalName}`;
 
       const confirmedName = await vscode.window.showInputBox({
         prompt: 'Confirm new file name',
@@ -84,18 +80,11 @@ export function prefixTimestampToFileCommand(
         return;
       }
 
-      const finalPath = path.join(dirPath, confirmedName);
-      const newUri = vscode.Uri.file(finalPath);
-
+      const newUri = vscode.Uri.file(path.join(path.dirname(uri.fsPath), confirmedName));
       await vscode.workspace.fs.rename(uri, newUri);
-
       logger.info(`Renamed file: ${originalName} -> ${confirmedName}`);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error('Failed to prefix timestamp to file', errorMessage);
-      void vscode.window.showErrorMessage(
-        'ARIT: Failed to rename file. See output for details.'
-      );
+      logAndShowError(logger, 'rename file', error);
     }
   };
 }

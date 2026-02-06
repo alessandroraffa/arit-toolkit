@@ -63,18 +63,20 @@ function buildSingleRootTooltip(
   const statusText = isEnabled ? 'Enabled' : 'Disabled';
   const action = isEnabled ? 'disable' : 'enable';
 
-  md.appendMarkdown(`### $(tools) ARIT Toolkit\n\n`);
-  md.appendMarkdown(`**Status:** ${statusIcon} ${statusText}\n\n`);
-  md.appendMarkdown(`---\n\n`);
-  md.appendMarkdown(`**Features:**\n\n`);
-  md.appendMarkdown(`- $(new-file) Timestamped File Creator\n`);
-  md.appendMarkdown(`- $(calendar) Prefix Creation Timestamp\n\n`);
-  md.appendMarkdown(`---\n\n`);
-  md.appendMarkdown(`**Configuration:**\n\n`);
-  md.appendMarkdown(`- Timestamp Format: \`${config.timestampFormat}\`\n`);
-  md.appendMarkdown(`- Separator: \`${config.timestampSeparator}\`\n\n`);
-  md.appendMarkdown(`---\n\n`);
-  md.appendMarkdown(`*Click to ${action}*`);
+  md.appendMarkdown(
+    `### $(tools) ARIT Toolkit\n\n` +
+      `**Status:** ${statusIcon} ${statusText}\n\n` +
+      `---\n\n` +
+      `**Features:**\n\n` +
+      `- $(new-file) Timestamped File Creator\n` +
+      `- $(calendar) Prefix Creation Timestamp\n\n` +
+      `---\n\n` +
+      `**Configuration:**\n\n` +
+      `- Timestamp Format: \`${config.timestampFormat}\`\n` +
+      `- Separator: \`${config.timestampSeparator}\`\n\n` +
+      `---\n\n` +
+      `*Click to ${action}*`
+  );
 
   return md;
 }

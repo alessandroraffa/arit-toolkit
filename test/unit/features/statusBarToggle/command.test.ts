@@ -54,13 +54,12 @@ describe('toggleEnabledCommand', () => {
 
   it('should call stateManager.toggle in single-root workspace', async () => {
     const command = toggleEnabledCommand({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       stateManager: mockStateManager as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       config: mockConfig as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       logger: mockLogger as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       statusBarItem: mockStatusBarItem as any,
     });
 
@@ -76,13 +75,12 @@ describe('toggleEnabledCommand', () => {
     });
 
     const command = toggleEnabledCommand({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       stateManager: mockStateManager as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       config: mockConfig as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       logger: mockLogger as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       statusBarItem: mockStatusBarItem as any,
     });
 
@@ -98,13 +96,12 @@ describe('toggleEnabledCommand', () => {
     });
 
     const command = toggleEnabledCommand({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       stateManager: mockStateManager as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       config: mockConfig as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       logger: mockLogger as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       statusBarItem: mockStatusBarItem as any,
     });
 
@@ -119,13 +116,12 @@ describe('toggleEnabledCommand', () => {
     mockStateManager.isToggleable = false;
 
     const command = toggleEnabledCommand({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       stateManager: mockStateManager as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       config: mockConfig as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       logger: mockLogger as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       statusBarItem: mockStatusBarItem as any,
     });
 

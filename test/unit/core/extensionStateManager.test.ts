@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { workspace, window, Uri, mockFileSystemWatcher } from '../mocks/vscode';
+import { workspace, window, mockFileSystemWatcher } from '../mocks/vscode';
 import { ExtensionStateManager } from '../../../src/core/extensionStateManager';
 
 describe('ExtensionStateManager', () => {
@@ -24,7 +24,7 @@ describe('ExtensionStateManager', () => {
   describe('workspace mode detection', () => {
     it('should detect no-workspace when workspaceFolders is undefined', () => {
       workspace.workspaceFolders = undefined;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       expect(manager.workspaceMode).toBe('no-workspace');
@@ -34,7 +34,7 @@ describe('ExtensionStateManager', () => {
 
     it('should detect no-workspace when workspaceFolders is empty', () => {
       workspace.workspaceFolders = [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       expect(manager.workspaceMode).toBe('no-workspace');
@@ -42,7 +42,7 @@ describe('ExtensionStateManager', () => {
 
     it('should detect single-root when one workspace folder exists', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       expect(manager.workspaceMode).toBe('single-root');
@@ -55,7 +55,7 @@ describe('ExtensionStateManager', () => {
         { uri: { fsPath: '/workspace1' } },
         { uri: { fsPath: '/workspace2' } },
       ];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       expect(manager.workspaceMode).toBe('multi-root');
@@ -67,7 +67,7 @@ describe('ExtensionStateManager', () => {
   describe('default state', () => {
     it('should be disabled by default', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       expect(manager.isEnabled).toBe(false);
@@ -79,7 +79,7 @@ describe('ExtensionStateManager', () => {
         { uri: { fsPath: '/w1' } },
         { uri: { fsPath: '/w2' } },
       ];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       expect(manager.isEnabled).toBe(false);
@@ -87,7 +87,7 @@ describe('ExtensionStateManager', () => {
 
     it('should be disabled in no-workspace', () => {
       workspace.workspaceFolders = undefined;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       expect(manager.isEnabled).toBe(false);
@@ -97,7 +97,7 @@ describe('ExtensionStateManager', () => {
   describe('initialize', () => {
     it('should skip initialization for non-single-root workspace', async () => {
       workspace.workspaceFolders = undefined;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       await manager.initialize();
@@ -112,7 +112,7 @@ describe('ExtensionStateManager', () => {
         .fn()
         .mockResolvedValue(new TextEncoder().encode(configContent));
       window.showInformationMessage = vi.fn();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       await manager.initialize();
@@ -125,7 +125,7 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('File not found'));
       window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       await manager.initialize();
@@ -143,7 +143,7 @@ describe('ExtensionStateManager', () => {
       workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('File not found'));
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
       window.showInformationMessage = vi.fn().mockResolvedValue('Initialize');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       await manager.initialize();
@@ -158,7 +158,7 @@ describe('ExtensionStateManager', () => {
       workspace.fs.readFile = vi
         .fn()
         .mockResolvedValue(new TextEncoder().encode('{ "enabled": false }'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       await manager.initialize();
@@ -170,7 +170,7 @@ describe('ExtensionStateManager', () => {
   describe('toggle', () => {
     it('should return false for non-single-root workspace', async () => {
       workspace.workspaceFolders = undefined;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       const result = await manager.toggle();
@@ -181,7 +181,7 @@ describe('ExtensionStateManager', () => {
     it('should show onboarding when not initialized', async () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       const result = await manager.toggle();
@@ -194,7 +194,7 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
       window.showInformationMessage = vi.fn().mockResolvedValue('Initialize');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       const result = await manager.toggle();
@@ -210,7 +210,7 @@ describe('ExtensionStateManager', () => {
         .fn()
         .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
       await manager.initialize();
 
@@ -228,7 +228,7 @@ describe('ExtensionStateManager', () => {
         .fn()
         .mockResolvedValue(new TextEncoder().encode('{ "enabled": false }'));
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
       await manager.initialize();
 
@@ -246,7 +246,7 @@ describe('ExtensionStateManager', () => {
         .fn()
         .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
       await manager.initialize();
 
@@ -266,7 +266,7 @@ describe('ExtensionStateManager', () => {
         .fn()
         .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
       await manager.initialize();
 
@@ -284,7 +284,7 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
       window.showInformationMessage = vi.fn().mockResolvedValue('Initialize');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       const result = await manager.showOnboardingNotification();
@@ -296,7 +296,7 @@ describe('ExtensionStateManager', () => {
     it('should return false when user dismisses', async () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
 
       const result = await manager.showOnboardingNotification();
@@ -312,7 +312,7 @@ describe('ExtensionStateManager', () => {
       workspace.fs.readFile = vi
         .fn()
         .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
       await manager.initialize();
 
@@ -334,7 +334,7 @@ describe('ExtensionStateManager', () => {
       workspace.fs.readFile = vi
         .fn()
         .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
       await manager.initialize();
 
@@ -355,7 +355,7 @@ describe('ExtensionStateManager', () => {
       workspace.fs.readFile = vi
         .fn()
         .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const manager = new ExtensionStateManager(mockLogger as any);
       await manager.initialize();
 

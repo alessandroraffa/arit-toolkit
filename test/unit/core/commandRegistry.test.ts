@@ -11,7 +11,7 @@ describe('CommandRegistry', () => {
     mockContext = {
       subscriptions: { push: vi.fn() },
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     registry = new CommandRegistry(mockContext as any);
   });
 
@@ -68,9 +68,8 @@ describe('CommandRegistry', () => {
     it('should execute handler when stateManager says enabled', async () => {
       const mockStateManager = { isEnabled: true };
       const registryWithState = new CommandRegistry(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockContext as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockStateManager as any
       );
 
@@ -88,9 +87,8 @@ describe('CommandRegistry', () => {
     it('should show warning and not execute handler when stateManager says disabled', async () => {
       const mockStateManager = { isEnabled: false };
       const registryWithState = new CommandRegistry(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockContext as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockStateManager as any
       );
 

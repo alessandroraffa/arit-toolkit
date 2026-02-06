@@ -40,11 +40,10 @@ describe('statusBarItem', () => {
   describe('createStatusBarItem', () => {
     it('should create item with correct alignment and priority', () => {
       createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 
@@ -53,11 +52,10 @@ describe('statusBarItem', () => {
 
     it('should set command to toggle command', () => {
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 
@@ -66,11 +64,10 @@ describe('statusBarItem', () => {
 
     it('should call show on creation', () => {
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 
@@ -79,11 +76,10 @@ describe('statusBarItem', () => {
 
     it('should set name to ARIT Toolkit', () => {
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 
@@ -94,16 +90,14 @@ describe('statusBarItem', () => {
   describe('updateStatusBarItem - single-root enabled', () => {
     it('should set correct text', () => {
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
       mockStateManager.isEnabled = true;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       updateStatusBarItem(item, mockStateManager as any, mockConfig as any);
 
       expect(item.text).toBe('$(tools) ARIT');
@@ -111,16 +105,14 @@ describe('statusBarItem', () => {
 
     it('should have no warning background when enabled', () => {
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
       mockStateManager.isEnabled = true;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       updateStatusBarItem(item, mockStateManager as any, mockConfig as any);
 
       expect(item.backgroundColor).toBeUndefined();
@@ -128,16 +120,14 @@ describe('statusBarItem', () => {
 
     it('should have tooltip with enabled status', () => {
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
       mockStateManager.isEnabled = true;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       updateStatusBarItem(item, mockStateManager as any, mockConfig as any);
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
@@ -150,11 +140,10 @@ describe('statusBarItem', () => {
     it('should have warning background when disabled', () => {
       mockStateManager.isEnabled = false;
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 
@@ -164,11 +153,10 @@ describe('statusBarItem', () => {
     it('should have tooltip with disabled status', () => {
       mockStateManager.isEnabled = false;
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 
@@ -183,11 +171,10 @@ describe('statusBarItem', () => {
       mockStateManager.isSingleRoot = false;
       mockStateManager.workspaceMode = 'multi-root';
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 
@@ -198,11 +185,10 @@ describe('statusBarItem', () => {
       mockStateManager.isSingleRoot = false;
       mockStateManager.workspaceMode = 'multi-root';
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 
@@ -215,11 +201,10 @@ describe('statusBarItem', () => {
     it('should reflect current timestamp format', () => {
       mockConfig.timestampFormat = 'ISO';
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 
@@ -230,11 +215,10 @@ describe('statusBarItem', () => {
     it('should reflect current separator', () => {
       mockConfig.timestampSeparator = '_';
       const item = createStatusBarItem(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         mockStateManager as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockConfig as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         mockLogger as any
       );
 

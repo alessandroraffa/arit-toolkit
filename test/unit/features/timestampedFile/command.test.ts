@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { window, workspace, Uri } from '../../mocks/vscode';
+import { window, workspace } from '../../mocks/vscode';
 import {
   createTimestampedFileCommand,
   prefixTimestampToFileCommand,
@@ -49,7 +49,7 @@ describe('timestampedFile commands', () => {
   describe('createTimestampedFileCommand', () => {
     it('should show error when no folder is selected and no workspace is open', async () => {
       workspace.workspaceFolders = undefined;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       const command = createTimestampedFileCommand(mockConfig as any, mockLogger as any);
 
       await command(undefined);
@@ -65,7 +65,6 @@ describe('timestampedFile commands', () => {
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
       window.showTextDocument = vi.fn().mockResolvedValue(undefined);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = createTimestampedFileCommand(mockConfig as any, mockLogger as any);
 
       await command(undefined);
@@ -83,10 +82,8 @@ describe('timestampedFile commands', () => {
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
       window.showTextDocument = vi.fn().mockResolvedValue(undefined);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = createTimestampedFileCommand(mockConfig as any, mockLogger as any);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await command(uri as any);
 
       expect(window.showInputBox).toHaveBeenCalled();
@@ -96,7 +93,6 @@ describe('timestampedFile commands', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       window.showInputBox = vi.fn().mockResolvedValue(undefined);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = createTimestampedFileCommand(mockConfig as any, mockLogger as any);
 
       await command(undefined);
@@ -111,7 +107,6 @@ describe('timestampedFile commands', () => {
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
       window.showTextDocument = vi.fn().mockResolvedValue(undefined);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = createTimestampedFileCommand(mockConfig as any, mockLogger as any);
 
       await command(undefined);
@@ -128,13 +123,12 @@ describe('timestampedFile commands', () => {
       window.showInputBox = vi.fn().mockResolvedValue('202602051430-test.md');
       workspace.fs.writeFile = vi.fn().mockRejectedValue(new Error('Write failed'));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = createTimestampedFileCommand(mockConfig as any, mockLogger as any);
 
       await command(undefined);
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to create timestamped file',
+        'Failed to create file',
         'Write failed'
       );
       expect(window.showErrorMessage).toHaveBeenCalledWith(
@@ -147,13 +141,12 @@ describe('timestampedFile commands', () => {
       window.showInputBox = vi.fn().mockResolvedValue('202602051430-test.md');
       workspace.fs.writeFile = vi.fn().mockRejectedValue('string error');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = createTimestampedFileCommand(mockConfig as any, mockLogger as any);
 
       await command(undefined);
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to create timestamped file',
+        'Failed to create file',
         'string error'
       );
     });
@@ -161,7 +154,6 @@ describe('timestampedFile commands', () => {
 
   describe('prefixTimestampToFileCommand', () => {
     it('should show error when no file is selected', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
 
       await command(undefined);
@@ -179,10 +171,8 @@ describe('timestampedFile commands', () => {
       window.showInputBox = vi.fn().mockResolvedValue('202006150945-file.txt');
       workspace.fs.rename = vi.fn().mockResolvedValue(undefined);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await command(uri as any);
 
       expect(fs.promises.stat).toHaveBeenCalledWith('/path/to/file.txt');
@@ -201,10 +191,8 @@ describe('timestampedFile commands', () => {
       } as unknown as Awaited<ReturnType<typeof fs.promises.stat>>);
       window.showInputBox = vi.fn().mockResolvedValue(undefined);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await command(uri as any);
 
       expect(mockLogger.debug).toHaveBeenCalledWith('File rename cancelled by user');
@@ -221,10 +209,8 @@ describe('timestampedFile commands', () => {
       window.showInputBox = vi.fn().mockResolvedValue('202006150945-file.txt');
       workspace.fs.rename = vi.fn().mockResolvedValue(undefined);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await command(uri as any);
 
       expect(workspace.fs.rename).toHaveBeenCalled();
@@ -238,14 +224,12 @@ describe('timestampedFile commands', () => {
 
       vi.mocked(fs.promises.stat).mockRejectedValue(new Error('Stat failed'));
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await command(uri as any);
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to prefix timestamp to file',
+        'Failed to rename file',
         'Stat failed'
       );
       expect(window.showErrorMessage).toHaveBeenCalledWith(
@@ -258,14 +242,12 @@ describe('timestampedFile commands', () => {
 
       vi.mocked(fs.promises.stat).mockRejectedValue('string error');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await command(uri as any);
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to prefix timestamp to file',
+        'Failed to rename file',
         'string error'
       );
     });

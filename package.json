@@ -137,8 +137,8 @@
     "watch:esbuild": "node esbuild.mjs --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
+    "lint": "eslint src test",
+    "lint:fix": "eslint src test --fix",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "test": "pnpm run test:unit && pnpm run test:integration",
@@ -164,6 +164,7 @@
     "@types/node": "^22.10.0",
     "@types/vscode": "^1.85.0",
     "@vitest/coverage-v8": "^2.1.0",
+    "@vitest/eslint-plugin": "^1.6.6",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
     "@vscode/vsce": "^3.2.0",
@@ -187,6 +188,7 @@
       "prettier --write"
     ],
     "test/**/*.ts": [
+      "eslint --fix",
       "prettier --write"
     ],
     "*.{json,md,yml}": [
