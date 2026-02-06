@@ -2,8 +2,8 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "npm",
-      "script": "watch",
+      "type": "shell",
+      "command": "pnpm run watch",
       "problemMatcher": "$esbuild-watch",
       "isBackground": true,
       "presentation": {
@@ -13,33 +13,33 @@
         "kind": "build",
         "isDefault": true
       },
-      "label": "npm: watch"
+      "label": "pnpm: watch"
     },
     {
-      "type": "npm",
-      "script": "build",
+      "type": "shell",
+      "command": "pnpm run build",
       "problemMatcher": "$esbuild",
       "group": "build",
-      "label": "npm: build"
+      "label": "pnpm: build"
     },
     {
-      "type": "npm",
-      "script": "compile",
+      "type": "shell",
+      "command": "pnpm run compile",
       "problemMatcher": "$esbuild",
       "group": "build",
-      "label": "npm: compile"
+      "label": "pnpm: compile"
     },
     {
-      "type": "npm",
-      "script": "lint",
+      "type": "shell",
+      "command": "pnpm run lint",
       "problemMatcher": "$eslint-stylish",
-      "label": "npm: lint"
+      "label": "pnpm: lint"
     },
     {
-      "type": "npm",
-      "script": "test:unit",
+      "type": "shell",
+      "command": "pnpm run test:unit",
       "problemMatcher": [],
-      "label": "npm: test:unit"
+      "label": "pnpm: test:unit"
     }
   ]
 }
