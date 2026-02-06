@@ -30,14 +30,18 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Run tests and linting:
+
    ```bash
-   npm run lint
-   npm run test
+   pnpm run lint
+   pnpm run test
    ```
+
 5. Commit using [conventional commits](https://www.conventionalcommits.org/):
+
    ```bash
    git commit -m "feat: add amazing feature"
    ```
+
 6. Push to your fork
 7. Open a Pull Request
 
@@ -45,8 +49,8 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ### Prerequisites
 
-- Node.js 20+
-- npm 10+
+- Node.js 22+
+- pnpm 10+ (install via `corepack enable pnpm`)
 - VS Code 1.85.0+
 
 ### Getting Started
@@ -57,38 +61,38 @@ git clone https://github.com/alessandroraffa/arit-toolkit.git
 cd arit-toolkit
 
 # Install dependencies
-npm install
+pnpm install
 
 # Build the extension
-npm run compile
+pnpm run compile
 
 # Run tests
-npm run test:unit
+pnpm run test:unit
 ```
 
 ### Development Workflow
 
 ```bash
 # Watch mode for development
-npm run watch
+pnpm run watch
 
 # Run linting
-npm run lint
+pnpm run lint
 
 # Fix linting issues
-npm run lint:fix
+pnpm run lint:fix
 
 # Format code
-npm run format
+pnpm run format
 
 # Run unit tests
-npm run test:unit
+pnpm run test:unit
 
 # Run unit tests with coverage
-npm run test:unit:coverage
+pnpm run test:unit:coverage
 
 # Run integration tests
-npm run test:integration
+pnpm run test:integration
 ```
 
 ### Testing in VS Code
