@@ -113,22 +113,23 @@ arit-toolkit/
 │   │   ├── index.ts              # Barrel export
 │   │   ├── logger.ts             # Centralized logging
 │   │   ├── configManager.ts      # Configuration handling
-│   │   └── commandRegistry.ts    # Command registration
-│   ├── features/                 # Feature modules
-│   │   ├── index.ts              # Feature registration
-│   │   └── timestampedFile/
-│   │       ├── index.ts          # Feature barrel export
-│   │       ├── command.ts        # Command handlers
-│   │       ├── utils.ts          # Pure utility functions
-│   │       └── constants.ts      # Command IDs and constants
+│   │   ├── commandRegistry.ts    # Command registration (guarded/unguarded)
+│   │   └── extensionStateManager.ts  # Workspace state persistence
+│   ├── features/                 # Feature modules (one directory per feature)
+│   │   ├── index.ts              # Feature registration orchestrator
+│   │   ├── timestampedFile/      # Timestamped file creation/renaming
+│   │   └── statusBarToggle/      # Status bar toggle with workspace state
 │   └── utils/
-│       └── index.ts              # Shared utilities
+│       ├── index.ts              # Barrel export
+│       └── jsonc.ts              # JSONC parser/formatter
 ├── test/
-│   ├── unit/                     # Unit tests (Vitest)
-│   │   └── features/
-│   │       └── timestampedFile/
-│   │           └── utils.test.ts
-│   └── integration/              # Integration tests (VS Code)
+│   ├── unit/                     # Unit tests (Vitest, mirrors src/ structure)
+│   │   ├── setup.ts              # Vitest setup (mocks vscode module)
+│   │   ├── mocks/vscode.ts       # Complete VS Code API mock
+│   │   ├── core/                 # Core module tests
+│   │   ├── features/             # Feature tests (one file per concern)
+│   │   └── utils/                # Utility tests
+│   └── integration/              # Integration tests (VS Code Extension Host)
 │       └── suite/
 │           ├── index.ts
 │           └── extension.test.ts
@@ -137,16 +138,57 @@ arit-toolkit/
 
 ## Adding a New Feature
 
-1. Create a new directory under `src/features/`
+1. Create a new directory under `src/features/<featureName>/`
 2. Implement:
    - `constants.ts` - Command IDs and constants
    - `utils.ts` - Pure utility functions
-   - `command.ts` - Command handler
-   - `index.ts` - Feature registration
-3. Register the feature in `src/features/index.ts`
-4. Add command to `package.json` contributes
-5. Add unit tests
-6. Update documentation
+   - `command.ts` - Command handler factories
+   - `index.ts` - Feature registration via `FeatureRegistrationContext`
+3. Write unit tests first (TDD) in `test/unit/features/<featureName>/`
+4. Extend VS Code mock in `test/unit/mocks/vscode.ts` if using new VS Code APIs
+5. Register the feature in `src/features/index.ts`
+6. Add command to `package.json` contributes (commands, menus, keybindings)
+7. Update `README.md` documentation
+8. Run full verification: `pnpm run check-types && pnpm run lint && pnpm run test:unit:coverage && pnpm run compile`
+
+## Code Quality
+
+This project enforces strict code quality rules via ESLint. Both source files (`src/`) and test files (`test/`) are linted.
+
+### Source file limits
+
+| Rule | Limit | Purpose |
+| --- | --- | --- |
+| `max-lines` | 250 | Keep files small and focused |
+| `max-lines-per-function` | 50 | Keep functions single-purpose |
+| `complexity` | 10 | Limit cyclomatic complexity |
+| `max-depth` | 3 | Avoid deep nesting |
+| `max-nested-callbacks` | 3 | Flat callback structure |
+| `max-params` | 3 | Use context objects for more params |
+| `max-statements` | 15 | Concise function bodies |
+| `max-classes-per-file` | 1 | One class per file |
+
+When approaching these limits, extract helper functions, use early returns, or split into smaller modules.
+
+### Test file rules
+
+Test files are linted with [`@vitest/eslint-plugin`](https://github.com/vitest-dev/eslint-plugin-vitest) recommended rules. Key rules:
+
+- Every `it`/`test` block must contain at least one `expect` assertion
+- No focused tests (`.only`) or disabled tests (`.skip`) left in code
+- No duplicate test titles
+
+Complexity rules are relaxed for test files (see `eslint.config.mjs` for details).
+
+### Running the linter
+
+```bash
+# Lint source and test files
+pnpm run lint
+
+# Lint with auto-fix
+pnpm run lint:fix
+```
 
 ## Commit Guidelines
 
