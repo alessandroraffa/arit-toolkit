@@ -1,3 +1,13 @@
+## [1.1.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.0.0...v1.1.0) (2026-02-06)
+
+### Features
+
+* **core:** add registerguarded method for toggleable commands ([7ef792a](https://github.com/alessandroraffa/arit-toolkit/commit/7ef792acac9eb818d13cf1de68aee006aa033023))
+* **core:** add workspace state manager with file persistence and onboarding ([55fe282](https://github.com/alessandroraffa/arit-toolkit/commit/55fe282ba7a7a8cae6316c5ccd82d7d3b025f6e8))
+* **statusbar:** add status bar toggle with workspace mode support ([b54b0f1](https://github.com/alessandroraffa/arit-toolkit/commit/b54b0f1ac0d64cb39704c9f13b2b902c3233801d))
+* **utils:** add jsonc parser utility for workspace config ([e4bc368](https://github.com/alessandroraffa/arit-toolkit/commit/e4bc36828cf06456a9741ed08d6064865f352d78))
+* wire status bar toggle into extension activation ([74ce35a](https://github.com/alessandroraffa/arit-toolkit/commit/74ce35a743c0ea06d953f33ceae03a823ca61e2d))
+
 ## 1.0.0 (2026-02-06)
 
 ### Features
