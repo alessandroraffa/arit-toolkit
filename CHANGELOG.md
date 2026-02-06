@@ -1,3 +1,15 @@
+## 1.0.0 (2026-02-06)
+
+### Features
+
+* add core extension infrastructure ([d9f678d](https://github.com/alessandroraffa/arit-toolkit/commit/d9f678dc3090102ce330aac7b0efebb2d0338de2))
+* add timestamped file features ([8eea9cc](https://github.com/alessandroraffa/arit-toolkit/commit/8eea9cc524081bb53872000d8e65670294df7888))
+
+### Code Refactoring
+
+* **timestamp:** simplify feature name constant ([a060c4b](https://github.com/alessandroraffa/arit-toolkit/commit/a060c4bfc914244253d09fec713b7d1c784b14c2))
+* **types:** remove unused feature interface ([1596b3b](https://github.com/alessandroraffa/arit-toolkit/commit/1596b3b00fb571628981eb43690fcc0ed25f95d0))
+
 # Changelog
 
 All notable changes to "ARIT Toolkit" will be documented in this file.
