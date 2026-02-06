@@ -1,3 +1,9 @@
+## [1.1.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.1.1...v1.1.2) (2026-02-06)
+
+### Bug Fixes
+
+* activate extension at startup and sync status bar after init ([7bde111](https://github.com/alessandroraffa/arit-toolkit/commit/7bde111c3c2e3a66545edcc36e3218516814457e))
+
 ## [1.1.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.1.0...v1.1.1) (2026-02-06)
 
 ### Code Refactoring
