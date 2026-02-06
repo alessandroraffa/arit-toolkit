@@ -11,5 +11,12 @@
     "node_modules": true,
     "coverage": true,
     "*.vsix": true
-  }
+  },
+  "terminal.integrated.profiles.osx": {
+    "zsh-nvm": {
+      "path": "/bin/zsh",
+      "args": ["-l", "-c", "source .vscode/nvm-auto.sh; exec zsh"]
+    }
+  },
+  "terminal.integrated.defaultProfile.osx": "zsh-nvm"
 }
