@@ -27,7 +27,10 @@ Thumbs.db
 
 # Logs
 *.log
-npm-debug.log*
+
+# Lock files (only pnpm-lock.yaml is allowed)
+package-lock.json
+yarn.lock
 
 # Claude Code
 .claude/

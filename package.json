@@ -29,6 +29,7 @@
     "utilities",
     "toolkit"
   ],
+  "packageManager": "pnpm@10.4.1",
   "engines": {
     "vscode": "^1.85.0",
     "node": ">=22.22.0"
@@ -121,10 +122,10 @@
     }
   },
   "scripts": {
-    "preinstall": "node -e \"const v = process.versions.node.split('.').map(Number); if (v[0] < 22 || (v[0] === 22 && v[1] < 22)) { console.error('\\x1b[31mError: Node.js >= 22.22 is required. Current: ' + process.version + '\\x1b[0m'); process.exit(1); }\"",
-    "compile": "npm run check-types && npm run build",
+    "preinstall": "node -e \"if (!/pnpm/.test(process.env.npm_config_user_agent || '')) { console.error('\\x1b[31mError: Use pnpm to install dependencies. Install it via: corepack enable pnpm\\x1b[0m'); process.exit(1); }\"",
+    "compile": "pnpm run check-types && pnpm run build",
     "build": "node esbuild.mjs",
-    "watch": "npm-run-all -p watch:*",
+    "watch": "run-p watch:*",
     "watch:esbuild": "node esbuild.mjs --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "check-types": "tsc --noEmit",
@@ -132,13 +133,13 @@
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
-    "test": "npm run test:unit && npm run test:integration",
+    "test": "pnpm run test:unit && pnpm run test:integration",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:unit:coverage": "vitest run --coverage",
     "test:integration": "vscode-test",
-    "vscode:prepublish": "npm run package",
-    "package": "npm run check-types && node esbuild.mjs --production",
+    "vscode:prepublish": "pnpm run package",
+    "package": "pnpm run check-types && node esbuild.mjs --production",
     "vsce:package": "vsce package",
     "vsce:publish": "vsce publish",
     "semantic-release": "semantic-release",
@@ -164,7 +165,7 @@
     "globals": "^15.14.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.3.0",
-    "npm-run-all": "^4.1.5",
+    "npm-run-all2": "^7.0.2",
     "prettier": "^3.4.2",
     "semantic-release": "^25.0.3",
     "semantic-release-vsce": "^6.0.23",
