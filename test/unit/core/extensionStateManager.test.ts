@@ -121,6 +121,23 @@ describe('ExtensionStateManager', () => {
       expect(manager.isEnabled).toBe(true);
     });
 
+    it('should fire onDidChangeState after reading existing config', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+
+      const manager = new ExtensionStateManager(mockLogger as any);
+      const stateChanges: boolean[] = [];
+      manager.onDidChangeState((state) => {
+        stateChanges.push(state);
+      });
+
+      await manager.initialize();
+
+      expect(stateChanges).toEqual([true]);
+    });
+
     it('should show onboarding notification when file does not exist', async () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('File not found'));

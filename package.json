@@ -34,7 +34,9 @@
     "vscode": "^1.85.0",
     "node": ">=22.22.0"
   },
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [

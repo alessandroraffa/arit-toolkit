@@ -60,7 +60,9 @@ export class ExtensionStateManager {
     await this.readStateFromFile();
     this.setupFileWatcher();
 
-    if (!this._isInitialized) {
+    if (this._isInitialized) {
+      this._onDidChangeState.fire(this._isEnabled);
+    } else {
       await this.showOnboardingNotification();
     }
   }
