@@ -12,37 +12,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run lint
-      - run: npm run format:check
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run lint
+      - run: pnpm run format:check
 
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run check-types
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check-types
 
   test-unit:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run test:unit:coverage
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:unit:coverage
       - uses: codecov/codecov-action@v4
         with:
           files: ./coverage/lcov.info
@@ -56,18 +59,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run compile
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run compile
       - name: Run Integration Tests (Linux)
         if: runner.os == 'Linux'
-        run: xvfb-run -a npm run test:integration
+        run: xvfb-run -a pnpm run test:integration
       - name: Run Integration Tests (macOS/Windows)
         if: runner.os != 'Linux'
-        run: npm run test:integration
+        run: pnpm run test:integration
 
   build:
     name: Build
@@ -75,13 +79,14 @@ jobs:
     needs: [lint, typecheck, test-unit]
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm run package
-      - run: npm run vsce:package
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run package
+      - run: pnpm run vsce:package
       - uses: actions/upload-artifact@v4
         with:
           name: extension-vsix
