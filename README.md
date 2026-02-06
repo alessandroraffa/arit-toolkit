@@ -42,6 +42,34 @@ Add the file's creation timestamp as a prefix to existing files. Useful for orga
 
 > **Note:** This feature is only available via the Explorer context menu.
 
+### Extension Toggle (Status Bar)
+
+Quickly enable or disable advanced ARIT Toolkit features for the current workspace via a status bar icon.
+
+**Status Bar:**
+
+An "ARIT" item appears in the bottom-right status bar. It shows:
+
+- The current enabled/disabled state
+- A tooltip with feature list and active configuration on hover
+- Click to toggle the extension on/off
+
+**Usage:**
+
+- Click the "ARIT" icon in the status bar
+- Command Palette: "ARIT: Toggle Extension (Enable/Disable)"
+
+**Workspace initialization:**
+
+When you open a single-root workspace for the first time, ARIT Toolkit will ask if you want to initialize it for advanced features. Accepting creates a `.arit-toolkit.jsonc` configuration file at the workspace root.
+
+**Workspace modes:**
+
+- **Single-root workspace:** Full functionality with toggle support. State is persisted in `.arit-toolkit.jsonc`.
+- **Multi-root workspace:** Basic timestamp commands remain available. The toggle is not available and the status bar indicates limited mode.
+
+When disabled, advanced features show a warning message. Basic timestamp commands always work regardless of the toggle state.
+
 ## Installation
 
 ### From VS Code Marketplace
