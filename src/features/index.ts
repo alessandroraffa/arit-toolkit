@@ -6,13 +6,15 @@ import type { Logger } from '../core/logger';
 import { registerTimestampedFileFeature } from './timestampedFile';
 import { registerStatusBarToggleFeature } from './statusBarToggle';
 
-export function registerAllFeatures(
-  registry: CommandRegistry,
-  stateManager: ExtensionStateManager,
-  config: ConfigManager,
-  logger: Logger,
-  context: vscode.ExtensionContext
-): void {
-  registerStatusBarToggleFeature(registry, stateManager, config, logger, context);
-  registerTimestampedFileFeature(registry, config, logger);
+export interface FeatureRegistrationContext {
+  registry: CommandRegistry;
+  stateManager: ExtensionStateManager;
+  config: ConfigManager;
+  logger: Logger;
+  context: vscode.ExtensionContext;
+}
+
+export function registerAllFeatures(ctx: FeatureRegistrationContext): void {
+  registerStatusBarToggleFeature(ctx);
+  registerTimestampedFileFeature(ctx.registry, ctx.config, ctx.logger);
 }

@@ -53,16 +53,16 @@ describe('toggleEnabledCommand', () => {
   });
 
   it('should call stateManager.toggle in single-root workspace', async () => {
-    const command = toggleEnabledCommand(
+    const command = toggleEnabledCommand({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockStateManager as any,
+      stateManager: mockStateManager as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockConfig as any,
+      config: mockConfig as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockLogger as any,
+      logger: mockLogger as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockStatusBarItem as any
-    );
+      statusBarItem: mockStatusBarItem as any,
+    });
 
     await command();
 
@@ -75,16 +75,16 @@ describe('toggleEnabledCommand', () => {
       return true;
     });
 
-    const command = toggleEnabledCommand(
+    const command = toggleEnabledCommand({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockStateManager as any,
+      stateManager: mockStateManager as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockConfig as any,
+      config: mockConfig as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockLogger as any,
+      logger: mockLogger as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockStatusBarItem as any
-    );
+      statusBarItem: mockStatusBarItem as any,
+    });
 
     await command();
 
@@ -97,16 +97,16 @@ describe('toggleEnabledCommand', () => {
       return true;
     });
 
-    const command = toggleEnabledCommand(
+    const command = toggleEnabledCommand({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockStateManager as any,
+      stateManager: mockStateManager as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockConfig as any,
+      config: mockConfig as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockLogger as any,
+      logger: mockLogger as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockStatusBarItem as any
-    );
+      statusBarItem: mockStatusBarItem as any,
+    });
 
     await command();
 
@@ -118,16 +118,16 @@ describe('toggleEnabledCommand', () => {
   it('should show info message in multi-root workspace', async () => {
     mockStateManager.isToggleable = false;
 
-    const command = toggleEnabledCommand(
+    const command = toggleEnabledCommand({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockStateManager as any,
+      stateManager: mockStateManager as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockConfig as any,
+      config: mockConfig as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockLogger as any,
+      logger: mockLogger as any,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockStatusBarItem as any
-    );
+      statusBarItem: mockStatusBarItem as any,
+    });
 
     await command();
 

@@ -26,7 +26,13 @@ export function activate(context: vscode.ExtensionContext): void {
   const commandRegistry = new CommandRegistry(context, stateManager);
 
   // Register all features
-  registerAllFeatures(commandRegistry, stateManager, configManager, logger, context);
+  registerAllFeatures({
+    registry: commandRegistry,
+    stateManager,
+    config: configManager,
+    logger,
+    context,
+  });
 
   // Initialize state manager (reads config file, shows onboarding if needed)
   void stateManager.initialize();

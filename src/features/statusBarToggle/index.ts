@@ -1,25 +1,16 @@
-import type * as vscode from 'vscode';
-import type { CommandRegistry } from '../../core/commandRegistry';
-import type { ExtensionStateManager } from '../../core/extensionStateManager';
-import type { ConfigManager } from '../../core/configManager';
-import type { Logger } from '../../core/logger';
+import type { FeatureRegistrationContext } from '../index';
 import { createStatusBarItem, updateStatusBarItem } from './statusBarItem';
 import { toggleEnabledCommand } from './command';
 import { COMMAND_ID_TOGGLE } from './constants';
 
-export function registerStatusBarToggleFeature(
-  registry: CommandRegistry,
-  stateManager: ExtensionStateManager,
-  config: ConfigManager,
-  logger: Logger,
-  context: vscode.ExtensionContext
-): void {
+export function registerStatusBarToggleFeature(ctx: FeatureRegistrationContext): void {
+  const { registry, stateManager, config, logger, context } = ctx;
   const statusBarItem = createStatusBarItem(stateManager, config, logger);
   context.subscriptions.push(statusBarItem);
 
   registry.register(
     COMMAND_ID_TOGGLE,
-    toggleEnabledCommand(stateManager, config, logger, statusBarItem)
+    toggleEnabledCommand({ stateManager, config, logger, statusBarItem })
   );
   logger.debug(`Registered command: ${COMMAND_ID_TOGGLE}`);
 
