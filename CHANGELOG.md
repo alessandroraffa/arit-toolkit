@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.1.0...v1.1.1) (2026-02-06)
+
+### Code Refactoring
+
+* use context objects to reduce function parameter count ([fd12390](https://github.com/alessandroraffa/arit-toolkit/commit/fd1239061c95fd903c10370164e5f53cdcee6e9b))
+
 ## [1.1.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.0.0...v1.1.0) (2026-02-06)
 
 ### Features
