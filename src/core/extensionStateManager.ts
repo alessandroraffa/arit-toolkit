@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import type { WorkspaceConfig, WorkspaceMode } from '../types';
 import type { Logger } from './logger';
-import { parseJsonc, formatJsonc } from '../utils';
+import { parseJsonc, formatJsonc, computeVersionCode } from '../utils';
 
 const CONFIG_FILENAME = '.arit-toolkit.jsonc';
 const CONFIG_HEADER =
@@ -16,6 +16,8 @@ export class ExtensionStateManager {
   private watcher: vscode.FileSystemWatcher | undefined;
   private _isInitialized = false;
   private _isEnabled = false;
+  private _extensionVersion: string | undefined;
+  private _configVersionCode: number | undefined;
 
   constructor(private readonly logger: Logger) {
     const folders = vscode.workspace.workspaceFolders;
@@ -51,7 +53,9 @@ export class ExtensionStateManager {
     return this._workspaceMode === 'single-root';
   }
 
-  public async initialize(): Promise<void> {
+  public async initialize(extensionVersion: string): Promise<void> {
+    this._extensionVersion = extensionVersion;
+
     if (!this.isSingleRoot || !this.workspaceRoot) {
       this.logger.debug('Skipping initialization for non-single-root workspace');
       return;
@@ -62,6 +66,7 @@ export class ExtensionStateManager {
 
     if (this._isInitialized) {
       this._onDidChangeState.fire(this._isEnabled);
+      await this.checkVersionCompatibility();
     } else {
       await this.showOnboardingNotification();
     }
@@ -101,6 +106,41 @@ export class ExtensionStateManager {
     return false;
   }
 
+  private async checkVersionCompatibility(): Promise<void> {
+    if (!this._extensionVersion) {
+      return;
+    }
+
+    const extensionVersionCode = computeVersionCode(this._extensionVersion);
+
+    if (this._configVersionCode === extensionVersionCode) {
+      this.logger.debug('Workspace config version is up to date');
+      return;
+    }
+
+    this.logger.info(
+      `Workspace config version mismatch: config=${String(this._configVersionCode)}, extension=${String(extensionVersionCode)}`
+    );
+    await this.showVersionUpdateNotification();
+  }
+
+  private async showVersionUpdateNotification(): Promise<void> {
+    const version = this._extensionVersion;
+    if (!version) {
+      return;
+    }
+
+    const action = await vscode.window.showInformationMessage(
+      `ARIT Toolkit: The workspace configuration needs to be updated to version ${version}. Update now?`,
+      'Update'
+    );
+
+    if (action === 'Update') {
+      await this.writeStateToFile(this._isEnabled);
+      this.logger.info(`Workspace config updated to version ${version}`);
+    }
+  }
+
   public async initializeWorkspace(): Promise<void> {
     if (!this.workspaceRoot) {
       return;
@@ -137,7 +177,10 @@ export class ExtensionStateManager {
       const config = parseJsonc(text) as WorkspaceConfig;
       this._isInitialized = true;
       this._isEnabled = config.enabled;
-      this.logger.debug(`Read workspace config: enabled=${String(this._isEnabled)}`);
+      this._configVersionCode = config.versionCode;
+      this.logger.debug(
+        `Read workspace config: enabled=${String(this._isEnabled)}, versionCode=${String(this._configVersionCode)}`
+      );
     } catch {
       this._isInitialized = false;
       this._isEnabled = false;
@@ -151,10 +194,18 @@ export class ExtensionStateManager {
       return;
     }
 
+    const version = this._extensionVersion;
     const config: WorkspaceConfig = { enabled };
+    if (version) {
+      config.version = version;
+      config.versionCode = computeVersionCode(version);
+    }
     const content = formatJsonc(config, CONFIG_HEADER);
     await vscode.workspace.fs.writeFile(configUri, new TextEncoder().encode(content));
-    this.logger.debug(`Wrote workspace config: enabled=${String(enabled)}`);
+    this._configVersionCode = config.versionCode;
+    this.logger.debug(
+      `Wrote workspace config: enabled=${String(enabled)}, version=${String(config.version)}, versionCode=${String(config.versionCode)}`
+    );
   }
 
   private setupFileWatcher(): void {
