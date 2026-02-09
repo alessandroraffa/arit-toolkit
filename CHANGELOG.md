@@ -1,3 +1,16 @@
+## [1.2.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.1.2...v1.2.0) (2026-02-09)
+
+### Features
+
+* **timestampedDirectory:** add command constants ([ee082fd](https://github.com/alessandroraffa/arit-toolkit/commit/ee082fd3c4b6dfd6c833e6829a9734cfc5b10553))
+* **timestampedDirectory:** add commands and menus to package.json ([b34f64c](https://github.com/alessandroraffa/arit-toolkit/commit/b34f64c7b9593095e6745690d1cf998b599ca388))
+* **timestampedDirectory:** add create and prefix timestamp commands ([493b9d9](https://github.com/alessandroraffa/arit-toolkit/commit/493b9d9056401d65216d049e82d3ea17e5725c30))
+* **timestampedDirectory:** register feature in extension ([27a4e09](https://github.com/alessandroraffa/arit-toolkit/commit/27a4e09e150ec7566f063bdfab40da13581f1f33))
+
+### Code Refactoring
+
+* move timestamp generation to shared utils ([fa77c22](https://github.com/alessandroraffa/arit-toolkit/commit/fa77c22338c3c6aeb9d02e7486acfe65478c8e7e))
+
 ## [1.1.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.1.1...v1.1.2) (2026-02-06)
 
 ### Bug Fixes
