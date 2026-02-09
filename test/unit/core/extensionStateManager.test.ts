@@ -100,14 +100,14 @@ describe('ExtensionStateManager', () => {
 
       const manager = new ExtensionStateManager(mockLogger as any);
 
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       expect(workspace.fs.readFile).not.toHaveBeenCalled();
     });
 
     it('should read state from file when it exists', async () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
-      const configContent = '{ "enabled": true }';
+      const configContent = '{ "enabled": true, "versionCode": 1001000000 }';
       workspace.fs.readFile = vi
         .fn()
         .mockResolvedValue(new TextEncoder().encode(configContent));
@@ -115,7 +115,7 @@ describe('ExtensionStateManager', () => {
 
       const manager = new ExtensionStateManager(mockLogger as any);
 
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       expect(manager.isInitialized).toBe(true);
       expect(manager.isEnabled).toBe(true);
@@ -125,7 +125,9 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
 
       const manager = new ExtensionStateManager(mockLogger as any);
       const stateChanges: boolean[] = [];
@@ -133,7 +135,7 @@ describe('ExtensionStateManager', () => {
         stateChanges.push(state);
       });
 
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       expect(stateChanges).toEqual([true]);
     });
@@ -145,7 +147,7 @@ describe('ExtensionStateManager', () => {
 
       const manager = new ExtensionStateManager(mockLogger as any);
 
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       expect(manager.isInitialized).toBe(false);
       expect(manager.isEnabled).toBe(false);
@@ -163,7 +165,7 @@ describe('ExtensionStateManager', () => {
 
       const manager = new ExtensionStateManager(mockLogger as any);
 
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       expect(manager.isInitialized).toBe(true);
       expect(manager.isEnabled).toBe(true);
@@ -174,11 +176,13 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": false }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": false, "versionCode": 1001000000 }')
+        );
 
       const manager = new ExtensionStateManager(mockLogger as any);
 
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       expect(workspace.createFileSystemWatcher).toHaveBeenCalled();
     });
@@ -225,11 +229,13 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
 
       const manager = new ExtensionStateManager(mockLogger as any);
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       expect(manager.isEnabled).toBe(true);
 
@@ -243,11 +249,13 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": false }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": false, "versionCode": 1001000000 }')
+        );
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
 
       const manager = new ExtensionStateManager(mockLogger as any);
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       expect(manager.isEnabled).toBe(false);
 
@@ -261,11 +269,13 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
 
       const manager = new ExtensionStateManager(mockLogger as any);
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       const stateChanges: boolean[] = [];
       manager.onDidChangeState((state) => {
@@ -281,11 +291,13 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
 
       const manager = new ExtensionStateManager(mockLogger as any);
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       await manager.toggle();
 
@@ -328,10 +340,12 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
 
       const manager = new ExtensionStateManager(mockLogger as any);
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       // Capture the onDidChange handler
       const onDidChangeHandler = mockFileSystemWatcher.onDidChange.mock
@@ -340,7 +354,9 @@ describe('ExtensionStateManager', () => {
       // Simulate external change to disabled
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": false }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": false, "versionCode": 1001000000 }')
+        );
       await onDidChangeHandler();
 
       expect(manager.isEnabled).toBe(false);
@@ -350,10 +366,12 @@ describe('ExtensionStateManager', () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
 
       const manager = new ExtensionStateManager(mockLogger as any);
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       expect(manager.isInitialized).toBe(true);
 
@@ -366,15 +384,114 @@ describe('ExtensionStateManager', () => {
     });
   });
 
+  describe('version compatibility check', () => {
+    it('should not show notification when versionCode matches', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
+      window.showInformationMessage = vi.fn();
+
+      const manager = new ExtensionStateManager(mockLogger as any);
+      await manager.initialize('1.0.0');
+
+      expect(window.showInformationMessage).not.toHaveBeenCalled();
+    });
+
+    it('should show update notification when versionCode is missing', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+      window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
+
+      const manager = new ExtensionStateManager(mockLogger as any);
+      await manager.initialize('1.0.0');
+
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'ARIT Toolkit: The workspace configuration needs to be updated to version 1.0.0. Update now?',
+        'Update'
+      );
+    });
+
+    it('should show update notification when versionCode differs', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1000999000 }')
+        );
+      window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
+
+      const manager = new ExtensionStateManager(mockLogger as any);
+      await manager.initialize('1.0.0');
+
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'ARIT Toolkit: The workspace configuration needs to be updated to version 1.0.0. Update now?',
+        'Update'
+      );
+    });
+
+    it('should update config file when user accepts version update', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+      window.showInformationMessage = vi.fn().mockResolvedValue('Update');
+
+      const manager = new ExtensionStateManager(mockLogger as any);
+      await manager.initialize('1.2.3');
+
+      expect(workspace.fs.writeFile).toHaveBeenCalled();
+      const writeCall = vi.mocked(workspace.fs.writeFile).mock.calls[0];
+      const writtenContent = new TextDecoder().decode(writeCall[1] as Uint8Array);
+      expect(writtenContent).toContain('"version": "1.2.3"');
+      expect(writtenContent).toContain('"versionCode": 1001002003');
+    });
+
+    it('should not update config file when user dismisses version update', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+      window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
+
+      const manager = new ExtensionStateManager(mockLogger as any);
+      await manager.initialize('1.0.0');
+
+      expect(workspace.fs.writeFile).not.toHaveBeenCalled();
+    });
+
+    it('should include version info when initializing workspace', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('File not found'));
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+      window.showInformationMessage = vi.fn().mockResolvedValue('Initialize');
+
+      const manager = new ExtensionStateManager(mockLogger as any);
+      await manager.initialize('2.5.0');
+
+      const writeCall = vi.mocked(workspace.fs.writeFile).mock.calls[0];
+      const writtenContent = new TextDecoder().decode(writeCall[1] as Uint8Array);
+      expect(writtenContent).toContain('"version": "2.5.0"');
+      expect(writtenContent).toContain('"versionCode": 1002005000');
+    });
+  });
+
   describe('dispose', () => {
     it('should clean up watcher', async () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi
         .fn()
-        .mockResolvedValue(new TextEncoder().encode('{ "enabled": true }'));
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
 
       const manager = new ExtensionStateManager(mockLogger as any);
-      await manager.initialize();
+      await manager.initialize('1.0.0');
 
       manager.dispose();
 
