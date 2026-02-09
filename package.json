@@ -51,6 +51,16 @@
         "icon": "$(calendar)"
       },
       {
+        "command": "arit.createTimestampedDirectory",
+        "title": "ARIT: New Folder with Timestamp",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "arit.prefixTimestampToDirectory",
+        "title": "ARIT: Prefix Creation Timestamp to Folder",
+        "icon": "$(folder)"
+      },
+      {
         "command": "arit.toggleEnabled",
         "title": "ARIT: Toggle Extension (Enable/Disable)",
         "icon": "$(tools)"
@@ -64,9 +74,19 @@
           "when": "explorerResourceIsFolder"
         },
         {
-          "command": "arit.prefixTimestampToFile",
+          "command": "arit.createTimestampedDirectory",
           "group": "navigation@2",
+          "when": "explorerResourceIsFolder"
+        },
+        {
+          "command": "arit.prefixTimestampToFile",
+          "group": "navigation@3",
           "when": "!explorerResourceIsFolder"
+        },
+        {
+          "command": "arit.prefixTimestampToDirectory",
+          "group": "navigation@4",
+          "when": "explorerResourceIsFolder"
         }
       ],
       "commandPalette": [
@@ -79,6 +99,14 @@
           "when": "false"
         },
         {
+          "command": "arit.createTimestampedDirectory",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "arit.prefixTimestampToDirectory",
+          "when": "false"
+        },
+        {
           "command": "arit.toggleEnabled"
         }
       ]
@@ -88,6 +116,12 @@
         "command": "arit.createTimestampedFile",
         "key": "ctrl+alt+n",
         "mac": "cmd+alt+n",
+        "when": "explorerViewletFocus"
+      },
+      {
+        "command": "arit.createTimestampedDirectory",
+        "key": "ctrl+alt+shift+n",
+        "mac": "cmd+alt+shift+n",
         "when": "explorerViewletFocus"
       }
     ],
