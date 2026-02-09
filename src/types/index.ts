@@ -6,4 +6,6 @@ export type WorkspaceMode = 'single-root' | 'multi-root' | 'no-workspace';
 
 export interface WorkspaceConfig {
   enabled: boolean;
+  version?: string;
+  versionCode?: number;
 }
