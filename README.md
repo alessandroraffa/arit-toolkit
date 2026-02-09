@@ -30,17 +30,32 @@ Create new files with automatic timestamp prefixes. Perfect for:
 
 **Example:** Creates `202602051430-meeting-notes.md`
 
+### Timestamped Directory Creator
+
+Create new directories with automatic timestamp prefixes. Same logic as the file creator, but for folders.
+
+**Usage:**
+
+- Right-click on a folder in Explorer → "ARIT: New Folder with Timestamp"
+- Keyboard shortcut: `Ctrl+Alt+Shift+N` / `Cmd+Alt+Shift+N` (when Explorer is focused)
+- Command Palette: "ARIT: New Folder with Timestamp"
+
+**Example:** Creates `202602051430-project-assets/`
+
 ### Prefix Creation Timestamp
 
-Add the file's creation timestamp as a prefix to existing files. Useful for organizing files by when they were created.
+Add the creation timestamp as a prefix to existing files or directories. Useful for organizing by when they were created.
 
 **Usage:**
 
 - Right-click on a file in Explorer → "ARIT: Prefix Creation Timestamp"
+- Right-click on a folder in Explorer → "ARIT: Prefix Creation Timestamp to Folder"
 
-**Example:** `report.pdf` → `202602051430-report.pdf` (uses the file's actual creation date)
+**Example (file):** `report.pdf` → `202602051430-report.pdf` (uses the file's actual creation date)
 
-> **Note:** This feature is only available via the Explorer context menu.
+**Example (folder):** `assets/` → `202602051430-assets/` (uses the folder's actual creation date)
+
+> **Note:** These features are only available via the Explorer context menu.
 
 ### Extension Toggle (Status Bar)
 
@@ -86,7 +101,7 @@ When disabled, advanced features show a warning message. Basic timestamp command
 
 ## Configuration
 
-Both features share the same timestamp configuration:
+All timestamp features share the same configuration:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -105,11 +120,12 @@ Both features share the same timestamp configuration:
 
 ## Keyboard Shortcuts
 
-| Command | Windows/Linux | macOS | Context |
-|---------|---------------|-------|---------|
-| New File with Timestamp | `Ctrl+Alt+N` | `Cmd+Alt+N` | Explorer focused |
+| Command                   | Windows/Linux       | macOS              | Context          |
+|---------------------------|---------------------|--------------------|------------------|
+| New File with Timestamp   | `Ctrl+Alt+N`        | `Cmd+Alt+N`        | Explorer focused |
+| New Folder with Timestamp | `Ctrl+Alt+Shift+N`  | `Cmd+Alt+Shift+N`  | Explorer focused |
 
-> **Note:** The "Prefix Creation Timestamp" command is only available via the Explorer context menu (right-click on a file).
+> **Note:** The "Prefix Creation Timestamp" commands are only available via the Explorer context menu.
 
 ## Requirements
 
