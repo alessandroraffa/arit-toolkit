@@ -1,3 +1,13 @@
+## [1.3.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.2.0...v1.3.0) (2026-02-09)
+
+### Features
+
+* **versionCode:** add version and version code fields to workspace config ([063df88](https://github.com/alessandroraffa/arit-toolkit/commit/063df8819c979eedfabb22088c3022273c09395c))
+* **versionCode:** add version code computation utility ([3d1a8b1](https://github.com/alessandroraffa/arit-toolkit/commit/3d1a8b176163526263450fc9086941f093e750e6))
+* **versionCode:** add version code field to package.json ([adfc5df](https://github.com/alessandroraffa/arit-toolkit/commit/adfc5df570bd593078dff2c60d9c314c7e53cf73))
+* **versionCode:** add version compatibility check on workspace init ([abd8498](https://github.com/alessandroraffa/arit-toolkit/commit/abd84986497040353c7b4be930743d034f31a94d))
+* **versionCode:** pass extension version to state manager on activate ([f8d13d3](https://github.com/alessandroraffa/arit-toolkit/commit/f8d13d33a3d408de96c8361f326659d3a4710384))
+
 ## [1.2.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.1.2...v1.2.0) (2026-02-09)
 
 ### Features
