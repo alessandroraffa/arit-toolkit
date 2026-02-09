@@ -34,8 +34,11 @@ export function activate(context: vscode.ExtensionContext): void {
     context,
   });
 
-  // Initialize state manager (reads config file, shows onboarding if needed)
-  void stateManager.initialize();
+  // Initialize state manager (reads config file, checks version, shows onboarding if needed)
+  const extensionVersion = String(
+    (context.extension.packageJSON as Record<string, unknown>).version
+  );
+  void stateManager.initialize(extensionVersion);
 
   logger.info('ARIT Toolkit activated successfully');
 }
