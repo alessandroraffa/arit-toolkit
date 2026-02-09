@@ -17,4 +17,3 @@ export function registerTimestampedFileFeature(
 }
 
 export { COMMAND_ID_CREATE, COMMAND_ID_PREFIX, FEATURE_NAME } from './constants';
-export { generateTimestamp } from './utils';

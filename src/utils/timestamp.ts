@@ -1,4 +1,4 @@
-import type { TimestampFormat } from '../../types';
+import type { TimestampFormat } from '../types';
 
 export function generateTimestamp(format: TimestampFormat, date?: Date): string {
   const targetDate = date ?? new Date();

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { generateTimestamp } from '../../../../src/features/timestampedFile/utils';
+import { generateTimestamp } from '../../../src/utils/timestamp';
 
 describe('generateTimestamp', () => {
   beforeEach(() => {
