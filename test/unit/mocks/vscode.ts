@@ -55,6 +55,7 @@ export const workspace = {
     writeFile: vi.fn(),
     readFile: vi.fn(),
     rename: vi.fn(),
+    createDirectory: vi.fn(),
   },
   createFileSystemWatcher: vi.fn(() => mockFileSystemWatcher),
 };
