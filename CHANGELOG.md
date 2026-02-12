@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.4.0...v1.4.1) (2026-02-12)
+
+### Bug Fixes
+
+* override qs to >=6.14.2 to resolve dos vulnerability (ghsa-njh5-hf29-cjgq) ([5954167](https://github.com/alessandroraffa/arit-toolkit/commit/59541673d73103fb91341e025d5f2bc0dc97433f))
+
 ## [1.4.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.3.0...v1.4.0) (2026-02-12)
 
 ### Features
