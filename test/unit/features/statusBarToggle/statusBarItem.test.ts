@@ -10,6 +10,7 @@ describe('statusBarItem', () => {
     isEnabled: boolean;
     isSingleRoot: boolean;
     workspaceMode: string;
+    getConfigSection: ReturnType<typeof vi.fn>;
   };
   let mockConfig: {
     timestampFormat: string;
@@ -26,6 +27,7 @@ describe('statusBarItem', () => {
       isEnabled: true,
       isSingleRoot: true,
       workspaceMode: 'single-root',
+      getConfigSection: vi.fn().mockReturnValue(undefined),
     };
     mockConfig = {
       timestampFormat: 'YYYYMMDDHHmm',

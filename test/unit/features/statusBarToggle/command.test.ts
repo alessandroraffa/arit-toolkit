@@ -8,6 +8,7 @@ describe('toggleEnabledCommand', () => {
     isEnabled: boolean;
     isSingleRoot: boolean;
     toggle: ReturnType<typeof vi.fn>;
+    getConfigSection: ReturnType<typeof vi.fn>;
   };
   let mockConfig: {
     timestampFormat: string;
@@ -33,6 +34,7 @@ describe('toggleEnabledCommand', () => {
       isEnabled: false,
       isSingleRoot: true,
       toggle: vi.fn().mockResolvedValue(true),
+      getConfigSection: vi.fn().mockReturnValue(undefined),
     };
     mockConfig = {
       timestampFormat: 'YYYYMMDDHHmm',

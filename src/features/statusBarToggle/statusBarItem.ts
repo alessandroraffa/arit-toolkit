@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { ExtensionStateManager } from '../../core/extensionStateManager';
 import type { ConfigManager } from '../../core/configManager';
 import type { Logger } from '../../core/logger';
+import type { AgentSessionsArchivingConfig } from '../../types';
 import {
   COMMAND_ID_TOGGLE,
   STATUS_BAR_PRIORITY,
@@ -9,6 +10,8 @@ import {
   STATUS_BAR_TEXT,
   STATUS_BAR_NAME,
 } from './constants';
+import { CONFIG_KEY as ARCHIVING_CONFIG_KEY } from '../agentSessionsArchiving';
+import { COMMAND_ID_TOGGLE as ARCHIVING_TOGGLE_CMD } from '../agentSessionsArchiving/constants';
 
 export function createStatusBarItem(
   stateManager: ExtensionStateManager,
@@ -50,17 +53,18 @@ export function updateStatusBarItem(
     item.color = new vscode.ThemeColor('disabledForeground');
   }
 
-  item.tooltip = buildSingleRootTooltip(stateManager.isEnabled, config);
+  item.tooltip = buildSingleRootTooltip(stateManager, config);
 }
 
 function buildSingleRootTooltip(
-  isEnabled: boolean,
+  stateManager: ExtensionStateManager,
   config: ConfigManager
 ): vscode.MarkdownString {
   const md = new vscode.MarkdownString('', true);
   md.isTrusted = true;
   md.supportThemeIcons = true;
 
+  const isEnabled = stateManager.isEnabled;
   const statusIcon = isEnabled ? '$(check)' : '$(circle-slash)';
   const statusText = isEnabled ? 'Enabled' : 'Disabled';
   const action = isEnabled ? 'disable' : 'enable';
@@ -68,8 +72,11 @@ function buildSingleRootTooltip(
   md.appendMarkdown(
     `### $(tools) ARIT Toolkit\n\n` +
       `**Status:** ${statusIcon} ${statusText}\n\n` +
-      `---\n\n` +
-      `**Features:**\n\n` +
+      `---\n\n`
+  );
+  md.appendMarkdown(buildBackgroundServicesSection(stateManager));
+  md.appendMarkdown(
+    `**Features:**\n\n` +
       `- $(new-file) Timestamped File Creator\n` +
       `- $(calendar) Prefix Creation Timestamp\n\n` +
       `---\n\n` +
@@ -81,6 +88,31 @@ function buildSingleRootTooltip(
   );
 
   return md;
+}
+
+function buildBackgroundServicesSection(stateManager: ExtensionStateManager): string {
+  const archivingConfig = stateManager.getConfigSection(ARCHIVING_CONFIG_KEY) as
+    | AgentSessionsArchivingConfig
+    | undefined;
+  if (!archivingConfig) {
+    return '';
+  }
+
+  if (!stateManager.isEnabled) {
+    return `**Background Services:**\n\n$(warning) All background services paused\n\n---\n\n`;
+  }
+
+  const icon = archivingConfig.enabled ? '$(check)' : '$(circle-slash)';
+  const status = archivingConfig.enabled ? 'Active' : 'Inactive';
+  const toggleIcon = archivingConfig.enabled ? '$(debug-stop)' : '$(play)';
+  const toggleLabel = archivingConfig.enabled ? 'Disable' : 'Enable';
+
+  return (
+    `**Background Services:**\n\n` +
+    `$(archive) Agent Sessions Archiving: ${icon} ${status} ` +
+    `[${toggleIcon} ${toggleLabel}](command:${ARCHIVING_TOGGLE_CMD})\n\n` +
+    `---\n\n`
+  );
 }
 
 function buildMultiRootTooltip(): vscode.MarkdownString {
