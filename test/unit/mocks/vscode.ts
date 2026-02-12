@@ -56,6 +56,10 @@ export const workspace = {
     readFile: vi.fn(),
     rename: vi.fn(),
     createDirectory: vi.fn(),
+    stat: vi.fn(),
+    copy: vi.fn(),
+    delete: vi.fn(),
+    readDirectory: vi.fn(),
   },
   createFileSystemWatcher: vi.fn(() => mockFileSystemWatcher),
 };
@@ -107,6 +111,13 @@ export class RelativePattern {
 export enum StatusBarAlignment {
   Left = 1,
   Right = 2,
+}
+
+export enum FileType {
+  Unknown = 0,
+  File = 1,
+  Directory = 2,
+  SymbolicLink = 64,
 }
 
 export class MarkdownString {
