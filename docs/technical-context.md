@@ -97,26 +97,26 @@ are prompted to opt in to new configuration sections.
 
 ### 3.1  Business Context
 
-```
-                          +-----------------------+
-                          |    VS Code Editor     |
-                          |   (Extension Host)    |
-                          +-----------+-----------+
-                                      |
-                     activates on     |  onStartupFinished
-                     workspace open   |
-                                      v
-                          +-----------------------+
-                          |    ARIT Toolkit       |
-                          |    Extension          |
-                          +-----------+-----------+
-                                      |
-              +-----------+-----------+-----------+-----------+
-              |           |           |           |           |
-              v           v           v           v           v
+```txt<>
+                           +-----------------------+
+                           |    VS Code Editor     |
+                           |   (Extension Host)    |
+                           +-----------+-----------+
+                                       |
+                      activates on     |  onStartupFinished
+                      workspace open   |
+                                       v
+                           +-----------------------+
+                           |    ARIT Toolkit       |
+                           |    Extension          |
+                           +-----------+-----------+
+                                       |
+              +-----------+------------+-----------+-----------+
+              |           |            |           |           |
+              v           v            v           v           v
         Timestamped  Timestamped  Status Bar  Agent Session  Config
-        File         Directory   Toggle      Archiving      Migration
-        Feature      Feature     Feature     Feature        System
+        File         Directory    Toggle      Archiving      Migration
+        Feature      Feature      Feature     Feature        System
 ```
 
 | External actor           | Interaction                                                         |
