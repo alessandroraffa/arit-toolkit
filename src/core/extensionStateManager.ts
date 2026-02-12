@@ -1,35 +1,42 @@
 import * as vscode from 'vscode';
-import type { WorkspaceConfig, WorkspaceMode } from '../types';
+import type { WorkspaceMode } from '../types';
 import type { Logger } from './logger';
+import type { ConfigMigrationService } from './configMigration/migrationService';
 import { parseJsonc, formatJsonc, computeVersionCode } from '../utils';
 
 const CONFIG_FILENAME = '.arit-toolkit.jsonc';
 const CONFIG_HEADER =
   'ARIT Toolkit workspace configuration\nManaged by the ARIT Toolkit extension';
 
+type SectionListener = (value: unknown) => void;
+
 export class ExtensionStateManager {
   private readonly _onDidChangeState = new vscode.EventEmitter<boolean>();
   public readonly onDidChangeState: vscode.Event<boolean> = this._onDidChangeState.event;
 
   private readonly _workspaceMode: WorkspaceMode;
-  private readonly workspaceRoot: vscode.Uri | undefined;
+  private readonly _workspaceRoot: vscode.Uri | undefined;
+  private readonly _sectionListeners = new Map<string, Set<SectionListener>>();
   private watcher: vscode.FileSystemWatcher | undefined;
   private _isInitialized = false;
   private _isEnabled = false;
   private _extensionVersion: string | undefined;
   private _configVersionCode: number | undefined;
+  private _fullConfig: Record<string, unknown> | undefined;
 
-  constructor(private readonly logger: Logger) {
+  constructor(
+    private readonly logger: Logger,
+    private readonly migrationService: ConfigMigrationService
+  ) {
     const folders = vscode.workspace.workspaceFolders;
     if (!folders || folders.length === 0) {
       this._workspaceMode = 'no-workspace';
     } else if (folders.length === 1) {
       this._workspaceMode = 'single-root';
-      this.workspaceRoot = folders[0]?.uri;
+      this._workspaceRoot = folders[0]?.uri;
     } else {
       this._workspaceMode = 'multi-root';
     }
-
     this.logger.debug(`Workspace mode: ${this._workspaceMode}`);
   }
 
@@ -53,35 +60,61 @@ export class ExtensionStateManager {
     return this._workspaceMode === 'single-root';
   }
 
+  public get workspaceRootUri(): vscode.Uri | undefined {
+    return this._workspaceRoot;
+  }
+
+  public getConfigSection(key: string): unknown {
+    return this._fullConfig?.[key];
+  }
+
+  public onConfigSectionChanged(
+    key: string,
+    listener: SectionListener
+  ): vscode.Disposable {
+    const listeners = this._sectionListeners.get(key) ?? new Set<SectionListener>();
+    this._sectionListeners.set(key, listeners);
+    listeners.add(listener);
+    return {
+      dispose: (): void => {
+        listeners.delete(listener);
+      },
+    };
+  }
+
+  public async updateConfigSection(key: string, value: unknown): Promise<void> {
+    if (!this._fullConfig) {
+      return;
+    }
+    const oldConfig = { ...this._fullConfig };
+    this._fullConfig[key] = value;
+    await this.writeFullConfig(this._fullConfig);
+    this.notifySectionListeners(oldConfig, this._fullConfig);
+  }
+
   public async initialize(extensionVersion: string): Promise<void> {
     this._extensionVersion = extensionVersion;
-
-    if (!this.isSingleRoot || !this.workspaceRoot) {
+    if (!this.isSingleRoot || !this._workspaceRoot) {
       this.logger.debug('Skipping initialization for non-single-root workspace');
       return;
     }
-
     await this.readStateFromFile();
     this.setupFileWatcher();
-
     if (this._isInitialized) {
       this._onDidChangeState.fire(this._isEnabled);
-      await this.checkVersionCompatibility();
+      await this.runMigration();
     } else {
       await this.showOnboardingNotification();
     }
   }
 
   public async toggle(): Promise<boolean> {
-    if (!this.isSingleRoot || !this.workspaceRoot) {
+    if (!this.isSingleRoot || !this._workspaceRoot) {
       return false;
     }
-
     if (!this._isInitialized) {
-      const accepted = await this.showOnboardingNotification();
-      return accepted;
+      return await this.showOnboardingNotification();
     }
-
     const newState = !this._isEnabled;
     await this.writeStateToFile(newState);
     this._isEnabled = newState;
@@ -97,55 +130,17 @@ export class ExtensionStateManager {
       'ARIT Toolkit: Initialize this workspace for advanced features?',
       'Initialize'
     );
-
     if (action === 'Initialize') {
       await this.initializeWorkspace();
       return true;
     }
-
     return false;
   }
 
-  private async checkVersionCompatibility(): Promise<void> {
-    if (!this._extensionVersion) {
-      return;
-    }
-
-    const extensionVersionCode = computeVersionCode(this._extensionVersion);
-
-    if (this._configVersionCode === extensionVersionCode) {
-      this.logger.debug('Workspace config version is up to date');
-      return;
-    }
-
-    this.logger.info(
-      `Workspace config version mismatch: config=${String(this._configVersionCode)}, extension=${String(extensionVersionCode)}`
-    );
-    await this.showVersionUpdateNotification();
-  }
-
-  private async showVersionUpdateNotification(): Promise<void> {
-    const version = this._extensionVersion;
-    if (!version) {
-      return;
-    }
-
-    const action = await vscode.window.showInformationMessage(
-      `ARIT Toolkit: The workspace configuration needs to be updated to version ${version}. Update now?`,
-      'Update'
-    );
-
-    if (action === 'Update') {
-      await this.writeStateToFile(this._isEnabled);
-      this.logger.info(`Workspace config updated to version ${version}`);
-    }
-  }
-
   public async initializeWorkspace(): Promise<void> {
-    if (!this.workspaceRoot) {
+    if (!this._workspaceRoot) {
       return;
     }
-
     await this.writeStateToFile(true);
     this._isInitialized = true;
     this._isEnabled = true;
@@ -159,10 +154,9 @@ export class ExtensionStateManager {
   }
 
   private getConfigUri(): vscode.Uri | undefined {
-    if (!this.workspaceRoot) {
-      return undefined;
-    }
-    return vscode.Uri.joinPath(this.workspaceRoot, CONFIG_FILENAME);
+    return this._workspaceRoot
+      ? vscode.Uri.joinPath(this._workspaceRoot, CONFIG_FILENAME)
+      : undefined;
   }
 
   private async readStateFromFile(): Promise<void> {
@@ -170,68 +164,107 @@ export class ExtensionStateManager {
     if (!configUri) {
       return;
     }
-
     try {
-      const content = await vscode.workspace.fs.readFile(configUri);
-      const text = new TextDecoder().decode(content);
-      const config = parseJsonc(text) as WorkspaceConfig;
-      this._isInitialized = true;
-      this._isEnabled = config.enabled;
-      this._configVersionCode = config.versionCode;
+      const raw = await vscode.workspace.fs.readFile(configUri);
+      const config = parseJsonc(new TextDecoder().decode(raw)) as Record<string, unknown>;
+      this.applyConfig(config);
       this.logger.debug(
         `Read workspace config: enabled=${String(this._isEnabled)}, versionCode=${String(this._configVersionCode)}`
       );
     } catch {
       this._isInitialized = false;
       this._isEnabled = false;
+      this._fullConfig = undefined;
       this.logger.debug('No workspace config file found');
     }
   }
 
+  private applyConfig(config: Record<string, unknown>): void {
+    const oldConfig = this._fullConfig;
+    this._fullConfig = config;
+    this._isInitialized = true;
+    this._isEnabled = Boolean(config.enabled);
+    this._configVersionCode = config.versionCode as number | undefined;
+    if (oldConfig) {
+      this.notifySectionListeners(oldConfig, config);
+    }
+  }
+
   private async writeStateToFile(enabled: boolean): Promise<void> {
+    const config: Record<string, unknown> = this._fullConfig
+      ? { ...this._fullConfig }
+      : {};
+    config.enabled = enabled;
+    if (this._extensionVersion) {
+      config.version = this._extensionVersion;
+      config.versionCode = computeVersionCode(this._extensionVersion);
+    }
+    await this.writeFullConfig(config);
+    this._fullConfig = config;
+    this._configVersionCode = config.versionCode as number | undefined;
+  }
+
+  private async writeFullConfig(config: Record<string, unknown>): Promise<void> {
     const configUri = this.getConfigUri();
     if (!configUri) {
       return;
     }
-
-    const version = this._extensionVersion;
-    const config: WorkspaceConfig = { enabled };
-    if (version) {
-      config.version = version;
-      config.versionCode = computeVersionCode(version);
-    }
     const content = formatJsonc(config, CONFIG_HEADER);
     await vscode.workspace.fs.writeFile(configUri, new TextEncoder().encode(content));
-    this._configVersionCode = config.versionCode;
-    this.logger.debug(
-      `Wrote workspace config: enabled=${String(enabled)}, version=${String(config.version)}, versionCode=${String(config.versionCode)}`
+    this.logger.debug('Wrote workspace config');
+  }
+
+  private async runMigration(): Promise<void> {
+    if (!this._extensionVersion || !this._fullConfig) {
+      return;
+    }
+    const merged = await this.migrationService.migrate(
+      this._fullConfig,
+      this._configVersionCode,
+      this._extensionVersion
     );
+    if (!merged) {
+      return;
+    }
+    const oldConfig = { ...this._fullConfig };
+    await this.writeFullConfig(merged);
+    this._fullConfig = merged;
+    this._configVersionCode = merged.versionCode as number | undefined;
+    this.notifySectionListeners(oldConfig, merged);
+    this.logger.info(`Workspace config migrated to version ${this._extensionVersion}`);
+  }
+
+  private notifySectionListeners(
+    oldConfig: Record<string, unknown>,
+    newConfig: Record<string, unknown>
+  ): void {
+    for (const [key, listeners] of this._sectionListeners) {
+      const oldVal = JSON.stringify(oldConfig[key]);
+      const newVal = JSON.stringify(newConfig[key]);
+      if (oldVal !== newVal) {
+        for (const listener of listeners) {
+          listener(newConfig[key]);
+        }
+      }
+    }
   }
 
   private setupFileWatcher(): void {
-    if (!this.workspaceRoot) {
+    if (!this._workspaceRoot) {
       return;
     }
-
-    const pattern = new vscode.RelativePattern(this.workspaceRoot, CONFIG_FILENAME);
+    const pattern = new vscode.RelativePattern(this._workspaceRoot, CONFIG_FILENAME);
     this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
-
-    this.watcher.onDidChange(async () => {
-      this.logger.debug('Workspace config file changed externally');
+    const reload = async (): Promise<void> => {
       await this.readStateFromFile();
       this._onDidChangeState.fire(this._isEnabled);
-    });
-
-    this.watcher.onDidCreate(async () => {
-      this.logger.debug('Workspace config file created externally');
-      await this.readStateFromFile();
-      this._onDidChangeState.fire(this._isEnabled);
-    });
-
+    };
+    this.watcher.onDidChange(reload);
+    this.watcher.onDidCreate(reload);
     this.watcher.onDidDelete(() => {
-      this.logger.debug('Workspace config file deleted externally');
       this._isInitialized = false;
       this._isEnabled = false;
+      this._fullConfig = undefined;
       this._onDidChangeState.fire(false);
     });
   }
