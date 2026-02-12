@@ -9,3 +9,9 @@ export interface WorkspaceConfig {
   version?: string;
   versionCode?: number;
 }
+
+export interface AgentSessionsArchivingConfig {
+  enabled: boolean;
+  archivePath: string;
+  intervalMinutes: number;
+}
