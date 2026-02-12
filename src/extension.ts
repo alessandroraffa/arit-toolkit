@@ -1,5 +1,12 @@
 import type * as vscode from 'vscode';
-import { Logger, ConfigManager, CommandRegistry, ExtensionStateManager } from './core';
+import {
+  Logger,
+  ConfigManager,
+  CommandRegistry,
+  ExtensionStateManager,
+  ConfigSectionRegistry,
+  ConfigMigrationService,
+} from './core';
 import { registerAllFeatures } from './features';
 
 let logger: Logger | undefined;
@@ -19,8 +26,12 @@ export function activate(context: vscode.ExtensionContext): void {
 
   logger.info('ARIT Toolkit is activating...');
 
+  // Create config migration infrastructure
+  const migrationRegistry = new ConfigSectionRegistry();
+  const migrationService = new ConfigMigrationService(migrationRegistry, logger);
+
   // Create extension state manager for workspace-level enable/disable
-  const stateManager = new ExtensionStateManager(logger);
+  const stateManager = new ExtensionStateManager(logger, migrationService);
   context.subscriptions.push(stateManager);
 
   const commandRegistry = new CommandRegistry(context, stateManager);
@@ -32,6 +43,7 @@ export function activate(context: vscode.ExtensionContext): void {
     config: configManager,
     logger,
     context,
+    migrationRegistry,
   });
 
   // Initialize state manager (reads config file, checks version, shows onboarding if needed)
