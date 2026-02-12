@@ -7,6 +7,7 @@ import type { Logger } from '../core/logger';
 import { registerTimestampedFileFeature } from './timestampedFile';
 import { registerTimestampedDirectoryFeature } from './timestampedDirectory';
 import { registerStatusBarToggleFeature } from './statusBarToggle';
+import { registerAgentSessionsArchivingFeature } from './agentSessionsArchiving';
 
 export interface FeatureRegistrationContext {
   registry: CommandRegistry;
@@ -21,4 +22,5 @@ export function registerAllFeatures(ctx: FeatureRegistrationContext): void {
   registerStatusBarToggleFeature(ctx);
   registerTimestampedFileFeature(ctx.registry, ctx.config, ctx.logger);
   registerTimestampedDirectoryFeature(ctx.registry, ctx.config, ctx.logger);
+  registerAgentSessionsArchivingFeature(ctx);
 }
