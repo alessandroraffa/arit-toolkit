@@ -2,8 +2,8 @@
   "name": "arit-toolkit",
   "displayName": "ARIT Toolkit",
   "description": "A collection of productivity utilities for VS Code - timestamped files, and more",
-  "version": "1.3.0",
-  "versionCode": 1001003000,
+  "version": "1.4.0",
+  "versionCode": 1001004000,
   "publisher": "alessandroraffa",
   "license": "MIT",
   "repository": {

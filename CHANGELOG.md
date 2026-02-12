@@ -1,3 +1,23 @@
+## [1.4.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.3.0...v1.4.0) (2026-02-12)
+
+### Features
+
+* **agentSessionsArchiving:** add archive service with mtime-based sync ([cab8f04](https://github.com/alessandroraffa/arit-toolkit/commit/cab8f046718b4e23892a4f80da5a5655b6ac39f1))
+* **agentSessionsArchiving:** add constants and types ([b3ac31a](https://github.com/alessandroraffa/arit-toolkit/commit/b3ac31a65dc1ab61c6b9a5f3fb5a895a2d50f152))
+* **agentSessionsArchiving:** add feature registration and toggle command ([415283f](https://github.com/alessandroraffa/arit-toolkit/commit/415283fb6146df90e34b7284367026b7420fba0e))
+* **agentSessionsArchiving:** add session providers ([1fe3fb8](https://github.com/alessandroraffa/arit-toolkit/commit/1fe3fb89f5ed75d325ad56049bc6446326d53ef5))
+* **agentSessionsArchiving:** add toggle command to package.json ([82bd368](https://github.com/alessandroraffa/arit-toolkit/commit/82bd368a5ef142abc0ee12bb9777ca477f6a711e))
+* **configMigration:** add barrel exports ([06b10b4](https://github.com/alessandroraffa/arit-toolkit/commit/06b10b43b32708ef050c7496e472ed8ae85044df))
+* **configMigration:** add config section registry and types ([998138b](https://github.com/alessandroraffa/arit-toolkit/commit/998138b365fc69cb1548df2828aa83d34a96e6be))
+* **configMigration:** add migration service ([23c69ae](https://github.com/alessandroraffa/arit-toolkit/commit/23c69ae032d23260c71585844ea829503cd67b5d))
+* **configMigration:** wire migration system into extension activation ([c908bf9](https://github.com/alessandroraffa/arit-toolkit/commit/c908bf9d018eb55376a8b3a301f5ac9babf770c6))
+* **statusBar:** add background services section to tooltip ([00430d9](https://github.com/alessandroraffa/arit-toolkit/commit/00430d94137a45079bd222c9866468da271639c4))
+* **types:** add agent sessions archiving config interface ([4cedbbd](https://github.com/alessandroraffa/arit-toolkit/commit/4cedbbd92f5ed346351c287dd54be69d7194e9dd))
+
+### Code Refactoring
+
+* **extensionStateManager:** support full config and per-section events ([3472390](https://github.com/alessandroraffa/arit-toolkit/commit/34723900ff807fe7f1319d78a3ca3073b1b966c8))
+
 ## [1.3.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.2.0...v1.3.0) (2026-02-09)
 
 ### Features
