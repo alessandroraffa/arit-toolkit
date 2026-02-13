@@ -16,19 +16,64 @@ describe('RooCodeProvider', () => {
     expect(provider.displayName).toBe('Roo Code');
   });
 
-  it('should find task sessions', async () => {
+  it('should find task sessions that belong to current workspace', async () => {
+    const workspacePath = '/projects/my-app';
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValue([['task-abc', FileType.Directory]]);
     workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000 });
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValue(
+        new TextEncoder().encode(
+          JSON.stringify([{ role: 'user', content: `<cwd>${workspacePath}</cwd>` }])
+        )
+      );
 
-    const sessions = await provider.findSessions('/workspace');
+    const sessions = await provider.findSessions(workspacePath);
 
     expect(sessions).toHaveLength(1);
     expect(sessions[0]!.archiveName).toBe('roo-code-task-abc');
     expect(sessions[0]!.extension).toBe('.json');
     expect(sessions[0]!.displayName).toBe('Roo Code task task-abc');
     expect(sessions[0]!.mtime).toBe(2000);
+  });
+
+  it('should exclude sessions from other workspaces', async () => {
+    workspace.fs.readDirectory = vi.fn().mockResolvedValue([
+      ['task-abc', FileType.Directory],
+      ['task-def', FileType.Directory],
+    ]);
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000 });
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new TextEncoder().encode(
+          JSON.stringify([{ role: 'user', content: '<cwd>/projects/my-app</cwd>' }])
+        )
+      )
+      .mockResolvedValueOnce(
+        new TextEncoder().encode(
+          JSON.stringify([{ role: 'user', content: '<cwd>/projects/other</cwd>' }])
+        )
+      );
+
+    const sessions = await provider.findSessions('/projects/my-app');
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]!.archiveName).toBe('roo-code-task-abc');
+  });
+
+  it('should exclude sessions when file content cannot be read', async () => {
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValue([['task-abc', FileType.Directory]]);
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000 });
+    workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('read error'));
+
+    const sessions = await provider.findSessions('/projects/my-app');
+
+    expect(sessions).toHaveLength(0);
   });
 
   it('should return empty array when tasks directory does not exist', async () => {
@@ -40,13 +85,19 @@ describe('RooCodeProvider', () => {
   });
 
   it('should skip non-directory entries', async () => {
+    const workspacePath = '/workspace';
     workspace.fs.readDirectory = vi.fn().mockResolvedValue([
       ['task-abc', FileType.Directory],
       ['readme.md', FileType.File],
     ]);
     workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500 });
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValue(
+        new TextEncoder().encode(`content containing ${workspacePath} path`)
+      );
 
-    const sessions = await provider.findSessions('/workspace');
+    const sessions = await provider.findSessions(workspacePath);
 
     expect(sessions).toHaveLength(1);
   });

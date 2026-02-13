@@ -6,7 +6,7 @@ export class ContinueProvider implements SessionProvider {
   public readonly name = 'continue';
   public readonly displayName = 'Continue';
 
-  public async findSessions(_workspaceRootPath: string): Promise<SessionFile[]> {
+  public async findSessions(workspaceRootPath: string): Promise<SessionFile[]> {
     const sessionsUri = vscode.Uri.file(`${os.homedir()}/.continue/sessions`);
 
     let entries: [string, vscode.FileType][];
@@ -21,12 +21,27 @@ export class ContinueProvider implements SessionProvider {
       if (type !== vscode.FileType.File || !name.endsWith('.json')) {
         continue;
       }
-      const session = await this.toSessionFile(sessionsUri, name);
+      const session = await this.toWorkspaceSession(sessionsUri, name, workspaceRootPath);
       if (session) {
         results.push(session);
       }
     }
     return results;
+  }
+
+  private async toWorkspaceSession(
+    dirUri: vscode.Uri,
+    name: string,
+    workspacePath: string
+  ): Promise<SessionFile | undefined> {
+    const session = await this.toSessionFile(dirUri, name);
+    if (!session) {
+      return undefined;
+    }
+    if (!(await this.belongsToWorkspace(session.uri, workspacePath))) {
+      return undefined;
+    }
+    return session;
   }
 
   private async toSessionFile(
@@ -46,6 +61,19 @@ export class ContinueProvider implements SessionProvider {
       mtime,
       extension: '.json',
     };
+  }
+
+  private async belongsToWorkspace(
+    uri: vscode.Uri,
+    workspacePath: string
+  ): Promise<boolean> {
+    try {
+      const bytes = await vscode.workspace.fs.readFile(uri);
+      const content = new TextDecoder().decode(bytes);
+      return content.includes(workspacePath);
+    } catch {
+      return false;
+    }
   }
 
   private async getMtime(uri: vscode.Uri): Promise<number | undefined> {

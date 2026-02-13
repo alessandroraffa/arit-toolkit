@@ -10,7 +10,7 @@ export class RooCodeProvider implements SessionProvider {
 
   constructor(private readonly globalStorageBase: vscode.Uri) {}
 
-  public async findSessions(_workspaceRootPath: string): Promise<SessionFile[]> {
+  public async findSessions(workspaceRootPath: string): Promise<SessionFile[]> {
     const tasksUri = vscode.Uri.joinPath(this.globalStorageBase, EXTENSION_ID, 'tasks');
 
     let taskDirs: [string, vscode.FileType][];
@@ -25,21 +25,48 @@ export class RooCodeProvider implements SessionProvider {
       if (type !== vscode.FileType.Directory) {
         continue;
       }
-      const uri = vscode.Uri.joinPath(tasksUri, taskId, SESSION_FILE);
-      const mtime = await this.getMtime(uri);
-      if (mtime === undefined) {
-        continue;
+      const session = await this.toSessionFile(tasksUri, taskId, workspaceRootPath);
+      if (session) {
+        results.push(session);
       }
-      results.push({
-        uri,
-        archiveName: `roo-code-${taskId}`,
-        displayName: `Roo Code task ${taskId}`,
-        mtime,
-        extension: '.json',
-      });
     }
 
     return results;
+  }
+
+  private async toSessionFile(
+    tasksUri: vscode.Uri,
+    taskId: string,
+    workspacePath: string
+  ): Promise<SessionFile | undefined> {
+    const uri = vscode.Uri.joinPath(tasksUri, taskId, SESSION_FILE);
+    const mtime = await this.getMtime(uri);
+    if (mtime === undefined) {
+      return undefined;
+    }
+    if (!(await this.belongsToWorkspace(uri, workspacePath))) {
+      return undefined;
+    }
+    return {
+      uri,
+      archiveName: `roo-code-${taskId}`,
+      displayName: `Roo Code task ${taskId}`,
+      mtime,
+      extension: '.json',
+    };
+  }
+
+  private async belongsToWorkspace(
+    uri: vscode.Uri,
+    workspacePath: string
+  ): Promise<boolean> {
+    try {
+      const bytes = await vscode.workspace.fs.readFile(uri);
+      const content = new TextDecoder().decode(bytes);
+      return content.includes(workspacePath);
+    } catch {
+      return false;
+    }
   }
 
   private async getMtime(uri: vscode.Uri): Promise<number | undefined> {

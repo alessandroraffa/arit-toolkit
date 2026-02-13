@@ -16,20 +16,65 @@ describe('ClineProvider', () => {
     expect(provider.displayName).toBe('Cline');
   });
 
-  it('should find task sessions', async () => {
+  it('should find task sessions that belong to current workspace', async () => {
+    const workspacePath = '/projects/my-app';
     workspace.fs.readDirectory = vi.fn().mockResolvedValue([
       ['task-001', FileType.Directory],
       ['task-002', FileType.Directory],
     ]);
     workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000 });
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValue(
+        new TextEncoder().encode(
+          JSON.stringify([{ role: 'user', content: `<cwd>${workspacePath}</cwd>` }])
+        )
+      );
 
-    const sessions = await provider.findSessions('/workspace');
+    const sessions = await provider.findSessions(workspacePath);
 
     expect(sessions).toHaveLength(2);
     expect(sessions[0]!.archiveName).toBe('cline-task-001');
     expect(sessions[0]!.extension).toBe('.json');
     expect(sessions[0]!.displayName).toBe('Cline task task-001');
     expect(sessions[1]!.archiveName).toBe('cline-task-002');
+  });
+
+  it('should exclude sessions from other workspaces', async () => {
+    workspace.fs.readDirectory = vi.fn().mockResolvedValue([
+      ['task-001', FileType.Directory],
+      ['task-002', FileType.Directory],
+    ]);
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000 });
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new TextEncoder().encode(
+          JSON.stringify([{ role: 'user', content: '<cwd>/projects/my-app</cwd>' }])
+        )
+      )
+      .mockResolvedValueOnce(
+        new TextEncoder().encode(
+          JSON.stringify([{ role: 'user', content: '<cwd>/projects/other-app</cwd>' }])
+        )
+      );
+
+    const sessions = await provider.findSessions('/projects/my-app');
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]!.archiveName).toBe('cline-task-001');
+  });
+
+  it('should exclude sessions when file content cannot be read', async () => {
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValue([['task-001', FileType.Directory]]);
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000 });
+    workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('read error'));
+
+    const sessions = await provider.findSessions('/projects/my-app');
+
+    expect(sessions).toHaveLength(0);
   });
 
   it('should return empty array when tasks directory does not exist', async () => {
@@ -41,13 +86,19 @@ describe('ClineProvider', () => {
   });
 
   it('should skip non-directory entries', async () => {
+    const workspacePath = '/workspace';
     workspace.fs.readDirectory = vi.fn().mockResolvedValue([
       ['task-001', FileType.Directory],
       ['some-file.txt', FileType.File],
     ]);
     workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500 });
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValue(
+        new TextEncoder().encode(`content containing ${workspacePath} path`)
+      );
 
-    const sessions = await provider.findSessions('/workspace');
+    const sessions = await provider.findSessions(workspacePath);
 
     expect(sessions).toHaveLength(1);
     expect(sessions[0]!.archiveName).toBe('cline-task-001');
@@ -62,6 +113,9 @@ describe('ClineProvider', () => {
       .fn()
       .mockResolvedValueOnce({ mtime: 1000 })
       .mockRejectedValueOnce(new Error('not found'));
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValue(new TextEncoder().encode('content with /workspace inside'));
 
     const sessions = await provider.findSessions('/workspace');
 
