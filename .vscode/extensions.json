@@ -2,6 +2,7 @@
   "recommendations": [
     "dbaeumer.vscode-eslint",
     "DavidAnson.vscode-markdownlint",
+    "EditorConfig.EditorConfig",
     "esbenp.prettier-vscode",
     "vitest.explorer"
   ]

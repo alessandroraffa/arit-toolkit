@@ -5,6 +5,7 @@ docs/**
 test/**
 src/**
 node_modules/**
+.editorconfig
 .eslintignore
 .gitignore
 .npmrc
