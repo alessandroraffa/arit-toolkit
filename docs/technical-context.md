@@ -13,11 +13,11 @@
 | System             | ARIT Toolkit -- VS Code Extension                          |
 | Repository         | <https://github.com/alessandroraffa/arit-toolkit>          |
 | Identifier         | `alessandroraffa.arit-toolkit`                             |
-| Current version    | 1.3.0 (versionCode `1001003000`)                           |
+| Current version    | 1.4.1 (versionCode `1001004001`)                           |
 | Licence            | MIT                                                        |
 | Architecture style | Feature-based modular architecture, dependency injection   |
 | Runtime deps       | None (VS Code API only)                                    |
-| Last updated       | 2026-02-12                                                 |
+| Last updated       | 2025-07-22                                                 |
 
 ---
 
@@ -124,7 +124,7 @@ are prompted to opt in to new configuration sections.
 | VS Code user             | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.arit-toolkit.jsonc` manually. |
 | `.arit-toolkit.jsonc`    | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits. |
 | VS Code settings         | `arit.timestampFormat`, `arit.timestampSeparator`, `arit.logLevel` -- read via `ConfigManager`. |
-| AI agent session files   | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/`, VS Code globalStorage/workspaceStorage directories. Copied to archive path. |
+| AI agent session files   | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/`, VS Code globalStorage/workspaceStorage directories. Only sessions belonging to the current workspace are copied to the archive path. |
 | VS Code Marketplace      | Publish target for `.vsix` packages via semantic-release pipeline.   |
 
 ### 3.2  Technical Context
@@ -183,7 +183,7 @@ are prompted to opt in to new configuration sections.
 | VS Code settings               | `vscode.workspace.getConfiguration()`   | Read      |
 | VS Code commands               | `vscode.commands.registerCommand()`     | Register  |
 | VS Code UI                     | `vscode.window.*` (status bar, input box, messages) | Write |
-| Global filesystem              | `vscode.workspace.fs` via `vscode.Uri.file()` for `~/.claude/`, `~/.continue/`, globalStorage | Read |
+| Global filesystem              | `vscode.workspace.fs` via `vscode.Uri.file()` for `~/.claude/`, `~/.continue/`, globalStorage, workspaceStorage | Read |
 | VS Code Output Channel         | `vscode.window.createOutputChannel()`   | Write     |
 
 ---
@@ -224,7 +224,7 @@ are prompted to opt in to new configuration sections.
 | 2 | Global toggle + per-feature toggles | Users need coarse-grained and fine-grained control over background services. | `enabled: false` at root level stops all background activity. Each feature's `enabled` is preserved and resumes independently when global toggle returns to `true`. |
 | 3 | Version-code-based config migration | Adding new config sections should not break existing users. | Each `ConfigSectionDefinition` declares `introducedAtVersionCode`. On activation, `ConfigMigrationService` detects missing sections and prompts users individually. Declined sections are not added. |
 | 4 | mtime-based change detection for archiving | Reading and hashing large session files is expensive. | `vscode.workspace.fs.stat()` is fast and sufficient. Each source session maps to exactly one archived file (latest version), replaced on mtime change. |
-| 5 | Session Provider abstraction | AI agent tools store sessions in different locations and formats. | `SessionProvider` interface allows adding new agents without modifying the archive service. Each provider encapsulates discovery logic (workspace, global path, VS Code storage). |
+| 5 | Session Provider abstraction | AI agent tools store sessions in different locations and formats. | `SessionProvider` interface allows adding new agents without modifying the archive service. Each provider encapsulates discovery logic (workspace, global path, VS Code storage) and workspace filtering (only sessions belonging to the current workspace are archived). |
 
 ### 4.4  Activation and Initialisation Sequence
 
@@ -366,18 +366,28 @@ flags are never modified by the global toggle.
   | .aider.chat.history.md|       docs/archive/agent-sessions/
   | ~/.claude/projects/   | --->  202602111319-aider-chat-history.md
   | globalStorage/cline/  |       202602110800-claude-code-abc123.jsonl
-  | ...                   |       202602111200-cline-task-xyz789.json
-  +-----------------------+       ...
+  | workspaceStorage/     |       202602111200-cline-task-xyz789.json
+  |   chatSessions/       |       202602111430-copilot-chat-sess01.json
+  | ~/.continue/sessions/ |       ...
+  +-----------------------+
 
   lastArchivedMap: Map<archiveName, { mtime, archiveFileName }>
 ```
+
+**Workspace filtering:** Each provider filters discovered sessions to
+include only those belonging to the current workspace. Workspace-scoped
+providers (Aider, Claude Code, Copilot Chat) use path-based discovery;
+global-scoped providers (Cline, Roo Code, Continue) read session file
+content and check if it references the workspace root path.
 
 **Replacement semantics (not accumulation):** Each source session has
 exactly one archived file at any time. When the source's `mtime`
 changes, the old archive file is deleted and a new one with an updated
 timestamp prefix is created.
 
-**Archive file naming:** `{YYYYMMDDHHmm}-{archiveName}{extension}`
+**Archive file naming:** `{YYYYMMDDHHmm}-{archiveName}{extension}`,
+where the timestamp is derived from the session file's last modification
+time (`mtime`), not the current time.
 
 ### 8.7  Command Guarding
 

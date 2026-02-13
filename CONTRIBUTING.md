@@ -114,14 +114,33 @@ arit-toolkit/
 │   │   ├── logger.ts             # Centralized logging
 │   │   ├── configManager.ts      # Configuration handling
 │   │   ├── commandRegistry.ts    # Command registration (guarded/unguarded)
-│   │   └── extensionStateManager.ts  # Workspace state persistence
+│   │   ├── extensionStateManager.ts  # Workspace state persistence
+│   │   └── configMigration/      # Version-aware config migration
+│   │       ├── index.ts
+│   │       ├── migrationService.ts
+│   │       ├── registry.ts
+│   │       └── types.ts
 │   ├── features/                 # Feature modules (one directory per feature)
 │   │   ├── index.ts              # Feature registration orchestrator
 │   │   ├── timestampedFile/      # Timestamped file creation/renaming
-│   │   └── statusBarToggle/      # Status bar toggle with workspace state
+│   │   ├── timestampedDirectory/ # Timestamped directory creation/renaming
+│   │   ├── statusBarToggle/      # Status bar toggle with workspace state
+│   │   └── agentSessionsArchiving/  # AI agent session archiving
+│   │       ├── archiveService.ts    # Core archive loop (mtime-based)
+│   │       ├── constants.ts
+│   │       ├── types.ts             # SessionProvider / SessionFile interfaces
+│   │       └── providers/           # One provider per AI assistant
+│   │           ├── aiderProvider.ts
+│   │           ├── claudeCodeProvider.ts
+│   │           ├── clineProvider.ts
+│   │           ├── continueProvider.ts
+│   │           ├── copilotChatProvider.ts
+│   │           └── rooCodeProvider.ts
 │   └── utils/
 │       ├── index.ts              # Barrel export
-│       └── jsonc.ts              # JSONC parser/formatter
+│       ├── jsonc.ts              # JSONC parser/formatter
+│       ├── timestamp.ts          # UTC timestamp generation
+│       └── version.ts            # Version code encoding/decoding
 ├── test/
 │   ├── unit/                     # Unit tests (Vitest, mirrors src/ structure)
 │   │   ├── setup.ts              # Vitest setup (mocks vscode module)

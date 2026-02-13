@@ -78,6 +78,44 @@ An "ARIT" item appears in the bottom-right status bar. It shows:
 
 When you open a single-root workspace for the first time, ARIT Toolkit will ask if you want to initialize it for advanced features. Accepting creates a `.arit-toolkit.jsonc` configuration file at the workspace root.
 
+### Agent Sessions Archiving
+
+Automatically archive chat session files from AI coding assistants into your workspace. The extension periodically scans for sessions that belong to the current workspace and copies them to a configurable archive directory.
+
+**Supported AI assistants:**
+
+| Assistant | Session location | Workspace matching |
+|-----------|------------------|-------------------|
+| Aider | `.aider.chat.history.md` in workspace root | File in workspace root |
+| Claude Code | `~/.claude/projects/<workspace-path>/` | Project path derived from workspace |
+| Cline | VS Code global storage | Session content references workspace path |
+| Roo Code | VS Code global storage | Session content references workspace path |
+| GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`) | Per-workspace storage (`.json` and `.jsonl`) |
+| Continue | `~/.continue/sessions/` | Session content references workspace path |
+
+**Archive behavior:**
+
+- Sessions are copied (not moved) to the archive directory
+- Each session has exactly one archived file — when the source is modified, the old archive is replaced
+- Archive filenames use the session's last modification timestamp: `{YYYYMMDDHHmm}-{sessionName}{extension}`
+- Only sessions belonging to the current workspace are archived
+
+**Configuration** (in `.arit-toolkit.jsonc`):
+
+```jsonc
+{
+  "agentSessionsArchiving": {
+    "enabled": true,
+    "archivePath": "docs/archive/agent-sessions",
+    "intervalMinutes": 5
+  }
+}
+```
+
+**Usage:**
+
+- Command Palette: "ARIT: Toggle Agent Sessions Archiving"
+
 **Workspace modes:**
 
 - **Single-root workspace:** Full functionality with toggle support. State is persisted in `.arit-toolkit.jsonc`.
