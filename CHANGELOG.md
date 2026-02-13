@@ -1,3 +1,9 @@
+## [1.4.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.4.1...v1.4.2) (2026-02-13)
+
+### Bug Fixes
+
+* override esbuild to >=0.25.0 to resolve cors vulnerability in dev server ([aa7e10a](https://github.com/alessandroraffa/arit-toolkit/commit/aa7e10a9be4d1fb8f0c0961bb3f96419c4f1823e))
+
 ## [1.4.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.4.0...v1.4.1) (2026-02-12)
 
 ### Bug Fixes
