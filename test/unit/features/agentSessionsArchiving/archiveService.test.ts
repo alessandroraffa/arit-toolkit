@@ -133,6 +133,26 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
 
+    it('should use session mtime for archive filename timestamp', async () => {
+      // mtime 1_609_459_200_000 = 2021-01-01T00:00:00.000Z → 202101010000
+      const session = createMockSession({ mtime: 1_609_459_200_000 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.runArchiveCycle();
+
+      const copyCall = vi.mocked(workspace.fs.copy).mock.calls[0]!;
+      const destPath = (copyCall[1] as { fsPath: string }).fsPath;
+      expect(destPath).toContain('202101010000-test-session.json');
+
+      service.dispose();
+    });
+
     it('should skip files with unchanged mtime', async () => {
       const session = createMockSession({ mtime: 1000 });
       const provider = createMockProvider([session]);

@@ -106,7 +106,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     }
 
     await this.ensureDirectory(archiveUri);
-    const timestamp = generateTimestamp('YYYYMMDDHHmm');
+    const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.mtime));
     const newFileName = `${timestamp}-${session.archiveName}${session.extension}`;
 
     if (entry) {
