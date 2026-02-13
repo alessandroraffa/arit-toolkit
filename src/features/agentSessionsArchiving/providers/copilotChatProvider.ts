@@ -1,21 +1,21 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import type { SessionFile, SessionProvider } from '../types';
 
-const EXTENSION_ID = 'github.copilot-chat';
 const SESSIONS_DIR = 'chatSessions';
+
+function isSessionFile(name: string): boolean {
+  return name.endsWith('.json') || name.endsWith('.jsonl');
+}
 
 export class CopilotChatProvider implements SessionProvider {
   public readonly name = 'copilot-chat';
   public readonly displayName = 'GitHub Copilot Chat';
 
-  constructor(private readonly workspaceStorageBase: vscode.Uri) {}
+  constructor(private readonly workspaceStorageDir: vscode.Uri) {}
 
   public async findSessions(_workspaceRootPath: string): Promise<SessionFile[]> {
-    const sessionsUri = vscode.Uri.joinPath(
-      this.workspaceStorageBase,
-      EXTENSION_ID,
-      SESSIONS_DIR
-    );
+    const sessionsUri = vscode.Uri.joinPath(this.workspaceStorageDir, SESSIONS_DIR);
 
     let entries: [string, vscode.FileType][];
     try {
@@ -26,7 +26,7 @@ export class CopilotChatProvider implements SessionProvider {
 
     const results: SessionFile[] = [];
     for (const [name, type] of entries) {
-      if (type !== vscode.FileType.File || !name.endsWith('.json')) {
+      if (type !== vscode.FileType.File || !isSessionFile(name)) {
         continue;
       }
       const session = await this.toSessionFile(sessionsUri, name);
@@ -46,13 +46,14 @@ export class CopilotChatProvider implements SessionProvider {
     if (mtime === undefined) {
       return undefined;
     }
-    const sessionId = name.replace('.json', '');
+    const ext = path.extname(name);
+    const sessionId = name.replace(ext, '');
     return {
       uri,
       archiveName: `copilot-chat-${sessionId}`,
       displayName: `Copilot Chat ${sessionId}`,
       mtime,
-      extension: '.json',
+      extension: ext,
     };
   }
 

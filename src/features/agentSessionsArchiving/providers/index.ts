@@ -9,16 +9,21 @@ import { ContinueProvider } from './continueProvider';
 
 export function getDefaultProviders(context: vscode.ExtensionContext): SessionProvider[] {
   const globalStorageBase = vscode.Uri.joinPath(context.globalStorageUri, '..');
-  const workspaceStorageBase = context.storageUri
+  const workspaceStorageDir = context.storageUri
     ? vscode.Uri.joinPath(context.storageUri, '..')
-    : globalStorageBase;
+    : undefined;
 
-  return [
+  const providers: SessionProvider[] = [
     new AiderProvider(),
     new ClaudeCodeProvider(),
     new ClineProvider(globalStorageBase),
     new RooCodeProvider(globalStorageBase),
-    new CopilotChatProvider(workspaceStorageBase),
     new ContinueProvider(),
   ];
+
+  if (workspaceStorageDir) {
+    providers.push(new CopilotChatProvider(workspaceStorageDir));
+  }
+
+  return providers;
 }

@@ -3,12 +3,12 @@ import { workspace, Uri, FileType } from '../../../mocks/vscode';
 import { CopilotChatProvider } from '../../../../../src/features/agentSessionsArchiving/providers/copilotChatProvider';
 
 describe('CopilotChatProvider', () => {
-  const workspaceStorageBase = Uri.file('/workspace/storage');
+  const workspaceStorageDir = Uri.file('/workspace/storage/abc123');
   let provider: CopilotChatProvider;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    provider = new CopilotChatProvider(workspaceStorageBase as any);
+    provider = new CopilotChatProvider(workspaceStorageDir as any);
   });
 
   it('should have correct name and displayName', () => {
@@ -16,7 +16,7 @@ describe('CopilotChatProvider', () => {
     expect(provider.displayName).toBe('GitHub Copilot Chat');
   });
 
-  it('should find chat session files', async () => {
+  it('should find json session files', async () => {
     workspace.fs.readDirectory = vi.fn().mockResolvedValue([
       ['3b809804.json', FileType.File],
       ['a1b2c3d4.json', FileType.File],
@@ -32,6 +32,36 @@ describe('CopilotChatProvider', () => {
     expect(sessions[1]!.archiveName).toBe('copilot-chat-a1b2c3d4');
   });
 
+  it('should find jsonl session files', async () => {
+    workspace.fs.readDirectory = vi.fn().mockResolvedValue([
+      ['session-1.jsonl', FileType.File],
+      ['session-2.jsonl', FileType.File],
+    ]);
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000 });
+
+    const sessions = await provider.findSessions('/workspace');
+
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0]!.archiveName).toBe('copilot-chat-session-1');
+    expect(sessions[0]!.extension).toBe('.jsonl');
+    expect(sessions[1]!.archiveName).toBe('copilot-chat-session-2');
+    expect(sessions[1]!.extension).toBe('.jsonl');
+  });
+
+  it('should find both json and jsonl session files', async () => {
+    workspace.fs.readDirectory = vi.fn().mockResolvedValue([
+      ['old-session.json', FileType.File],
+      ['new-session.jsonl', FileType.File],
+    ]);
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1500 });
+
+    const sessions = await provider.findSessions('/workspace');
+
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0]!.extension).toBe('.json');
+    expect(sessions[1]!.extension).toBe('.jsonl');
+  });
+
   it('should return empty array when sessions directory does not exist', async () => {
     workspace.fs.readDirectory = vi.fn().mockRejectedValue(new Error('not found'));
 
@@ -40,7 +70,7 @@ describe('CopilotChatProvider', () => {
     expect(sessions).toHaveLength(0);
   });
 
-  it('should skip non-json files', async () => {
+  it('should skip non-session files', async () => {
     workspace.fs.readDirectory = vi.fn().mockResolvedValue([
       ['session.json', FileType.File],
       ['session.txt', FileType.File],
@@ -81,13 +111,13 @@ describe('CopilotChatProvider', () => {
     expect(sessions[0]!.archiveName).toBe('copilot-chat-good');
   });
 
-  it('should look in correct workspaceStorage path', async () => {
+  it('should look directly in workspace storage chatSessions path', async () => {
     workspace.fs.readDirectory = vi.fn().mockResolvedValue([]);
 
     await provider.findSessions('/workspace');
 
     const readDirCall = vi.mocked(workspace.fs.readDirectory).mock.calls[0]!;
-    expect(readDirCall[0].fsPath).toContain('github.copilot-chat');
-    expect(readDirCall[0].fsPath).toContain('chatSessions');
+    expect(readDirCall[0].fsPath).toBe('/workspace/storage/abc123/chatSessions');
+    expect(readDirCall[0].fsPath).not.toContain('github.copilot-chat');
   });
 });
