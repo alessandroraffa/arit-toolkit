@@ -3,6 +3,7 @@ import type { AgentSessionsArchivingConfig } from '../../types';
 import type { SessionProvider, SessionFile } from './types';
 import type { Logger } from '../../core/logger';
 import { generateTimestamp } from '../../utils';
+import { getParserForProvider, renderSessionToMarkdown } from './markdown';
 
 interface ArchivedEntry {
   mtime: number;
@@ -107,22 +108,63 @@ export class AgentSessionArchiveService implements vscode.Disposable {
 
     await this.ensureDirectory(archiveUri);
     const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.mtime));
-    const newFileName = `${timestamp}-${session.archiveName}${session.extension}`;
 
     if (entry) {
       await this.deleteFile(vscode.Uri.joinPath(archiveUri, entry.archiveFileName));
     }
 
-    const destUri = vscode.Uri.joinPath(archiveUri, newFileName);
-    try {
-      await vscode.workspace.fs.copy(session.uri, destUri, { overwrite: true });
+    const archiveFileName = await this.writeArchiveFile(session, archiveUri, timestamp);
+    if (archiveFileName) {
       this.lastArchivedMap.set(session.archiveName, {
         mtime: session.mtime,
-        archiveFileName: newFileName,
+        archiveFileName,
       });
-      this.logger.debug(`Archived ${session.displayName} → ${newFileName}`);
+      this.logger.debug(`Archived ${session.displayName} → ${archiveFileName}`);
+    }
+  }
+
+  private async writeArchiveFile(
+    session: SessionFile,
+    archiveUri: vscode.Uri,
+    timestamp: string
+  ): Promise<string | undefined> {
+    const parser = getParserForProvider(session.providerName);
+    if (!parser) {
+      return await this.copyRawArchive(session, archiveUri, timestamp);
+    }
+
+    const mdFileName = `${timestamp}-${session.archiveName}.md`;
+    const mdUri = vscode.Uri.joinPath(archiveUri, mdFileName);
+
+    try {
+      const rawBytes = await vscode.workspace.fs.readFile(session.uri);
+      const rawContent = new TextDecoder().decode(rawBytes);
+      const normalized = parser.parse(rawContent, session.archiveName);
+      const markdown = renderSessionToMarkdown(normalized);
+      await vscode.workspace.fs.writeFile(mdUri, new TextEncoder().encode(markdown));
+      return mdFileName;
+    } catch (err) {
+      this.logger.warn(
+        `Failed to convert ${session.displayName} to markdown: ${String(err)}`
+      );
+      return await this.copyRawArchive(session, archiveUri, timestamp);
+    }
+  }
+
+  private async copyRawArchive(
+    session: SessionFile,
+    archiveUri: vscode.Uri,
+    timestamp: string
+  ): Promise<string | undefined> {
+    const rawFileName = `${timestamp}-${session.archiveName}${session.extension}`;
+    const destUri = vscode.Uri.joinPath(archiveUri, rawFileName);
+
+    try {
+      await vscode.workspace.fs.copy(session.uri, destUri, { overwrite: true });
+      return rawFileName;
     } catch (err) {
       this.logger.error(`Failed to archive ${session.displayName}: ${String(err)}`);
+      return undefined;
     }
   }
 
