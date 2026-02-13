@@ -1,3 +1,11 @@
+## [1.4.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.4.2...v1.4.3) (2026-02-13)
+
+### Bug Fixes
+
+* correct copilot chat session path and support jsonl format ([3e323e2](https://github.com/alessandroraffa/arit-toolkit/commit/3e323e2bb80c328039cd8413777c6c8de22330ee))
+* filter agent sessions by workspace to prevent cross-workspace archiving ([3751da1](https://github.com/alessandroraffa/arit-toolkit/commit/3751da1f91b289f81d9f9844fd9f854204c2c17a))
+* use session mtime instead of current time for archive filename timestamp ([b231d62](https://github.com/alessandroraffa/arit-toolkit/commit/b231d62e98b9169de8b45b86d0dbd5faf6ff65d8))
+
 ## [1.4.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.4.1...v1.4.2) (2026-02-13)
 
 ### Bug Fixes
