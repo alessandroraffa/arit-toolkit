@@ -6,6 +6,10 @@ Thank you for your interest in contributing to ARIT Toolkit! This document provi
 
 Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 
+## Security
+
+To report a security vulnerability, please see [SECURITY.md](SECURITY.md) for responsible disclosure guidelines. **Do not** open a public issue for security vulnerabilities.
+
 ## How to Contribute
 
 ### Reporting Bugs
@@ -70,6 +74,8 @@ pnpm run compile
 pnpm run test:unit
 ```
 
+> **Tip:** A [Dev Container](.devcontainer/devcontainer.json) configuration is provided. Open the project in VS Code and select "Reopen in Container" to get a pre-configured environment with the correct Node.js version, pnpm, and all recommended extensions.
+
 ### Development Workflow
 
 ```bash
@@ -105,6 +111,15 @@ pnpm run test:integration
 
 ```text
 arit-toolkit/
+├── .devcontainer/
+│   └── devcontainer.json         # Dev Container configuration
+├── .github/
+│   ├── ISSUE_TEMPLATE/           # Bug report / feature request templates
+│   ├── PULL_REQUEST_TEMPLATE.md
+│   ├── dependabot.yml            # Automated dependency updates
+│   └── workflows/
+│       ├── ci.yml                # CI pipeline (lint, typecheck, audit, test, build)
+│       └── release.yml           # Automated release via semantic-release
 ├── src/
 │   ├── extension.ts              # Entry point
 │   ├── types/
@@ -123,13 +138,25 @@ arit-toolkit/
 │   ├── features/                 # Feature modules (one directory per feature)
 │   │   ├── index.ts              # Feature registration orchestrator
 │   │   ├── timestampedFile/      # Timestamped file creation/renaming
+│   │   │   ├── command.ts
+│   │   │   ├── constants.ts
+│   │   │   └── index.ts
 │   │   ├── timestampedDirectory/ # Timestamped directory creation/renaming
+│   │   │   ├── command.ts
+│   │   │   ├── constants.ts
+│   │   │   └── index.ts
 │   │   ├── statusBarToggle/      # Status bar toggle with workspace state
+│   │   │   ├── command.ts
+│   │   │   ├── constants.ts
+│   │   │   ├── index.ts
+│   │   │   └── statusBarItem.ts  # Status bar UI management
 │   │   └── agentSessionsArchiving/  # AI agent session archiving
+│   │       ├── index.ts             # Feature registration
 │   │       ├── archiveService.ts    # Core archive loop (mtime-based)
 │   │       ├── constants.ts
 │   │       ├── types.ts             # SessionProvider / SessionFile interfaces
 │   │       └── providers/           # One provider per AI assistant
+│   │           ├── index.ts         # Barrel export
 │   │           ├── aiderProvider.ts
 │   │           ├── claudeCodeProvider.ts
 │   │           ├── clineProvider.ts
@@ -152,7 +179,16 @@ arit-toolkit/
 │       └── suite/
 │           ├── index.ts
 │           └── extension.test.ts
-└── ...
+├── .editorconfig                 # Cross-editor formatting rules
+├── .markdownlint.jsonc           # Markdown linting configuration
+├── .prettierrc                   # Prettier configuration
+├── .releaserc.json               # semantic-release configuration
+├── commitlint.config.mjs         # Commit message validation
+├── esbuild.mjs                   # esbuild bundler configuration
+├── eslint.config.mjs             # ESLint flat config
+├── tsconfig.json                 # TypeScript configuration
+├── vitest.config.ts              # Vitest test runner configuration
+└── package.json
 ```
 
 ## Adding a New Feature
@@ -266,8 +302,8 @@ Commits are validated automatically via commitlint. Invalid commits will be reje
 This project uses [semantic-release](https://semantic-release.gitbook.io/) for automated versioning and publishing:
 
 1. Push to `main` branch
-2. CI runs tests
-3. If tests pass, semantic-release analyzes commits
+2. CI runs lint, type check, security audit, and tests
+3. If all checks pass, semantic-release analyzes commits
 4. Version is bumped based on commit types
 5. CHANGELOG.md is updated automatically
 6. Extension is published to VS Code Marketplace

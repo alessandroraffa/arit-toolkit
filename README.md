@@ -170,6 +170,10 @@ All timestamp features share the same configuration:
 
 - VS Code 1.85.0 or higher
 
+## Security
+
+To report a security vulnerability, please see [SECURITY.md](SECURITY.md) for responsible disclosure guidelines.
+
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
