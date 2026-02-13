@@ -129,7 +129,7 @@ are prompted to opt in to new configuration sections.
 
 ### 3.2  Technical Context
 
-```
+```text
 +------------------------------------------------------------------+
 |  VS Code Extension Host (Node.js >= 22.22.0)                    |
 |                                                                  |
@@ -228,7 +228,7 @@ are prompted to opt in to new configuration sections.
 
 ### 4.4  Activation and Initialisation Sequence
 
-```
+```text
 activate(context)
   |
   +-- Logger.getInstance() + ConfigManager
@@ -303,7 +303,7 @@ re-reads on change/create and fires `onDidChangeState`.
 
 The migration system enables forward-compatible config evolution:
 
-```
+```text
 ConfigSectionRegistry          ConfigMigrationService
   .register(definition)  --->    .findMissingSections(config, versionCode)
                                  .promptForSections(missing)
@@ -321,7 +321,7 @@ ConfigSectionRegistry          ConfigMigrationService
 
 Semantic versions are encoded as numeric codes for fast comparison:
 
-```
+```text
 1XXXYYYZZZ = 1_000_000_000 + major * 1_000_000 + minor * 1_000 + patch
 ```
 
@@ -359,7 +359,7 @@ flags are never modified by the global toggle.
 
 ### 8.6  Agent Session Archiving Model
 
-```
+```text
   Source                          Archive directory
   (read-only)                     (workspace-relative)
   +-----------------------+
@@ -429,7 +429,7 @@ deterministic implementations of `workspace.fs`, `Uri`, `window`,
 
 ### 8.10  Release Pipeline
 
-```
+```text
 git push main
   |
   v

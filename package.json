@@ -179,8 +179,10 @@
     "watch:esbuild": "node esbuild.mjs --watch",
     "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
     "check-types": "tsc --noEmit",
-    "lint": "eslint src test",
-    "lint:fix": "eslint src test --fix",
+    "lint": "eslint src test && markdownlint-cli2 '**/*.md'",
+    "lint:fix": "eslint src test --fix && markdownlint-cli2 --fix '**/*.md'",
+    "lint:md": "markdownlint-cli2 '**/*.md'",
+    "lint:md:fix": "markdownlint-cli2 --fix '**/*.md'",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "test": "pnpm run test:unit && pnpm run test:integration",
@@ -217,6 +219,7 @@
     "globals": "^15.14.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.3.0",
+    "markdownlint-cli2": "^0.20.0",
     "npm-run-all2": "^7.0.2",
     "prettier": "^3.4.2",
     "semantic-release": "^25.0.3",
@@ -240,7 +243,11 @@
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{json,md,yml}": [
+    "*.md": [
+      "markdownlint-cli2 --fix",
+      "prettier --write"
+    ],
+    "*.{json,yml}": [
       "prettier --write"
     ]
   }

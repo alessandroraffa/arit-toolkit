@@ -103,7 +103,7 @@ pnpm run test:integration
 
 ## Project Structure
 
-```
+```text
 arit-toolkit/
 ├── src/
 │   ├── extension.ts              # Entry point
@@ -213,7 +213,7 @@ pnpm run lint:fix
 
 We use [Conventional Commits](https://www.conventionalcommits.org/) with **enforced validation**. All commits must follow this format:
 
-```
+```text
 <type>(<scope>): <description>
 
 [optional body]
