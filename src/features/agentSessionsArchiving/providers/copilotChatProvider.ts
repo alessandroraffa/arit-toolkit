@@ -50,6 +50,7 @@ export class CopilotChatProvider implements SessionProvider {
     const sessionId = name.replace(ext, '');
     return {
       uri,
+      providerName: this.name,
       archiveName: `copilot-chat-${sessionId}`,
       displayName: `Copilot Chat ${sessionId}`,
       mtime,

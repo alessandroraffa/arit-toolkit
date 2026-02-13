@@ -44,6 +44,7 @@ export class ClaudeCodeProvider implements SessionProvider {
     }
     return {
       uri,
+      providerName: this.name,
       archiveName: `claude-code-${path.parse(name).name}`,
       displayName: `Claude Code ${name}`,
       mtime,

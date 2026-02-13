@@ -49,6 +49,7 @@ export class RooCodeProvider implements SessionProvider {
     }
     return {
       uri,
+      providerName: this.name,
       archiveName: `roo-code-${taskId}`,
       displayName: `Roo Code task ${taskId}`,
       mtime,

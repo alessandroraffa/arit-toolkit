@@ -2,6 +2,7 @@ import type * as vscode from 'vscode';
 
 export interface SessionFile {
   readonly uri: vscode.Uri;
+  readonly providerName: string;
   readonly archiveName: string;
   readonly displayName: string;
   readonly mtime: number;

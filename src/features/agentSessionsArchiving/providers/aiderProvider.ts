@@ -20,6 +20,7 @@ export class AiderProvider implements SessionProvider {
       if (mtime !== undefined) {
         results.push({
           uri,
+          providerName: this.name,
           archiveName: file.archiveName,
           displayName: `Aider ${file.name}`,
           mtime,

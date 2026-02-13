@@ -56,6 +56,7 @@ export class ContinueProvider implements SessionProvider {
     const sessionId = name.replace('.json', '');
     return {
       uri,
+      providerName: this.name,
       archiveName: `continue-${sessionId}`,
       displayName: `Continue session ${sessionId}`,
       mtime,

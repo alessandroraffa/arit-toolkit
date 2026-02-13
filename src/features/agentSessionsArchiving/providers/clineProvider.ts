@@ -49,6 +49,7 @@ export class ClineProvider implements SessionProvider {
     }
     return {
       uri,
+      providerName: this.name,
       archiveName: `cline-${taskId}`,
       displayName: `Cline task ${taskId}`,
       mtime,

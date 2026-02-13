@@ -19,6 +19,7 @@ function createMockLogger() {
 function createMockSession(overrides: Partial<SessionFile> = {}): SessionFile {
   return {
     uri: { fsPath: '/source/session.json' } as any,
+    providerName: 'test-provider',
     archiveName: 'test-session',
     displayName: 'Test Session',
     mtime: 1000,
