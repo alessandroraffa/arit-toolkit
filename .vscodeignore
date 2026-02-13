@@ -19,4 +19,5 @@ vitest.config.ts
 *.map
 CONTRIBUTING.md
 CODE_OF_CONDUCT.md
+SECURITY.md
 coverage/**
