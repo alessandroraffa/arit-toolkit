@@ -1,0 +1,55 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: 'build'
+      include: 'scope'
+    labels:
+      - dependencies
+    groups:
+      eslint:
+        patterns:
+          - '@eslint/*'
+          - eslint
+          - typescript-eslint
+          - '@vitest/eslint-plugin'
+          - globals
+      testing:
+        patterns:
+          - vitest
+          - '@vitest/*'
+          - '@vscode/test-cli'
+          - '@vscode/test-electron'
+          - '@types/mocha'
+      semantic-release:
+        patterns:
+          - semantic-release
+          - semantic-release-vsce
+          - '@semantic-release/*'
+          - conventional-changelog-conventionalcommits
+      commitlint:
+        patterns:
+          - '@commitlint/*'
+          - husky
+          - lint-staged
+      types:
+        patterns:
+          - '@types/*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
+    labels:
+      - ci
+      - dependencies
