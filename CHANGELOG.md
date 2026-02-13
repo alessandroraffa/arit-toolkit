@@ -1,3 +1,16 @@
+## [1.5.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.4.3...v1.5.0) (2026-02-13)
+
+### Features
+
+* add auto-commit service for config changes ([c3557e5](https://github.com/alessandroraffa/arit-toolkit/commit/c3557e5aec03f2a54bc02605454581338ad98e81))
+* add git utilities for gitignore check and stage-commit ([98db159](https://github.com/alessandroraffa/arit-toolkit/commit/98db159b48e0ab5d8f3f01c6a5df5813b21923e6))
+* add markdown renderer for archived sessions ([b6a0963](https://github.com/alessandroraffa/arit-toolkit/commit/b6a096326d6d8d8d0b131397ec718193f45e6602))
+* add normalized session model for markdown conversion ([1e1a30e](https://github.com/alessandroraffa/arit-toolkit/commit/1e1a30e3b0010e6c9b86455cedae2bcc8c21db33))
+* add provider name to session file model ([325741e](https://github.com/alessandroraffa/arit-toolkit/commit/325741eda7ec9b83eb0840e6357c86e56a4ad163))
+* add session parsers for markdown conversion ([f87f84f](https://github.com/alessandroraffa/arit-toolkit/commit/f87f84f689e7f29af1b346924fd524ec31e3c61c))
+* integrate auto-commit into extension lifecycle ([d954147](https://github.com/alessandroraffa/arit-toolkit/commit/d9541479a0bc3ca1b9cad12bc5b2ffb61a869c4d))
+* integrate markdown conversion into archive service ([2319d4f](https://github.com/alessandroraffa/arit-toolkit/commit/2319d4fa6173a2834efc385399b4637b6de5927e))
+
 ## [1.4.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.4.2...v1.4.3) (2026-02-13)
 
 ### Bug Fixes

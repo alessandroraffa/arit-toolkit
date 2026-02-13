@@ -2,8 +2,8 @@
   "name": "arit-toolkit",
   "displayName": "ARIT Toolkit",
   "description": "Archive AI coding sessions (Claude Code, Cline, Aider, Copilot, Roo Code, Continue) into your workspace. Timestamped file and folder management included.",
-  "version": "1.4.3",
-  "versionCode": 1001004003,
+  "version": "1.5.0",
+  "versionCode": 1001005000,
   "publisher": "alessandroraffa",
   "license": "MIT",
   "repository": {
