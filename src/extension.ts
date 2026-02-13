@@ -4,12 +4,25 @@ import {
   ConfigManager,
   CommandRegistry,
   ExtensionStateManager,
+  ConfigAutoCommitService,
   ConfigSectionRegistry,
   ConfigMigrationService,
 } from './core';
 import { registerAllFeatures } from './features';
 
 let logger: Logger | undefined;
+
+function setupAutoCommit(stateManager: ExtensionStateManager, log: Logger): void {
+  if (stateManager.workspaceRootUri) {
+    stateManager.setAutoCommitService(
+      new ConfigAutoCommitService(
+        stateManager.workspaceRootUri.fsPath,
+        '.arit-toolkit.jsonc',
+        log
+      )
+    );
+  }
+}
 
 export function activate(context: vscode.ExtensionContext): void {
   logger = Logger.getInstance();
@@ -34,6 +47,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const stateManager = new ExtensionStateManager(logger, migrationService);
   context.subscriptions.push(stateManager);
 
+  setupAutoCommit(stateManager, logger);
+
   const commandRegistry = new CommandRegistry(context, stateManager);
 
   // Register all features
@@ -47,10 +62,9 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   // Initialize state manager (reads config file, checks version, shows onboarding if needed)
-  const extensionVersion = String(
-    (context.extension.packageJSON as Record<string, unknown>).version
+  void stateManager.initialize(
+    String((context.extension.packageJSON as Record<string, unknown>).version)
   );
-  void stateManager.initialize(extensionVersion);
 
   logger.info('ARIT Toolkit activated successfully');
 }

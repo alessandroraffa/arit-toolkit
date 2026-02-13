@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import type { WorkspaceMode } from '../types';
 import type { Logger } from './logger';
 import type { ConfigMigrationService } from './configMigration/migrationService';
+import type { ConfigAutoCommitService } from './configAutoCommit';
 import { parseJsonc, formatJsonc, computeVersionCode } from '../utils';
 
 const CONFIG_FILENAME = '.arit-toolkit.jsonc';
@@ -23,6 +24,7 @@ export class ExtensionStateManager {
   private _extensionVersion: string | undefined;
   private _configVersionCode: number | undefined;
   private _fullConfig: Record<string, unknown> | undefined;
+  private _autoCommitService: ConfigAutoCommitService | undefined;
 
   constructor(
     private readonly logger: Logger,
@@ -62,6 +64,10 @@ export class ExtensionStateManager {
 
   public get workspaceRootUri(): vscode.Uri | undefined {
     return this._workspaceRoot;
+  }
+
+  public setAutoCommitService(service: ConfigAutoCommitService): void {
+    this._autoCommitService = service;
   }
 
   public getConfigSection(key: string): unknown {
@@ -212,6 +218,7 @@ export class ExtensionStateManager {
     const content = formatJsonc(config, CONFIG_HEADER);
     await vscode.workspace.fs.writeFile(configUri, new TextEncoder().encode(content));
     this.logger.debug('Wrote workspace config');
+    void this._autoCommitService?.onConfigWritten();
   }
 
   private async runMigration(): Promise<void> {
