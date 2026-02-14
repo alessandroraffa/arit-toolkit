@@ -1,3 +1,9 @@
+## [1.5.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.5.0...v1.5.1) (2026-02-14)
+
+### Code Refactoring
+
+* **agentSessionsArchiving:** replace turn headings with bold role prefixes ([3227096](https://github.com/alessandroraffa/arit-toolkit/commit/322709604b8cccfd80a460c3be72d7456baa606b))
+
 ## [1.5.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.4.3...v1.5.0) (2026-02-13)
 
 ### Features
