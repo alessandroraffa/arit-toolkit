@@ -6,6 +6,7 @@ settings:
 
 overrides:
   esbuild: '>=0.25.0'
+  markdown-it: '>=14.1.1'
   qs: '>=6.14.2'
 
 importers:
@@ -19,7 +20,7 @@ importers:
         specifier: ^20.4.1
         version: 20.4.1
       '@eslint/js':
-        specifier: ^9.18.0
+        specifier: ^9.39.2
         version: 9.39.2
       '@semantic-release/changelog':
         specifier: ^6.0.3
@@ -37,13 +38,13 @@ importers:
         specifier: ^10.0.10
         version: 10.0.10
       '@types/node':
-        specifier: ^22.10.0
+        specifier: ^22.19.9
         version: 22.19.9
       '@types/vscode':
-        specifier: ^1.85.0
+        specifier: ^1.109.0
         version: 1.109.0
       '@vitest/coverage-v8':
-        specifier: ^2.1.0
+        specifier: ^2.1.9
         version: 2.1.9(vitest@2.1.9(@types/node@22.19.9))
       '@vitest/eslint-plugin':
         specifier: ^1.6.6
@@ -52,10 +53,10 @@ importers:
         specifier: ^0.0.10
         version: 0.0.10
       '@vscode/test-electron':
-        specifier: ^2.4.1
+        specifier: ^2.5.2
         version: 2.5.2
       '@vscode/vsce':
-        specifier: ^3.2.0
+        specifier: ^3.7.1
         version: 3.7.1
       conventional-changelog-conventionalcommits:
         specifier: ^9.1.0
@@ -64,16 +65,16 @@ importers:
         specifier: '>=0.25.0'
         version: 0.25.12
       eslint:
-        specifier: ^9.18.0
+        specifier: ^9.39.2
         version: 9.39.2(jiti@2.6.1)
       globals:
-        specifier: ^15.14.0
+        specifier: ^15.15.0
         version: 15.15.0
       husky:
         specifier: ^9.1.7
         version: 9.1.7
       lint-staged:
-        specifier: ^15.3.0
+        specifier: ^15.5.2
         version: 15.5.2
       markdownlint-cli2:
         specifier: ^0.20.0
@@ -82,7 +83,7 @@ importers:
         specifier: ^7.0.2
         version: 7.0.2
       prettier:
-        specifier: ^3.4.2
+        specifier: ^3.8.1
         version: 3.8.1
       semantic-release:
         specifier: ^25.0.3
@@ -91,13 +92,13 @@ importers:
         specifier: ^6.0.23
         version: 6.0.23(semantic-release@25.0.3(typescript@5.9.3))
       typescript:
-        specifier: ^5.7.0
+        specifier: ^5.9.3
         version: 5.9.3
       typescript-eslint:
-        specifier: ^8.20.0
+        specifier: ^8.54.0
         version: 8.54.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       vitest:
-        specifier: ^2.1.0
+        specifier: ^2.1.9
         version: 2.1.9(@types/node@22.19.9)
 
 packages:
@@ -2518,8 +2519,8 @@ packages:
     resolution: {integrity: sha512-hXdUTZYIVOt1Ex//jAQi+wTZZpUpwBj/0QsOzqegb3rGMMeJiSEu5xLHnYfBrRV4RH2+OCSOO95Is/7x1WJ4bw==}
     engines: {node: '>=10'}
 
-  markdown-it@14.1.0:
-    resolution: {integrity: sha512-a54IwgWPaeBCAAsv13YgmALOF1elABB08FxO9i+r4VFk5Vl4pKokRPeX8u5TCgSsPi6ec1otfLjdOpVcgbpshg==}
+  markdown-it@14.1.1:
+    resolution: {integrity: sha512-BuU2qnTti9YKgK5N+IeMubp14ZUKUUw7yeJbkjtosvHiP0AZ5c8IAgEMk79D0eC8F23r4Ac/q8cAIFdm2FtyoA==}
     hasBin: true
 
   markdownlint-cli2-formatter-default@0.0.6:
@@ -5042,7 +5043,7 @@ snapshots:
       hosted-git-info: 4.1.0
       jsonc-parser: 3.3.1
       leven: 3.1.0
-      markdown-it: 14.1.0
+      markdown-it: 14.1.1
       mime: 1.6.0
       minimatch: 3.1.2
       parse-semver: 1.1.1
@@ -6485,7 +6486,7 @@ snapshots:
     dependencies:
       semver: 7.7.4
 
-  markdown-it@14.1.0:
+  markdown-it@14.1.1:
     dependencies:
       argparse: 2.0.1
       entities: 4.5.0
@@ -6503,7 +6504,7 @@ snapshots:
       globby: 15.0.0
       js-yaml: 4.1.1
       jsonc-parser: 3.3.1
-      markdown-it: 14.1.0
+      markdown-it: 14.1.1
       markdownlint: 0.40.0
       markdownlint-cli2-formatter-default: 0.0.6(markdownlint-cli2@0.20.0)
       micromatch: 4.0.8
