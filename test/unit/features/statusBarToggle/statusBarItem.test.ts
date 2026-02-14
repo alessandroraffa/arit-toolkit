@@ -12,10 +12,6 @@ describe('statusBarItem', () => {
     workspaceMode: string;
     getConfigSection: ReturnType<typeof vi.fn>;
   };
-  let mockConfig: {
-    timestampFormat: string;
-    timestampSeparator: string;
-  };
   let mockLogger: {
     debug: ReturnType<typeof vi.fn>;
     info: ReturnType<typeof vi.fn>;
@@ -29,10 +25,6 @@ describe('statusBarItem', () => {
       workspaceMode: 'single-root',
       getConfigSection: vi.fn().mockReturnValue(undefined),
     };
-    mockConfig = {
-      timestampFormat: 'YYYYMMDDHHmm',
-      timestampSeparator: '-',
-    };
     mockLogger = {
       debug: vi.fn(),
       info: vi.fn(),
@@ -44,8 +36,6 @@ describe('statusBarItem', () => {
       createStatusBarItem(
         mockStateManager as any,
 
-        mockConfig as any,
-
         mockLogger as any
       );
 
@@ -55,8 +45,6 @@ describe('statusBarItem', () => {
     it('should set command to toggle command', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
-
-        mockConfig as any,
 
         mockLogger as any
       );
@@ -68,8 +56,6 @@ describe('statusBarItem', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
 
-        mockConfig as any,
-
         mockLogger as any
       );
 
@@ -79,8 +65,6 @@ describe('statusBarItem', () => {
     it('should set name to ARIT Toolkit', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
-
-        mockConfig as any,
 
         mockLogger as any
       );
@@ -94,13 +78,11 @@ describe('statusBarItem', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
 
-        mockConfig as any,
-
         mockLogger as any
       );
       mockStateManager.isEnabled = true;
 
-      updateStatusBarItem(item, mockStateManager as any, mockConfig as any);
+      updateStatusBarItem(item, mockStateManager as any);
 
       expect(item.text).toBe('$(tools) ARIT');
     });
@@ -109,13 +91,11 @@ describe('statusBarItem', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
 
-        mockConfig as any,
-
         mockLogger as any
       );
       mockStateManager.isEnabled = true;
 
-      updateStatusBarItem(item, mockStateManager as any, mockConfig as any);
+      updateStatusBarItem(item, mockStateManager as any);
 
       expect(item.backgroundColor).toBeUndefined();
     });
@@ -124,17 +104,34 @@ describe('statusBarItem', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
 
-        mockConfig as any,
+        mockLogger as any
+      );
+      mockStateManager.isEnabled = true;
+
+      updateStatusBarItem(item, mockStateManager as any);
+
+      const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
+      expect(tooltip.value).toContain('Enabled');
+      expect(tooltip.value).toContain('Click to disable');
+    });
+
+    it('should not include Features or Configuration sections', () => {
+      const item = createStatusBarItem(
+        mockStateManager as any,
 
         mockLogger as any
       );
       mockStateManager.isEnabled = true;
 
-      updateStatusBarItem(item, mockStateManager as any, mockConfig as any);
+      updateStatusBarItem(item, mockStateManager as any);
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
-      expect(tooltip.value).toContain('Enabled');
-      expect(tooltip.value).toContain('Click to disable');
+      expect(tooltip.value).not.toContain('Features:');
+      expect(tooltip.value).not.toContain('Configuration:');
+      expect(tooltip.value).not.toContain('Timestamped File Creator');
+      expect(tooltip.value).not.toContain('Prefix Creation Timestamp');
+      expect(tooltip.value).not.toContain('Timestamp Format');
+      expect(tooltip.value).not.toContain('Separator');
     });
   });
 
@@ -143,8 +140,6 @@ describe('statusBarItem', () => {
       mockStateManager.isEnabled = false;
       const item = createStatusBarItem(
         mockStateManager as any,
-
-        mockConfig as any,
 
         mockLogger as any
       );
@@ -157,8 +152,6 @@ describe('statusBarItem', () => {
       mockStateManager.isEnabled = false;
       const item = createStatusBarItem(
         mockStateManager as any,
-
-        mockConfig as any,
 
         mockLogger as any
       );
@@ -176,8 +169,6 @@ describe('statusBarItem', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
 
-        mockConfig as any,
-
         mockLogger as any
       );
 
@@ -190,8 +181,6 @@ describe('statusBarItem', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
 
-        mockConfig as any,
-
         mockLogger as any
       );
 
@@ -200,33 +189,30 @@ describe('statusBarItem', () => {
     });
   });
 
-  describe('tooltip configuration values', () => {
-    it('should reflect current timestamp format', () => {
-      mockConfig.timestampFormat = 'ISO';
+  describe('tooltip background services', () => {
+    it('should show archiving status when config exists', () => {
+      mockStateManager.getConfigSection.mockReturnValue({ enabled: true });
       const item = createStatusBarItem(
         mockStateManager as any,
-
-        mockConfig as any,
 
         mockLogger as any
       );
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
-      expect(tooltip.value).toContain('ISO');
+      expect(tooltip.value).toContain('Background Services:');
+      expect(tooltip.value).toContain('Agent Sessions Archiving');
     });
 
-    it('should reflect current separator', () => {
-      mockConfig.timestampSeparator = '_';
+    it('should not show Features or Configuration sections', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
-
-        mockConfig as any,
 
         mockLogger as any
       );
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
-      expect(tooltip.value).toContain('_');
+      expect(tooltip.value).not.toContain('Features:');
+      expect(tooltip.value).not.toContain('Configuration:');
     });
   });
 });

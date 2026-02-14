@@ -5,22 +5,22 @@ import { COMMAND_ID_TOGGLE } from './constants';
 
 export function registerStatusBarToggleFeature(ctx: FeatureRegistrationContext): void {
   const { registry, stateManager, config, logger, context } = ctx;
-  const statusBarItem = createStatusBarItem(stateManager, config, logger);
+  const statusBarItem = createStatusBarItem(stateManager, logger);
   context.subscriptions.push(statusBarItem);
 
   registry.register(
     COMMAND_ID_TOGGLE,
-    toggleEnabledCommand({ stateManager, config, logger, statusBarItem })
+    toggleEnabledCommand({ stateManager, logger, statusBarItem })
   );
   logger.debug(`Registered command: ${COMMAND_ID_TOGGLE}`);
 
   const stateDisposable = stateManager.onDidChangeState(() => {
-    updateStatusBarItem(statusBarItem, stateManager, config);
+    updateStatusBarItem(statusBarItem, stateManager);
   });
   context.subscriptions.push(stateDisposable);
 
   const configDisposable = config.onConfigChange(() => {
-    updateStatusBarItem(statusBarItem, stateManager, config);
+    updateStatusBarItem(statusBarItem, stateManager);
   });
   context.subscriptions.push(configDisposable);
 }

@@ -10,10 +10,6 @@ describe('toggleEnabledCommand', () => {
     toggle: ReturnType<typeof vi.fn>;
     getConfigSection: ReturnType<typeof vi.fn>;
   };
-  let mockConfig: {
-    timestampFormat: string;
-    timestampSeparator: string;
-  };
   let mockLogger: {
     debug: ReturnType<typeof vi.fn>;
     info: ReturnType<typeof vi.fn>;
@@ -36,10 +32,6 @@ describe('toggleEnabledCommand', () => {
       toggle: vi.fn().mockResolvedValue(true),
       getConfigSection: vi.fn().mockReturnValue(undefined),
     };
-    mockConfig = {
-      timestampFormat: 'YYYYMMDDHHmm',
-      timestampSeparator: '-',
-    };
     mockLogger = {
       debug: vi.fn(),
       info: vi.fn(),
@@ -57,8 +49,6 @@ describe('toggleEnabledCommand', () => {
   it('should call stateManager.toggle in single-root workspace', async () => {
     const command = toggleEnabledCommand({
       stateManager: mockStateManager as any,
-
-      config: mockConfig as any,
 
       logger: mockLogger as any,
 
@@ -79,8 +69,6 @@ describe('toggleEnabledCommand', () => {
     const command = toggleEnabledCommand({
       stateManager: mockStateManager as any,
 
-      config: mockConfig as any,
-
       logger: mockLogger as any,
 
       statusBarItem: mockStatusBarItem as any,
@@ -100,8 +88,6 @@ describe('toggleEnabledCommand', () => {
     const command = toggleEnabledCommand({
       stateManager: mockStateManager as any,
 
-      config: mockConfig as any,
-
       logger: mockLogger as any,
 
       statusBarItem: mockStatusBarItem as any,
@@ -119,8 +105,6 @@ describe('toggleEnabledCommand', () => {
 
     const command = toggleEnabledCommand({
       stateManager: mockStateManager as any,
-
-      config: mockConfig as any,
 
       logger: mockLogger as any,
 

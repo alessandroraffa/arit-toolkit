@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import type { ExtensionStateManager } from '../../core/extensionStateManager';
-import type { ConfigManager } from '../../core/configManager';
 import type { Logger } from '../../core/logger';
 import type { AgentSessionsArchivingConfig } from '../../types';
 import {
@@ -15,7 +14,6 @@ import { COMMAND_ID_TOGGLE as ARCHIVING_TOGGLE_CMD } from '../agentSessionsArchi
 
 export function createStatusBarItem(
   stateManager: ExtensionStateManager,
-  config: ConfigManager,
   logger: Logger
 ): vscode.StatusBarItem {
   const item = vscode.window.createStatusBarItem(
@@ -25,7 +23,7 @@ export function createStatusBarItem(
   item.command = COMMAND_ID_TOGGLE;
   item.name = STATUS_BAR_NAME;
 
-  updateStatusBarItem(item, stateManager, config);
+  updateStatusBarItem(item, stateManager);
   item.show();
 
   logger.debug('Status bar item created');
@@ -34,8 +32,7 @@ export function createStatusBarItem(
 
 export function updateStatusBarItem(
   item: vscode.StatusBarItem,
-  stateManager: ExtensionStateManager,
-  config: ConfigManager
+  stateManager: ExtensionStateManager
 ): void {
   item.text = `${ICON_CODICON} ${STATUS_BAR_TEXT}`;
 
@@ -53,12 +50,11 @@ export function updateStatusBarItem(
     item.color = new vscode.ThemeColor('disabledForeground');
   }
 
-  item.tooltip = buildSingleRootTooltip(stateManager, config);
+  item.tooltip = buildSingleRootTooltip(stateManager);
 }
 
 function buildSingleRootTooltip(
-  stateManager: ExtensionStateManager,
-  config: ConfigManager
+  stateManager: ExtensionStateManager
 ): vscode.MarkdownString {
   const md = new vscode.MarkdownString('', true);
   md.isTrusted = true;
@@ -75,17 +71,7 @@ function buildSingleRootTooltip(
       `---\n\n`
   );
   md.appendMarkdown(buildBackgroundServicesSection(stateManager));
-  md.appendMarkdown(
-    `**Features:**\n\n` +
-      `- $(new-file) Timestamped File Creator\n` +
-      `- $(calendar) Prefix Creation Timestamp\n\n` +
-      `---\n\n` +
-      `**Configuration:**\n\n` +
-      `- Timestamp Format: \`${config.timestampFormat}\`\n` +
-      `- Separator: \`${config.timestampSeparator}\`\n\n` +
-      `---\n\n` +
-      `*Click to ${action}*`
-  );
+  md.appendMarkdown(`*Click to ${action}*`);
 
   return md;
 }
