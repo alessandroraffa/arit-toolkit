@@ -36,8 +36,8 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
-    expect(md).toContain('## Turn 1 (User)');
-    expect(md).toContain('Hello, how are you?');
+    expect(md).toContain('**User:** Hello, how are you?');
+    expect(md).not.toContain('## Turn');
   });
 
   it('should render assistant turn with tools', () => {
@@ -58,12 +58,12 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
-    expect(md).toContain('## Turn 1 (Assistant)');
-    expect(md).toContain('Let me read that file.');
+    expect(md).toContain('**Assistant:** Let me read that file.');
     expect(md).toContain('### Tools Called');
     expect(md).toContain('**Read**');
     expect(md).toContain('### Files Read');
     expect(md).toContain('`src/main.ts`');
+    expect(md).not.toContain('## Turn');
   });
 
   it('should render thinking in details block', () => {
@@ -85,6 +85,7 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
+    expect(md).toContain('**Assistant:** Done.');
     expect(md).toContain('<details>');
     expect(md).toContain('<summary>Reasoning</summary>');
     expect(md).toContain('Let me think about this...');
@@ -109,6 +110,7 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
+    expect(md).toContain('**Assistant:** Updated.');
     expect(md).toContain('### Files Modified');
     expect(md).toContain('`src/foo.ts`');
     expect(md).toContain('`src/bar.ts`');
@@ -132,13 +134,14 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
+    expect(md).toContain('**Assistant:** Just text.');
     expect(md).not.toContain('### Tools Called');
     expect(md).not.toContain('### Files Read');
     expect(md).not.toContain('### Files Modified');
     expect(md).not.toContain('<details>');
   });
 
-  it('should render multiple turns with sequential numbering', () => {
+  it('should render multiple turns with role prefixes', () => {
     const session: NormalizedSession = {
       providerName: 'claude-code',
       providerDisplayName: 'Claude Code',
@@ -170,9 +173,10 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
-    expect(md).toContain('## Turn 1 (User)');
-    expect(md).toContain('## Turn 2 (Assistant)');
-    expect(md).toContain('## Turn 3 (User)');
+    expect(md).toContain('**User:** Question');
+    expect(md).toContain('**Assistant:** Answer');
+    expect(md).toContain('**User:** Follow-up');
+    expect(md).not.toContain('## Turn');
   });
 
   it('should render empty session with just header', () => {
@@ -186,6 +190,7 @@ describe('renderSessionToMarkdown', () => {
     const md = renderSessionToMarkdown(session);
 
     expect(md).toContain('# Test Session');
-    expect(md).not.toContain('## Turn');
+    expect(md).not.toContain('**User:**');
+    expect(md).not.toContain('**Assistant:**');
   });
 });

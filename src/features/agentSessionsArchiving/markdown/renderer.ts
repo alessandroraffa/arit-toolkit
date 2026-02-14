@@ -11,18 +11,23 @@ export function renderSessionToMarkdown(session: NormalizedSession): string {
   lines.push('---');
   lines.push('');
 
-  for (const [index, turn] of session.turns.entries()) {
-    lines.push(...renderTurn(turn, index + 1));
+  for (const turn of session.turns) {
+    lines.push(...renderTurn(turn));
   }
 
   return lines.join('\n');
 }
 
-function renderTurn(turn: NormalizedTurn, turnNumber: number): string[] {
+function renderTurn(turn: NormalizedTurn): string[] {
   const roleLabel = turn.role === 'user' ? 'User' : 'Assistant';
-  const lines: string[] = [`## Turn ${String(turnNumber)} (${roleLabel})`, ''];
+  const lines: string[] = [];
 
-  if (turn.content) lines.push(turn.content, '');
+  if (turn.content) {
+    lines.push(`**${roleLabel}:** ${turn.content}`, '');
+  } else {
+    lines.push(`**${roleLabel}:**`, '');
+  }
+
   lines.push(...renderToolsSection(turn.toolCalls));
   lines.push(...renderThinkingSection(turn.thinking));
   lines.push(...renderFileList('Files Read', turn.filesRead));
