@@ -190,10 +190,6 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       );
     }
     await vscode.workspace.fs.delete(oldUri, { recursive: true });
-
-    for (const [key, entry] of this.lastArchivedMap) {
-      this.lastArchivedMap.set(key, entry);
-    }
     this.logger.info(`Moved archive from ${oldPath} to ${newPath}`);
   }
 
