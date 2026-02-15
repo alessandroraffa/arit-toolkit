@@ -176,6 +176,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     try {
       entries = await vscode.workspace.fs.readDirectory(oldUri);
     } catch {
+      this.logger.debug(`Old archive directory not found, skipping move: ${oldPath}`);
       return;
     }
 
@@ -196,16 +197,16 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   private async ensureDirectory(uri: vscode.Uri): Promise<void> {
     try {
       await vscode.workspace.fs.createDirectory(uri);
-    } catch {
-      // directory already exists
+    } catch (err) {
+      this.logger.debug(`ensureDirectory: ${String(err)}`);
     }
   }
 
   private async deleteFile(uri: vscode.Uri): Promise<void> {
     try {
       await vscode.workspace.fs.delete(uri);
-    } catch {
-      // file may not exist
+    } catch (err) {
+      this.logger.debug(`deleteFile: ${String(err)}`);
     }
   }
 }
