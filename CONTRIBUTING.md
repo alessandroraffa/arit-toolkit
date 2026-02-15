@@ -55,7 +55,7 @@ To report a security vulnerability, please see [SECURITY.md](SECURITY.md) for re
 
 - Node.js 22+
 - pnpm 10+ (install via `corepack enable pnpm`)
-- VS Code 1.85.0+
+- VS Code 1.109.0+
 
 ### Getting Started
 

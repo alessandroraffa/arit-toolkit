@@ -31,7 +31,7 @@
   ],
   "packageManager": "pnpm@10.4.1",
   "engines": {
-    "vscode": "^1.85.0",
+    "vscode": "^1.109.0",
     "node": ">=22.22.0"
   },
   "activationEvents": [

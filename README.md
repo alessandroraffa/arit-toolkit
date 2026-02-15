@@ -136,7 +136,7 @@ Command Palette → "ARIT: Toggle Extension (Enable/Disable)"
 
 ## Requirements
 
-- VS Code 1.85.0 or higher
+- VS Code 1.109.0 or higher
 
 ## Security
 

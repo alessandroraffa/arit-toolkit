@@ -70,7 +70,7 @@ are prompted to opt in to new configuration sections.
 | VS Code API surface        | The extension runs inside the VS Code extension host. All file I/O goes through `vscode.workspace.fs`; UI through `vscode.window`; commands through `vscode.commands`. |
 | Single-root workspace only | Advanced features (state toggle, config migration, agent-session archiving) require a single workspace root. Multi-root and no-workspace modes degrade gracefully. |
 | Node.js >= 22.22.0         | Required by `package.json` `engines` field.                                      |
-| VS Code >= 1.85.0          | Minimum host version; determines available API surface.                          |
+| VS Code >= 1.109.0         | Minimum host version; determines available API surface.                          |
 | CommonJS bundle            | VS Code extension host requires CJS. The project is authored in ESM-style TypeScript and bundled by esbuild into a single `dist/extension.js`. |
 | Zero runtime dependencies  | All functionality is implemented against Node.js built-ins and the VS Code API. |
 

@@ -29,7 +29,7 @@ If applicable, add screenshots to help explain your problem.
 ## Environment
 
 - OS: [e.g., macOS 14.0, Windows 11, Ubuntu 22.04]
-- VS Code Version: [e.g., 1.85.0]
+- VS Code Version: [e.g., 1.109.0]
 - Extension Version: [e.g., 1.0.0]
 
 ## Additional context

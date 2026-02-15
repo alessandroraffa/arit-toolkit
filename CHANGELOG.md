@@ -22,6 +22,10 @@
 
 * update extension icon
 
+### Build
+
+* upgrade minimum VS Code version from 1.85.0 to 1.109.0 to align with @types/vscode
+
 ### Documentation
 
 * update README status bar description and prefix command access note
