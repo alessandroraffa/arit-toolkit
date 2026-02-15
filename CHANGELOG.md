@@ -1,3 +1,31 @@
+## [Unreleased](https://github.com/alessandroraffa/arit-toolkit/compare/v1.5.1...HEAD)
+
+### Bug Fixes
+
+* **archiveService:** remove no-op loop in move archive
+* **archiveService:** add debug logging to silent error paths
+* add node types to tsconfig for global api resolution
+
+### Code Refactoring
+
+* **statusBarToggle:** redesign tooltip with action-oriented layout
+* **statusBarToggle:** remove features and configuration from tooltip
+* **providers:** extract shared utilities and improve path matching
+* **agentSessionsArchiving:** extract migration registration into helper
+
+### Tests
+
+* **extensionStateManager:** split test file into two focused modules
+* improve coverage for archive service and claude code parser
+
+### Chores
+
+* update extension icon
+
+### Documentation
+
+* update README status bar description and prefix command access note
+
 ## [1.5.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.5.0...v1.5.1) (2026-02-14)
 
 ### Code Refactoring
