@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import type { SessionFile, SessionProvider } from '../types';
+import { getMtime } from './providerUtils';
 
 const SESSIONS_DIR = 'chatSessions';
 
@@ -42,7 +43,7 @@ export class CopilotChatProvider implements SessionProvider {
     name: string
   ): Promise<SessionFile | undefined> {
     const uri = vscode.Uri.joinPath(dirUri, name);
-    const mtime = await this.getMtime(uri);
+    const mtime = await getMtime(uri);
     if (mtime === undefined) {
       return undefined;
     }
@@ -56,14 +57,5 @@ export class CopilotChatProvider implements SessionProvider {
       mtime,
       extension: ext,
     };
-  }
-
-  private async getMtime(uri: vscode.Uri): Promise<number | undefined> {
-    try {
-      const stat = await vscode.workspace.fs.stat(uri);
-      return stat.mtime;
-    } catch {
-      return undefined;
-    }
   }
 }

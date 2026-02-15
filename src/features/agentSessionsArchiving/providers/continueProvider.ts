@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import type { SessionFile, SessionProvider } from '../types';
+import { getMtime, belongsToWorkspace } from './providerUtils';
 
 export class ContinueProvider implements SessionProvider {
   public readonly name = 'continue';
@@ -38,7 +39,7 @@ export class ContinueProvider implements SessionProvider {
     if (!session) {
       return undefined;
     }
-    if (!(await this.belongsToWorkspace(session.uri, workspacePath))) {
+    if (!(await belongsToWorkspace(session.uri, workspacePath))) {
       return undefined;
     }
     return session;
@@ -49,7 +50,7 @@ export class ContinueProvider implements SessionProvider {
     name: string
   ): Promise<SessionFile | undefined> {
     const uri = vscode.Uri.joinPath(dirUri, name);
-    const mtime = await this.getMtime(uri);
+    const mtime = await getMtime(uri);
     if (mtime === undefined) {
       return undefined;
     }
@@ -62,27 +63,5 @@ export class ContinueProvider implements SessionProvider {
       mtime,
       extension: '.json',
     };
-  }
-
-  private async belongsToWorkspace(
-    uri: vscode.Uri,
-    workspacePath: string
-  ): Promise<boolean> {
-    try {
-      const bytes = await vscode.workspace.fs.readFile(uri);
-      const content = new TextDecoder().decode(bytes);
-      return content.includes(workspacePath);
-    } catch {
-      return false;
-    }
-  }
-
-  private async getMtime(uri: vscode.Uri): Promise<number | undefined> {
-    try {
-      const stat = await vscode.workspace.fs.stat(uri);
-      return stat.mtime;
-    } catch {
-      return undefined;
-    }
   }
 }

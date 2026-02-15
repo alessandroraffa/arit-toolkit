@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import type { SessionFile, SessionProvider } from '../types';
+import { getMtime, belongsToWorkspace } from './providerUtils';
 
 const EXTENSION_ID = 'rooveterinaryinc.roo-cline';
 const SESSION_FILE = 'api_conversation_history.json';
@@ -40,11 +41,11 @@ export class RooCodeProvider implements SessionProvider {
     workspacePath: string
   ): Promise<SessionFile | undefined> {
     const uri = vscode.Uri.joinPath(tasksUri, taskId, SESSION_FILE);
-    const mtime = await this.getMtime(uri);
+    const mtime = await getMtime(uri);
     if (mtime === undefined) {
       return undefined;
     }
-    if (!(await this.belongsToWorkspace(uri, workspacePath))) {
+    if (!(await belongsToWorkspace(uri, workspacePath))) {
       return undefined;
     }
     return {
@@ -55,27 +56,5 @@ export class RooCodeProvider implements SessionProvider {
       mtime,
       extension: '.json',
     };
-  }
-
-  private async belongsToWorkspace(
-    uri: vscode.Uri,
-    workspacePath: string
-  ): Promise<boolean> {
-    try {
-      const bytes = await vscode.workspace.fs.readFile(uri);
-      const content = new TextDecoder().decode(bytes);
-      return content.includes(workspacePath);
-    } catch {
-      return false;
-    }
-  }
-
-  private async getMtime(uri: vscode.Uri): Promise<number | undefined> {
-    try {
-      const stat = await vscode.workspace.fs.stat(uri);
-      return stat.mtime;
-    } catch {
-      return undefined;
-    }
   }
 }
