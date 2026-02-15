@@ -1,5 +1,6 @@
 import type { FeatureRegistrationContext } from '../index';
 import type { AgentSessionsArchivingConfig } from '../../types';
+import type { ConfigSectionRegistry } from '../../core/configMigration';
 import { AgentSessionArchiveService } from './archiveService';
 import { getDefaultProviders } from './providers';
 import {
@@ -10,16 +11,8 @@ import {
   INTRODUCED_AT_VERSION_CODE,
 } from './constants';
 
-export function registerAgentSessionsArchivingFeature(
-  ctx: FeatureRegistrationContext
-): void {
-  const { stateManager, logger } = ctx;
-  const workspaceRoot = stateManager.workspaceRootUri;
-  if (!workspaceRoot) {
-    return;
-  }
-
-  ctx.migrationRegistry.register({
+function registerMigration(registry: ConfigSectionRegistry): void {
+  registry.register({
     key: CONFIG_KEY,
     label: 'Agent Sessions Archiving',
     description: 'Periodically archive AI coding assistant chat sessions',
@@ -30,6 +23,18 @@ export function registerAgentSessionsArchivingFeature(
     },
     introducedAtVersionCode: INTRODUCED_AT_VERSION_CODE,
   });
+}
+
+export function registerAgentSessionsArchivingFeature(
+  ctx: FeatureRegistrationContext
+): void {
+  const { stateManager, logger } = ctx;
+  const workspaceRoot = stateManager.workspaceRootUri;
+  if (!workspaceRoot) {
+    return;
+  }
+
+  registerMigration(ctx.migrationRegistry);
 
   const providers = getDefaultProviders(ctx.context);
   const service = new AgentSessionArchiveService(workspaceRoot, providers, logger);
