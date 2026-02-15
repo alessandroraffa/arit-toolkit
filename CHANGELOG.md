@@ -1,3 +1,19 @@
+## [1.5.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.5.1...v1.5.2) (2026-02-15)
+
+### Bug Fixes
+
+* add node types to tsconfig for global api resolution ([8a2e0e4](https://github.com/alessandroraffa/arit-toolkit/commit/8a2e0e4c22fa7fff3d929df6d5729b3be429f8fb))
+* **archiveService:** add debug logging to silent error paths ([1eb4d1f](https://github.com/alessandroraffa/arit-toolkit/commit/1eb4d1f1db149e08b0c091d9de2ffd6920cee6d0))
+* **archiveService:** remove no-op loop in move archive ([726f962](https://github.com/alessandroraffa/arit-toolkit/commit/726f962b3c36ec91b73ab2157aa4a66ce3f68431))
+* **deps:** override markdown-it to >=14.1.1 for security fix ([d0bb927](https://github.com/alessandroraffa/arit-toolkit/commit/d0bb927cae61941363ac9534151df5238a9d13d7))
+
+### Code Refactoring
+
+* **agentSessionsArchiving:** extract migration registration into helper ([995464c](https://github.com/alessandroraffa/arit-toolkit/commit/995464c1f277c808bed2faabe00eeacc49632b97))
+* **providers:** extract shared utilities and improve path matching ([61a1138](https://github.com/alessandroraffa/arit-toolkit/commit/61a11381cb54092c0e35edf5392a8441068f2c19))
+* **statusBarToggle:** redesign tooltip with action-oriented layout ([1d21e9f](https://github.com/alessandroraffa/arit-toolkit/commit/1d21e9f91f05a0ed015a2fd01424457b2d0907a4))
+* **statusBarToggle:** remove features and configuration from tooltip ([387145e](https://github.com/alessandroraffa/arit-toolkit/commit/387145e5283bf62890cbf7cd588e3228a2001060))
+
 ## [Unreleased](https://github.com/alessandroraffa/arit-toolkit/compare/v1.5.1...HEAD)
 
 ### Bug Fixes
