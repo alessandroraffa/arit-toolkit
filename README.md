@@ -60,7 +60,7 @@ Creates `202602051430-project-assets/`
 
 ## Prefix Creation Timestamp
 
-Add the creation timestamp to existing files or directories. The timestamp is derived from the item's actual creation date.
+Add the creation timestamp to existing files or directories. The timestamp is derived from the item's actual creation date. These commands are available only via the Explorer context menu (right-click), not from the Command Palette.
 
 Right-click a file → "ARIT: Prefix Creation Timestamp"
 `report.pdf` → `202602051430-report.pdf`
@@ -70,7 +70,7 @@ Right-click a folder → "ARIT: Prefix Creation Timestamp to Folder"
 
 ## Extension Toggle
 
-An **ARIT** status bar item (bottom-right) shows the current state and lets you enable or disable advanced features with a click. Hover for a tooltip with active configuration details.
+An **ARIT** status bar item (bottom-right) shows the current state and lets you enable or disable advanced features with a click. Hover for a tooltip with active services and their status, with quick toggle buttons.
 
 Command Palette → "ARIT: Toggle Extension (Enable/Disable)"
 
