@@ -153,4 +153,120 @@ describe('ClaudeCodeParser', () => {
 
     expect(result.turns).toHaveLength(1);
   });
+
+  it('should process tool_result events and attach output to tool calls', () => {
+    const content = jsonl(
+      {
+        type: 'tool_use',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Read',
+              id: 'tool-1',
+              input: { file_path: 'a.ts' },
+            },
+          ],
+        },
+      },
+      {
+        type: 'tool_result',
+        message: {
+          role: 'tool',
+          content: [
+            { type: 'tool_result', tool_use_id: 'tool-1', content: 'file contents here' },
+          ],
+        },
+      },
+      {
+        type: 'assistant',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'I read the file.' }],
+        },
+      }
+    );
+
+    const result = parser.parse(content, 'session-1');
+
+    expect(result.turns).toHaveLength(1);
+    expect(result.turns[0]!.toolCalls[0]!.output).toBe('file contents here');
+  });
+
+  it('should flush pending tool calls when session ends without assistant event', () => {
+    const content = jsonl({
+      type: 'tool_use',
+      message: {
+        role: 'assistant',
+        content: [
+          { type: 'tool_use', name: 'Bash', id: 'tool-2', input: { command: 'ls' } },
+        ],
+      },
+    });
+
+    const result = parser.parse(content, 'session-1');
+
+    expect(result.turns).toHaveLength(1);
+    expect(result.turns[0]!.role).toBe('assistant');
+    expect(result.turns[0]!.toolCalls).toHaveLength(1);
+    expect(result.turns[0]!.toolCalls[0]!.name).toBe('Bash');
+  });
+
+  it('should handle user message with string content', () => {
+    const content = jsonl({
+      type: 'user',
+      message: { role: 'user', content: 'plain string content' },
+    });
+
+    const result = parser.parse(content, 'session-1');
+
+    expect(result.turns).toHaveLength(1);
+    expect(result.turns[0]!.content).toBe('plain string content');
+  });
+
+  it('should concatenate multiple thinking blocks', () => {
+    const content = jsonl({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: [
+          { type: 'thinking', thinking: 'First thought.' },
+          { type: 'thinking', thinking: 'Second thought.' },
+          { type: 'text', text: 'Answer.' },
+        ],
+      },
+    });
+
+    const result = parser.parse(content, 'session-1');
+
+    expect(result.turns[0]!.thinking).toBe('First thought.\n\nSecond thought.');
+  });
+
+  it('should extract file refs for Write tool', () => {
+    const content = jsonl(
+      {
+        type: 'tool_use',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Write',
+              id: 'tool-1',
+              input: { file_path: 'new.ts' },
+            },
+          ],
+        },
+      },
+      {
+        type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'text', text: 'Done.' }] },
+      }
+    );
+
+    const result = parser.parse(content, 'session-1');
+
+    expect(result.turns[0]!.filesModified).toContain('new.ts');
+  });
 });

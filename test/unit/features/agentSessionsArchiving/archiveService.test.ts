@@ -219,6 +219,41 @@ describe('AgentSessionArchiveService', () => {
 
       service.dispose();
     });
+
+    it('should return early when no config is set', async () => {
+      const provider = createMockProvider();
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+
+      await service.runArchiveCycle();
+
+      expect(provider.findSessions).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should log error when copy fails during archive', async () => {
+      const session = createMockSession();
+      const provider = createMockProvider([session]);
+      workspace.fs.copy = vi.fn().mockRejectedValue(new Error('disk full'));
+
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+      await service.runArchiveCycle();
+
+      expect(logger.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to archive Test Session')
+      );
+
+      service.dispose();
+    });
   });
 
   describe('reconfigure', () => {
@@ -271,6 +306,41 @@ describe('AgentSessionArchiveService', () => {
       expect(logger.info).toHaveBeenCalledWith(
         expect.stringContaining('Moved archive from')
       );
+
+      service.dispose();
+    });
+
+    it('should skip move when old directory does not exist', async () => {
+      workspace.fs.readDirectory = vi.fn().mockRejectedValue(new Error('not found'));
+      const provider = createMockProvider();
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      const newConfig = { ...DEFAULT_CONFIG, archivePath: 'new/path' };
+      await service.reconfigure(DEFAULT_CONFIG, newConfig);
+
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.stringContaining('Old archive directory not found')
+      );
+
+      service.dispose();
+    });
+
+    it('should not start when transitioning from no config with disabled', async () => {
+      const provider = createMockProvider();
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+
+      await service.reconfigure(undefined, { ...DEFAULT_CONFIG, enabled: false });
+
+      expect(service.currentConfig).toBeUndefined();
 
       service.dispose();
     });
