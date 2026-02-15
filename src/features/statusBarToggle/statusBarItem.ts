@@ -60,32 +60,36 @@ function buildSingleRootTooltip(
   md.isTrusted = true;
   md.supportThemeIcons = true;
 
-  const isEnabled = stateManager.isEnabled;
-  const statusIcon = isEnabled ? '$(check)' : '$(circle-slash)';
-  const statusText = isEnabled ? 'Enabled' : 'Disabled';
-  const action = isEnabled ? 'disable' : 'enable';
+  md.appendMarkdown(`### $(tools) ARIT Toolkit\n\n`);
 
-  md.appendMarkdown(
-    `### $(tools) ARIT Toolkit\n\n` +
-      `**Status:** ${statusIcon} ${statusText}\n\n` +
-      `---\n\n`
-  );
-  md.appendMarkdown(buildBackgroundServicesSection(stateManager));
-  md.appendMarkdown(`*Click to ${action}*`);
+  if (!stateManager.isEnabled) {
+    md.appendMarkdown(buildDisabledSection());
+  } else {
+    md.appendMarkdown(buildServicesSection(stateManager));
+  }
+
+  md.appendMarkdown(`---\n\n`);
+  md.appendMarkdown(buildGlobalToggleButton(stateManager.isEnabled));
 
   return md;
 }
 
-function buildBackgroundServicesSection(stateManager: ExtensionStateManager): string {
+function buildGlobalToggleButton(isEnabled: boolean): string {
+  const icon = isEnabled ? '$(circle-slash)' : '$(play)';
+  const label = isEnabled ? 'Disable All' : 'Enable All';
+  return `[${icon} ${label}](command:${COMMAND_ID_TOGGLE})`;
+}
+
+function buildDisabledSection(): string {
+  return `$(warning) All services paused\n\n`;
+}
+
+function buildServicesSection(stateManager: ExtensionStateManager): string {
   const archivingConfig = stateManager.getConfigSection(ARCHIVING_CONFIG_KEY) as
     | AgentSessionsArchivingConfig
     | undefined;
   if (!archivingConfig) {
     return '';
-  }
-
-  if (!stateManager.isEnabled) {
-    return `**Background Services:**\n\n$(warning) All background services paused\n\n---\n\n`;
   }
 
   const icon = archivingConfig.enabled ? '$(check)' : '$(circle-slash)';
@@ -94,10 +98,8 @@ function buildBackgroundServicesSection(stateManager: ExtensionStateManager): st
   const toggleLabel = archivingConfig.enabled ? 'Disable' : 'Enable';
 
   return (
-    `**Background Services:**\n\n` +
-    `$(archive) Agent Sessions Archiving: ${icon} ${status} ` +
-    `[${toggleIcon} ${toggleLabel}](command:${ARCHIVING_TOGGLE_CMD})\n\n` +
-    `---\n\n`
+    `$(archive) Agent Sessions Archiving\u2002${icon} ${status}\n\n` +
+    `[${toggleIcon} ${toggleLabel}](command:${ARCHIVING_TOGGLE_CMD})\n\n`
   );
 }
 

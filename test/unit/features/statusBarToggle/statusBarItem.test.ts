@@ -100,7 +100,7 @@ describe('statusBarItem', () => {
       expect(item.backgroundColor).toBeUndefined();
     });
 
-    it('should have tooltip with enabled status', () => {
+    it('should have tooltip with disable all button when enabled', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
 
@@ -111,8 +111,9 @@ describe('statusBarItem', () => {
       updateStatusBarItem(item, mockStateManager as any);
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
-      expect(tooltip.value).toContain('Enabled');
-      expect(tooltip.value).toContain('Click to disable');
+      expect(tooltip.value).toContain('Disable All');
+      expect(tooltip.value).toContain('command:arit.toggleEnabled');
+      expect(tooltip.value).not.toContain('Status:');
     });
 
     it('should not include Features or Configuration sections', () => {
@@ -148,7 +149,7 @@ describe('statusBarItem', () => {
       expect(item.color).toBeInstanceOf(ThemeColor);
     });
 
-    it('should have tooltip with disabled status', () => {
+    it('should have tooltip with enable all button when disabled', () => {
       mockStateManager.isEnabled = false;
       const item = createStatusBarItem(
         mockStateManager as any,
@@ -157,8 +158,22 @@ describe('statusBarItem', () => {
       );
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
-      expect(tooltip.value).toContain('Disabled');
-      expect(tooltip.value).toContain('Click to enable');
+      expect(tooltip.value).toContain('Enable All');
+      expect(tooltip.value).toContain('command:arit.toggleEnabled');
+      expect(tooltip.value).not.toContain('Status:');
+    });
+
+    it('should show all services paused when disabled', () => {
+      mockStateManager.isEnabled = false;
+      mockStateManager.getConfigSection.mockReturnValue({ enabled: true });
+      const item = createStatusBarItem(
+        mockStateManager as any,
+
+        mockLogger as any
+      );
+
+      const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
+      expect(tooltip.value).toContain('All services paused');
     });
   });
 
@@ -190,7 +205,7 @@ describe('statusBarItem', () => {
   });
 
   describe('tooltip background services', () => {
-    it('should show archiving status when config exists', () => {
+    it('should show archiving active with disable button', () => {
       mockStateManager.getConfigSection.mockReturnValue({ enabled: true });
       const item = createStatusBarItem(
         mockStateManager as any,
@@ -199,8 +214,24 @@ describe('statusBarItem', () => {
       );
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
-      expect(tooltip.value).toContain('Background Services:');
       expect(tooltip.value).toContain('Agent Sessions Archiving');
+      expect(tooltip.value).toContain('Active');
+      expect(tooltip.value).toContain('Disable');
+      expect(tooltip.value).toContain('command:arit.toggleAgentSessionsArchiving');
+    });
+
+    it('should show archiving inactive with enable button', () => {
+      mockStateManager.getConfigSection.mockReturnValue({ enabled: false });
+      const item = createStatusBarItem(
+        mockStateManager as any,
+
+        mockLogger as any
+      );
+
+      const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
+      expect(tooltip.value).toContain('Agent Sessions Archiving');
+      expect(tooltip.value).toContain('Inactive');
+      expect(tooltip.value).toContain('Enable');
     });
 
     it('should not show Features or Configuration sections', () => {
