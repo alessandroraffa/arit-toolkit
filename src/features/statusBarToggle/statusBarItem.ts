@@ -4,6 +4,7 @@ import type { Logger } from '../../core/logger';
 import type { AgentSessionsArchivingConfig } from '../../types';
 import {
   COMMAND_ID_TOGGLE,
+  COMMAND_ID_REINITIALIZE,
   STATUS_BAR_PRIORITY,
   ICON_CODICON,
   STATUS_BAR_TEXT,
@@ -69,6 +70,7 @@ function buildSingleRootTooltip(
   }
 
   md.appendMarkdown(`---\n\n`);
+  md.appendMarkdown(`[$(gear) Run Setup](command:${COMMAND_ID_REINITIALIZE})\u2002`);
   md.appendMarkdown(buildGlobalToggleButton(stateManager.isEnabled));
 
   return md;

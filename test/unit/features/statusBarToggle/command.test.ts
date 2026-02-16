@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { window } from '../../mocks/vscode';
-import { toggleEnabledCommand } from '../../../../src/features/statusBarToggle/command';
+import {
+  toggleEnabledCommand,
+  reinitializeCommand,
+} from '../../../../src/features/statusBarToggle/command';
 
 describe('toggleEnabledCommand', () => {
   let mockStateManager: {
@@ -117,5 +120,84 @@ describe('toggleEnabledCommand', () => {
     expect(window.showInformationMessage).toHaveBeenCalledWith(
       'ARIT Toolkit: Toggle is not available in multi-directory workspaces.'
     );
+  });
+});
+
+describe('reinitializeCommand', () => {
+  let mockStateManager: {
+    isEnabled: boolean;
+    isSingleRoot: boolean;
+    reinitialize: ReturnType<typeof vi.fn>;
+    getConfigSection: ReturnType<typeof vi.fn>;
+  };
+  let mockLogger: {
+    debug: ReturnType<typeof vi.fn>;
+    info: ReturnType<typeof vi.fn>;
+  };
+  let mockStatusBarItem: {
+    text: string;
+    tooltip: unknown;
+    backgroundColor: unknown;
+    command: string | undefined;
+    name: string | undefined;
+    show: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockStateManager = {
+      isEnabled: true,
+      isSingleRoot: true,
+      reinitialize: vi.fn().mockResolvedValue(undefined),
+      getConfigSection: vi.fn().mockReturnValue(undefined),
+    };
+    mockLogger = {
+      debug: vi.fn(),
+      info: vi.fn(),
+    };
+    mockStatusBarItem = {
+      text: '',
+      tooltip: undefined,
+      backgroundColor: undefined,
+      command: undefined,
+      name: undefined,
+      show: vi.fn(),
+    };
+  });
+
+  it('should call stateManager.reinitialize', async () => {
+    const command = reinitializeCommand({
+      stateManager: mockStateManager as any,
+      logger: mockLogger as any,
+      statusBarItem: mockStatusBarItem as any,
+    });
+
+    await command();
+
+    expect(mockStateManager.reinitialize).toHaveBeenCalled();
+  });
+
+  it('should update status bar item after reinitialize', async () => {
+    const command = reinitializeCommand({
+      stateManager: mockStateManager as any,
+      logger: mockLogger as any,
+      statusBarItem: mockStatusBarItem as any,
+    });
+
+    await command();
+
+    expect(mockStatusBarItem.text).toBe('$(tools) ARIT');
+  });
+
+  it('should log reinitialize action', async () => {
+    const command = reinitializeCommand({
+      stateManager: mockStateManager as any,
+      logger: mockLogger as any,
+      statusBarItem: mockStatusBarItem as any,
+    });
+
+    await command();
+
+    expect(mockLogger.info).toHaveBeenCalledWith('ARIT Toolkit setup executed');
   });
 });

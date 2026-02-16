@@ -45,23 +45,19 @@ export class ExtensionStateManager {
   public get workspaceMode(): WorkspaceMode {
     return this._workspaceMode;
   }
-
   public get isSingleRoot(): boolean {
     return this._workspaceMode === 'single-root';
   }
-
   public get isEnabled(): boolean {
     return this._isEnabled;
   }
-
   public get isInitialized(): boolean {
     return this._isInitialized;
   }
 
   public get isToggleable(): boolean {
-    return this._workspaceMode === 'single-root';
+    return this.isSingleRoot;
   }
-
   public get workspaceRootUri(): vscode.Uri | undefined {
     return this._workspaceRoot;
   }
@@ -111,6 +107,19 @@ export class ExtensionStateManager {
       if (this._isEnabled) {
         await this.runMigration();
       }
+    } else {
+      await this.showOnboardingNotification();
+    }
+  }
+
+  public async reinitialize(): Promise<void> {
+    if (!this.isSingleRoot || !this._workspaceRoot || !this._extensionVersion) {
+      return;
+    }
+    await this.readStateFromFile();
+    if (this._isInitialized) {
+      this._onDidChangeState.fire(this._isEnabled);
+      await this.runMigration();
     } else {
       await this.showOnboardingNotification();
     }

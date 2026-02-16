@@ -70,9 +70,9 @@ Right-click a folder → "ARIT: Prefix Creation Timestamp to Folder"
 
 ## Extension Toggle
 
-An **ARIT** status bar item (bottom-right) shows the current state and lets you enable or disable advanced features with a click. Hover for a tooltip with active services and their status, with quick toggle buttons.
+An **ARIT** status bar item (bottom-right) shows the current state and lets you enable or disable advanced features with a click. Hover for a tooltip with active services and their status, with quick toggle buttons. A **Run Setup** button in the tooltip re-triggers initialization checks (version, config migration, section prompts) without reloading VS Code.
 
-Command Palette → "ARIT: Toggle Extension (Enable/Disable)"
+Command Palette → "ARIT: Toggle Extension (Enable/Disable)" or "ARIT: Run Setup"
 
 **Workspace initialization:** When you open a single-root workspace for the first time, ARIT Toolkit offers to create a `.arit-toolkit.jsonc` configuration file at the workspace root.
 

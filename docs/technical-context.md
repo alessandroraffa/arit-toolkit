@@ -238,6 +238,8 @@ activate(context)
   +-- registerAllFeatures(ctx)
   |     |
   |     +-- registerStatusBarToggleFeature(ctx)
+  |     |     +-- register arit.toggleEnabled command
+  |     |     +-- register arit.reinitialize command
   |     +-- registerTimestampedFileFeature(registry, config, logger)
   |     +-- registerTimestampedDirectoryFeature(registry, config, logger)
   |     +-- registerAgentSessionsArchivingFeature(ctx)
@@ -262,6 +264,15 @@ activate(context)
         |           +-- notify section listeners
         +-- if not initialised:
               +-- showOnboardingNotification()
+
+stateManager.reinitialize()  [async, triggered by "Run Setup" button]
+  |
+  +-- readStateFromFile()
+  +-- if initialised:
+  |     +-- fire onDidChangeState
+  |     +-- runMigration()  (unconditionally — user explicitly requested)
+  +-- if not initialised:
+        +-- showOnboardingNotification()
 ```
 
 ---
@@ -472,6 +483,7 @@ all others -> no release.
 | **Guarded command**     | A VS Code command that checks `stateManager.isEnabled` before executing and shows a warning if the extension is disabled. |
 | **mtime**               | File modification timestamp obtained via `vscode.workspace.fs.stat()`, used for change detection without reading file contents. |
 | **Onboarding**          | The first-time notification shown when a user opens a single-root workspace that does not yet have `.arit-toolkit.jsonc`. |
+| **Reinitialize**        | A manual re-trigger of the initialization flow (config read, state fire, migration) via the "Run Setup" tooltip button, without reloading VS Code. Runs migration unconditionally regardless of enabled state. |
 | **Session file**        | A file produced by an AI coding assistant that contains chat interaction history (not rules or configuration). |
 | **Session provider**    | An implementation of `SessionProvider` that discovers session files for a specific AI coding assistant. |
 | **Single-root workspace** | A VS Code workspace with exactly one root folder. Required for advanced features that persist state to disk. |

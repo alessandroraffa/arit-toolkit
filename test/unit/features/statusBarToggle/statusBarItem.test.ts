@@ -246,4 +246,24 @@ describe('statusBarItem', () => {
       expect(tooltip.value).not.toContain('Configuration:');
     });
   });
+
+  describe('tooltip run setup button', () => {
+    it('should show run setup button when enabled', () => {
+      mockStateManager.isEnabled = true;
+      const item = createStatusBarItem(mockStateManager as any, mockLogger as any);
+
+      const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
+      expect(tooltip.value).toContain('Run Setup');
+      expect(tooltip.value).toContain('command:arit.reinitialize');
+    });
+
+    it('should show run setup button when disabled', () => {
+      mockStateManager.isEnabled = false;
+      const item = createStatusBarItem(mockStateManager as any, mockLogger as any);
+
+      const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
+      expect(tooltip.value).toContain('Run Setup');
+      expect(tooltip.value).toContain('command:arit.reinitialize');
+    });
+  });
 });

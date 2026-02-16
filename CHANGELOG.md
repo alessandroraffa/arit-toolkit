@@ -23,6 +23,10 @@
 * add node types to tsconfig for global api resolution
 * **configMigration:** re-prompt for declined config sections on every reload
 
+### Features
+
+* **statusBarToggle:** add run setup button to status bar tooltip
+
 ### Code Refactoring
 
 * **statusBarToggle:** redesign tooltip with action-oriented layout

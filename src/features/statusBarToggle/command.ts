@@ -10,6 +10,15 @@ export interface ToggleCommandDeps {
   statusBarItem: vscode.StatusBarItem;
 }
 
+export function reinitializeCommand(deps: ToggleCommandDeps): () => Promise<void> {
+  const { stateManager, logger, statusBarItem } = deps;
+  return async (): Promise<void> => {
+    await stateManager.reinitialize();
+    updateStatusBarItem(statusBarItem, stateManager);
+    logger.info('ARIT Toolkit setup executed');
+  };
+}
+
 export function toggleEnabledCommand(deps: ToggleCommandDeps): () => Promise<void> {
   const { stateManager, logger, statusBarItem } = deps;
   return async (): Promise<void> => {

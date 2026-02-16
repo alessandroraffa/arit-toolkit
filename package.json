@@ -66,6 +66,11 @@
         "icon": "$(tools)"
       },
       {
+        "command": "arit.reinitialize",
+        "title": "ARIT: Run Setup",
+        "icon": "$(gear)"
+      },
+      {
         "command": "arit.toggleAgentSessionsArchiving",
         "title": "ARIT: Toggle Agent Sessions Archiving",
         "icon": "$(archive)"
