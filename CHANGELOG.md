@@ -1,3 +1,13 @@
+## [1.6.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.5.2...v1.6.0) (2026-02-16)
+
+### Features
+
+* **statusBarToggle:** add run setup button to status bar tooltip ([e2d402a](https://github.com/alessandroraffa/arit-toolkit/commit/e2d402a097db48531d414938367f229b98cf4fd1))
+
+### Bug Fixes
+
+* **configMigration:** re-prompt for declined config sections on reload ([f814882](https://github.com/alessandroraffa/arit-toolkit/commit/f8148828f14349e95b233828b2d40dc15d7e3cef))
+
 ## [1.5.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.5.1...v1.5.2) (2026-02-15)
 
 ### Bug Fixes
