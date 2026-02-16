@@ -7,10 +7,6 @@ export class ConfigSectionRegistry {
     this.sections.push(section);
   }
 
-  public getSectionsAfter(versionCode: number): ConfigSectionDefinition[] {
-    return this.sections.filter((s) => s.introducedAtVersionCode > versionCode);
-  }
-
   public getAllSections(): readonly ConfigSectionDefinition[] {
     return this.sections;
   }

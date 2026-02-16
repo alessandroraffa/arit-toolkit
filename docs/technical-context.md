@@ -87,7 +87,7 @@ are prompted to opt in to new configuration sections.
 | Convention                    | Detail                                                                   |
 | ----------------------------- | ------------------------------------------------------------------------ |
 | Feature isolation             | Each feature lives under `src/features/<name>/` and exposes a single `register*Feature()` entry point. Features depend on Core and Utils, never on each other. |
-| Config section self-registration | Features that add workspace-config sections register a `ConfigSectionDefinition` with `introducedAtVersionCode` so the migration system can offer them to upgrading users. |
+| Config section self-registration | Features that add workspace-config sections register a `ConfigSectionDefinition` so the migration system can detect missing sections and offer them to users on every activation. |
 | UTC timestamps                | All generated timestamps use UTC (`getUTCFullYear()`, etc.).              |
 | Disposable pattern            | Every VS Code resource (watchers, event emitters, commands) is tracked via `context.subscriptions` for deterministic cleanup. |
 
@@ -222,7 +222,7 @@ are prompted to opt in to new configuration sections.
 |---|----------|---------|--------------|
 | 1 | Single-root workspace requirement for stateful features | Multi-root workspaces have no single root to place `.arit-toolkit.jsonc`. | Multi-root mode degrades gracefully: basic commands available, toggle and archiving disabled. Status bar shows warning. |
 | 2 | Global toggle + per-feature toggles | Users need coarse-grained and fine-grained control over background services. | `enabled: false` at root level stops all background activity. Each feature's `enabled` is preserved and resumes independently when global toggle returns to `true`. |
-| 3 | Version-code-based config migration | Adding new config sections should not break existing users. | Each `ConfigSectionDefinition` declares `introducedAtVersionCode`. On activation, `ConfigMigrationService` detects missing sections and prompts users individually. Declined sections are not added. |
+| 3 | Presence-based config migration | Adding new config sections should not break existing users. | On activation, `ConfigMigrationService` detects sections whose keys are absent from the workspace config and prompts users individually. Declined sections are re-prompted on the next activation (only when the extension is globally enabled). |
 | 4 | mtime-based change detection for archiving | Reading and hashing large session files is expensive. | `vscode.workspace.fs.stat()` is fast and sufficient. Each source session maps to exactly one archived file (latest version), replaced on mtime change. |
 | 5 | Session Provider abstraction | AI agent tools store sessions in different locations and formats. | `SessionProvider` interface allows adding new agents without modifying the archive service. Each provider encapsulates discovery logic (workspace, global path, VS Code storage) and workspace filtering (only sessions belonging to the current workspace are archived). |
 
@@ -305,15 +305,15 @@ The migration system enables forward-compatible config evolution:
 
 ```text
 ConfigSectionRegistry          ConfigMigrationService
-  .register(definition)  --->    .findMissingSections(config, versionCode)
+  .register(definition)  --->    .findMissingSections(config)
                                  .promptForSections(missing)
                                  .mergeIntoConfig(config, accepted, version)
 ```
 
-- A section is "missing" if its key is absent from the config **and**
-  its `introducedAtVersionCode` is greater than the config's
-  `versionCode`.
-- Users are prompted per section; declined sections are not written.
+- A section is "missing" if its key is absent from the config.
+- Users are prompted per section; declined sections are not written but
+  will be re-prompted on the next extension activation (only when the
+  extension is globally enabled).
 - The merge is non-destructive: existing values are never overwritten.
 - `version` and `versionCode` are always updated.
 

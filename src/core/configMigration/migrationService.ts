@@ -11,16 +11,10 @@ export class ConfigMigrationService {
   ) {}
 
   public findMissingSections(
-    currentConfig: Record<string, unknown>,
-    configVersionCode: number | undefined
+    currentConfig: Record<string, unknown>
   ): ConfigSectionDefinition[] {
     const allSections = this.registry.getAllSections();
-    return allSections.filter(
-      (section) =>
-        !(section.key in currentConfig) &&
-        (configVersionCode === undefined ||
-          section.introducedAtVersionCode > configVersionCode)
-    );
+    return allSections.filter((section) => !(section.key in currentConfig));
   }
 
   public async promptForSections(
@@ -50,7 +44,7 @@ export class ConfigMigrationService {
     extensionVersion: string
   ): Promise<Record<string, unknown> | undefined> {
     const extensionVersionCode = computeVersionCode(extensionVersion);
-    const missingSections = this.findMissingSections(currentConfig, configVersionCode);
+    const missingSections = this.findMissingSections(currentConfig);
     if (missingSections.length === 0 && configVersionCode === extensionVersionCode) {
       this.logger.debug('Workspace config is up to date');
       return undefined;

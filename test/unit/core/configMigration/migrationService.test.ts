@@ -43,12 +43,12 @@ describe('ConfigMigrationService', () => {
   });
 
   describe('findMissingSections', () => {
-    it('should return sections missing from config and newer than versionCode', () => {
+    it('should return sections missing from config', () => {
       registry.register(sectionA);
       registry.register(sectionB);
       const config = { enabled: true, version: '1.2.0', versionCode: 1001002000 };
 
-      const missing = service.findMissingSections(config, 1001002000);
+      const missing = service.findMissingSections(config);
 
       expect(missing).toHaveLength(2);
       expect(missing).toContain(sectionA);
@@ -59,26 +59,27 @@ describe('ConfigMigrationService', () => {
       registry.register(sectionA);
       const config = { enabled: true, featureA: { enabled: false } };
 
-      const missing = service.findMissingSections(config, 1001002000);
+      const missing = service.findMissingSections(config);
 
       expect(missing).toHaveLength(0);
     });
 
-    it('should not return sections older than or equal to versionCode', () => {
+    it('should return sections whose key is absent regardless of versionCode', () => {
       registry.register(sectionA); // introduced at 1001003000
-      const config = { enabled: true };
+      const config = { enabled: true, versionCode: 1001003000 };
 
-      const missing = service.findMissingSections(config, 1001003000);
+      const missing = service.findMissingSections(config);
 
-      expect(missing).toHaveLength(0);
+      expect(missing).toHaveLength(1);
+      expect(missing[0]).toBe(sectionA);
     });
 
-    it('should return all sections when configVersionCode is undefined', () => {
+    it('should return all missing sections', () => {
       registry.register(sectionA);
       registry.register(sectionB);
       const config = { enabled: true };
 
-      const missing = service.findMissingSections(config, undefined);
+      const missing = service.findMissingSections(config);
 
       expect(missing).toHaveLength(2);
     });
@@ -86,7 +87,7 @@ describe('ConfigMigrationService', () => {
     it('should return empty array when no sections registered', () => {
       const config = { enabled: true };
 
-      const missing = service.findMissingSections(config, 1001002000);
+      const missing = service.findMissingSections(config);
 
       expect(missing).toHaveLength(0);
     });
@@ -279,6 +280,21 @@ describe('ConfigMigrationService', () => {
       expect(result).toBeDefined();
       expect(result!['featureA']).toEqual({ enabled: true, path: '/default' });
       expect(result!['featureB']).toEqual({ active: false });
+    });
+
+    it('should re-prompt for previously declined sections on next activation', async () => {
+      registry.register(sectionA);
+      window.showInformationMessage = vi.fn().mockResolvedValue('Add');
+      const config = { enabled: true, version: '1.3.0', versionCode: 1001003000 };
+
+      const result = await service.migrate(config, 1001003000, '1.3.0');
+
+      expect(result).toBeDefined();
+      expect(result!['featureA']).toEqual({ enabled: true, path: '/default' });
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'ARIT Toolkit: Add Feature A? Description of Feature A',
+        'Add'
+      );
     });
   });
 });

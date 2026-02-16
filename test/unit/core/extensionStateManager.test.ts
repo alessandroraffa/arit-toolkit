@@ -220,6 +220,22 @@ describe('ExtensionStateManager', () => {
       expect(workspace.fs.writeFile).toHaveBeenCalled();
     });
 
+    it('should skip migration when extension is disabled', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": false, "versionCode": 1001000000 }')
+        );
+
+      const manager = createManager();
+      await manager.initialize('1.0.0');
+
+      expect(manager.isInitialized).toBe(true);
+      expect(manager.isEnabled).toBe(false);
+      expect(mockMigrationService.migrate).not.toHaveBeenCalled();
+    });
+
     it('should set up file watcher in single-root', async () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi

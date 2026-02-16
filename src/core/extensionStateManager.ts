@@ -108,7 +108,9 @@ export class ExtensionStateManager {
     this.setupFileWatcher();
     if (this._isInitialized) {
       this._onDidChangeState.fire(this._isEnabled);
-      await this.runMigration();
+      if (this._isEnabled) {
+        await this.runMigration();
+      }
     } else {
       await this.showOnboardingNotification();
     }

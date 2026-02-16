@@ -21,6 +21,7 @@
 * **archiveService:** remove no-op loop in move archive
 * **archiveService:** add debug logging to silent error paths
 * add node types to tsconfig for global api resolution
+* **configMigration:** re-prompt for declined config sections on every reload
 
 ### Code Refactoring
 
