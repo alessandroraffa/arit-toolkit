@@ -108,7 +108,10 @@ export class ExtensionStateManager {
         await this.runMigration();
       }
     } else {
-      await this.showOnboardingNotification();
+      const accepted = await this.showOnboardingNotification();
+      if (accepted) {
+        await this.runMigration();
+      }
     }
   }
 

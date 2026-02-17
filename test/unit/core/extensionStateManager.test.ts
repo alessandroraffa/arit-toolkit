@@ -220,6 +220,18 @@ describe('ExtensionStateManager', () => {
       expect(workspace.fs.writeFile).toHaveBeenCalled();
     });
 
+    it('should run migration after onboarding acceptance', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('File not found'));
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+      window.showInformationMessage = vi.fn().mockResolvedValue('Initialize');
+
+      const manager = createManager();
+      await manager.initialize('1.0.0');
+
+      expect(mockMigrationService.migrate).toHaveBeenCalled();
+    });
+
     it('should skip migration when extension is disabled', async () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
       workspace.fs.readFile = vi

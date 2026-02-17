@@ -32,6 +32,7 @@
 * **archiveService:** add debug logging to silent error paths
 * add node types to tsconfig for global api resolution
 * **configMigration:** re-prompt for declined config sections on every reload
+* **extensionStateManager:** run config migration after onboarding acceptance
 
 ### Features
 

@@ -264,6 +264,7 @@ activate(context)
         |           +-- notify section listeners
         +-- if not initialised:
               +-- showOnboardingNotification()
+              +-- if accepted: runMigration()
 
 stateManager.reinitialize()  [async, triggered by "Run Setup" button]
   |
