@@ -401,6 +401,11 @@ timestamp prefix is created.
 where the timestamp is derived from the session file's last modification
 time (`mtime`), not the current time.
 
+**Date cutoff filtering:** The optional `ignoreSessionsBefore` field
+(format `YYYYMMDD`) sets a UTC date cutoff. Sessions whose `mtime` is
+before midnight UTC of that date are skipped during the archive cycle.
+When omitted, all sessions are archived.
+
 ### 8.7  Command Guarding
 
 Commands are registered in two modes:

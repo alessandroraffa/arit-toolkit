@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { generateTimestamp } from '../../../src/utils/timestamp';
+import { generateTimestamp, parseYYYYMMDD } from '../../../src/utils/timestamp';
 
 describe('generateTimestamp', () => {
   beforeEach(() => {
@@ -73,5 +73,19 @@ describe('generateTimestamp', () => {
       const customDate = new Date('2022-07-04T12:00:00.500Z');
       expect(generateTimestamp('ISO', customDate)).toBe('2022-07-04T12-00-00-500Z');
     });
+  });
+});
+
+describe('parseYYYYMMDD', () => {
+  it('should parse date string to epoch ms at midnight UTC', () => {
+    expect(parseYYYYMMDD('20250101')).toBe(Date.UTC(2025, 0, 1));
+  });
+
+  it('should parse end-of-year date correctly', () => {
+    expect(parseYYYYMMDD('20261231')).toBe(Date.UTC(2026, 11, 31));
+  });
+
+  it('should parse mid-year date correctly', () => {
+    expect(parseYYYYMMDD('20260615')).toBe(Date.UTC(2026, 5, 15));
   });
 });

@@ -36,6 +36,7 @@
 
 ### Features
 
+* **agentSessionsArchiving:** add ignoreSessionsBefore config option to skip old sessions
 * **statusBarToggle:** add run setup button to status bar tooltip
 
 ### Code Refactoring

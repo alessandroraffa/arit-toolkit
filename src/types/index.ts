@@ -14,4 +14,5 @@ export interface AgentSessionsArchivingConfig {
   enabled: boolean;
   archivePath: string;
   intervalMinutes: number;
+  ignoreSessionsBefore?: string;
 }

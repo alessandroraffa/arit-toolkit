@@ -19,6 +19,13 @@ export function generateTimestamp(format: TimestampFormat, date?: Date): string 
   }
 }
 
+export function parseYYYYMMDD(dateStr: string): number {
+  const year = Number(dateStr.slice(0, 4));
+  const month = Number(dateStr.slice(4, 6)) - 1;
+  const day = Number(dateStr.slice(6, 8));
+  return Date.UTC(year, month, day);
+}
+
 function formatDate(date: Date): string {
   const year = String(date.getUTCFullYear());
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');

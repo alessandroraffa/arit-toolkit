@@ -254,6 +254,57 @@ describe('AgentSessionArchiveService', () => {
 
       service.dispose();
     });
+
+    it('should skip sessions before ignoreSessionsBefore cutoff', async () => {
+      const session = createMockSession({ mtime: Date.UTC(2024, 11, 31) });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start({ ...DEFAULT_CONFIG, ignoreSessionsBefore: '20250101' });
+
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.copy).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should archive sessions on or after ignoreSessionsBefore cutoff', async () => {
+      const session = createMockSession({ mtime: Date.UTC(2025, 0, 1) });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start({ ...DEFAULT_CONFIG, ignoreSessionsBefore: '20250101' });
+
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.copy).toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should archive all sessions when ignoreSessionsBefore is undefined', async () => {
+      const session = createMockSession({ mtime: 1000 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.copy).toHaveBeenCalled();
+
+      service.dispose();
+    });
   });
 
   describe('reconfigure', () => {

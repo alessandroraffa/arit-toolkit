@@ -41,10 +41,13 @@ Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-
   "agentSessionsArchiving": {
     "enabled": true,
     "archivePath": "docs/archive/agent-sessions",
-    "intervalMinutes": 5
+    "intervalMinutes": 5,
+    "ignoreSessionsBefore": "20250101"
   }
 }
 ```
+
+Set `ignoreSessionsBefore` to a `YYYYMMDD` date to skip archiving sessions older than that date. Omit the field to archive everything.
 
 **Toggle:** Command Palette → "ARIT: Toggle Agent Sessions Archiving"
 

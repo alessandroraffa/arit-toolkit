@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { AgentSessionsArchivingConfig } from '../../types';
 import type { SessionProvider, SessionFile } from './types';
 import type { Logger } from '../../core/logger';
-import { generateTimestamp } from '../../utils';
+import { generateTimestamp, parseYYYYMMDD } from '../../utils';
 import { getParserForProvider, renderSessionToMarkdown } from './markdown';
 
 interface ArchivedEntry {
@@ -76,6 +76,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this.workspaceRootUri,
       this._currentConfig.archivePath
     );
+    const cutoffMs = this._currentConfig.ignoreSessionsBefore
+      ? parseYYYYMMDD(this._currentConfig.ignoreSessionsBefore)
+      : 0;
 
     for (const provider of this.providers) {
       let sessions: SessionFile[];
@@ -88,6 +91,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         continue;
       }
       for (const session of sessions) {
+        if (session.mtime < cutoffMs) {
+          continue;
+        }
         await this.archiveSession(session, archiveUri);
       }
     }
