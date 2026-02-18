@@ -20,7 +20,8 @@ vi.mock('node:util', () => ({
 }));
 
 // Must import after mocks are set up
-const { isGitIgnored, gitStageAndCommit } = await import('../../../src/utils/git');
+const { isGitIgnored, gitStageAndCommit, hasGitChanges } =
+  await import('../../../src/utils/git');
 
 describe('isGitIgnored', () => {
   beforeEach(() => {
@@ -145,5 +146,79 @@ describe('gitStageAndCommit', () => {
     await expect(
       gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update', '/workspace')
     ).rejects.toThrow('add failed');
+  });
+});
+
+describe('hasGitChanges', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return true when file has changes (non-empty output)', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        cb(null, ' M .arit-toolkit.jsonc\n', '');
+      }
+    );
+
+    const result = await hasGitChanges('.arit-toolkit.jsonc', '/workspace');
+    expect(result).toBe(true);
+  });
+
+  it('should return false when file has no changes (empty output)', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        cb(null, '', '');
+      }
+    );
+
+    const result = await hasGitChanges('.arit-toolkit.jsonc', '/workspace');
+    expect(result).toBe(false);
+  });
+
+  it('should return false when git is not installed (ENOENT)', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        const err = new Error('not found');
+        (err as any).code = 'ENOENT';
+        cb(err, '', '');
+      }
+    );
+
+    const result = await hasGitChanges('.arit-toolkit.jsonc', '/workspace');
+    expect(result).toBe(false);
+  });
+
+  it('should return false on other errors', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        const err = new Error('unknown error');
+        (err as any).code = 128;
+        cb(err, '', '');
+      }
+    );
+
+    const result = await hasGitChanges('.arit-toolkit.jsonc', '/workspace');
+    expect(result).toBe(false);
   });
 });

@@ -23,6 +23,23 @@ export async function isGitIgnored(filePath: string, cwd: string): Promise<boole
 }
 
 /**
+ * Returns true if the given file has uncommitted changes (staged, unstaged, or untracked).
+ * Returns false when there are no changes or when git is unavailable.
+ */
+export async function hasGitChanges(filePath: string, cwd: string): Promise<boolean> {
+  try {
+    const { stdout } = await execFileAsync(
+      'git',
+      ['status', '--porcelain', '--', filePath],
+      { cwd }
+    );
+    return stdout.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Stages a single file and commits it with the given message.
  * Throws if the git commands fail.
  */

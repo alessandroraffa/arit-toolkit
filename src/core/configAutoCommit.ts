@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { Logger } from './logger';
-import { isGitIgnored, gitStageAndCommit } from '../utils/git';
+import { isGitIgnored, hasGitChanges, gitStageAndCommit } from '../utils/git';
 
 const COMMIT_MESSAGE = 'chore: update arit-toolkit config';
 
@@ -22,6 +22,11 @@ export class ConfigAutoCommitService {
     }
 
     if (this._gitIgnored) {
+      return;
+    }
+
+    const changed = await hasGitChanges(this.configFileName, this.workspaceRootPath);
+    if (!changed) {
       return;
     }
 

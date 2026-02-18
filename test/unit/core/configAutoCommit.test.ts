@@ -3,10 +3,12 @@ import { window } from '../mocks/vscode';
 
 vi.mock('../../../src/utils/git', () => ({
   isGitIgnored: vi.fn(),
+  hasGitChanges: vi.fn(),
   gitStageAndCommit: vi.fn(),
 }));
 
-const { isGitIgnored, gitStageAndCommit } = await import('../../../src/utils/git');
+const { isGitIgnored, hasGitChanges, gitStageAndCommit } =
+  await import('../../../src/utils/git');
 const { ConfigAutoCommitService } = await import('../../../src/core/configAutoCommit');
 
 function createMockLogger() {
@@ -39,8 +41,24 @@ describe('ConfigAutoCommitService', () => {
     expect(window.showInformationMessage).not.toHaveBeenCalled();
   });
 
+  it('should not prompt when file has no git changes', async () => {
+    vi.mocked(isGitIgnored).mockResolvedValue(false);
+    vi.mocked(hasGitChanges).mockResolvedValue(false);
+
+    const service = new ConfigAutoCommitService(
+      '/workspace',
+      '.arit-toolkit.jsonc',
+      logger as any
+    );
+    await service.onConfigWritten();
+
+    expect(hasGitChanges).toHaveBeenCalledWith('.arit-toolkit.jsonc', '/workspace');
+    expect(window.showInformationMessage).not.toHaveBeenCalled();
+  });
+
   it('should prompt and commit when user clicks Commit', async () => {
     vi.mocked(isGitIgnored).mockResolvedValue(false);
+    vi.mocked(hasGitChanges).mockResolvedValue(true);
     vi.mocked(window.showInformationMessage).mockResolvedValue('Commit' as any);
     vi.mocked(gitStageAndCommit).mockResolvedValue(undefined);
 
@@ -66,6 +84,7 @@ describe('ConfigAutoCommitService', () => {
 
   it('should not commit when user clicks Skip', async () => {
     vi.mocked(isGitIgnored).mockResolvedValue(false);
+    vi.mocked(hasGitChanges).mockResolvedValue(true);
     vi.mocked(window.showInformationMessage).mockResolvedValue('Skip' as any);
 
     const service = new ConfigAutoCommitService(
@@ -80,6 +99,7 @@ describe('ConfigAutoCommitService', () => {
 
   it('should not commit when user dismisses notification', async () => {
     vi.mocked(isGitIgnored).mockResolvedValue(false);
+    vi.mocked(hasGitChanges).mockResolvedValue(true);
     vi.mocked(window.showInformationMessage).mockResolvedValue(undefined as any);
 
     const service = new ConfigAutoCommitService(
@@ -94,6 +114,7 @@ describe('ConfigAutoCommitService', () => {
 
   it('should log warning when commit fails', async () => {
     vi.mocked(isGitIgnored).mockResolvedValue(false);
+    vi.mocked(hasGitChanges).mockResolvedValue(true);
     vi.mocked(window.showInformationMessage).mockResolvedValue('Commit' as any);
     vi.mocked(gitStageAndCommit).mockRejectedValue(new Error('commit failed'));
 
