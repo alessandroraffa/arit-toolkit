@@ -16,22 +16,23 @@ AI coding assistants store their session files in different locations and format
 
 **Supported assistants:**
 
-| Assistant | Session location | Workspace matching |
-|-----------|------------------|-------------------|
-| Aider | `.aider.chat.history.md` in workspace root | File in workspace root |
-| Claude Code | `~/.claude/projects/<workspace-path>/` | Project path derived from workspace |
-| Cline | VS Code global storage | Session content references workspace path |
-| Roo Code | VS Code global storage | Session content references workspace path |
-| GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`) | Per-workspace storage (`.json` and `.jsonl`) |
-| Continue | `~/.continue/sessions/` | Session content references workspace path |
+| Assistant           | Session location                                                      | Workspace matching                           |
+| ------------------- | --------------------------------------------------------------------- | -------------------------------------------- |
+| Aider               | `.aider.chat.history.md` and `.aider.input.history` in workspace root | Files in workspace root                      |
+| Claude Code         | `~/.claude/projects/<workspace-path>/`                                | Project path derived from workspace          |
+| Cline               | VS Code global storage                                                | Session content references workspace path    |
+| Roo Code            | VS Code global storage                                                | Session content references workspace path    |
+| GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`)                           | Per-workspace storage (`.json` and `.jsonl`) |
+| Continue            | `~/.continue/sessions/`                                               | Session content references workspace path    |
 
 Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-toolkit/issues) to request support.
 
 **How it works:**
 
 - Sessions are copied (not moved) to the archive directory
+- Sessions from Claude Code, Cline, Roo Code, GitHub Copilot Chat, and Continue are automatically converted to structured markdown during archiving; Aider sessions are archived as-is
 - Each session maps to exactly one archived file — when the source changes, the old archive is replaced
-- Archive filenames use the session's creation timestamp: `{YYYYMMDDHHmm}-{name}{ext}`
+- Archive filenames use the session's creation timestamp: `{YYYYMMDDHHmm}-{name}.md`
 - Only sessions belonging to the current workspace are archived
 
 **Configuration** (in `.arit-toolkit.jsonc`):
@@ -42,8 +43,8 @@ Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-
     "enabled": true,
     "archivePath": "docs/archive/agent-sessions",
     "intervalMinutes": 5,
-    "ignoreSessionsBefore": "20250101"
-  }
+    "ignoreSessionsBefore": "20250101",
+  },
 }
 ```
 
@@ -77,7 +78,9 @@ An **ARIT** status bar item (bottom-right) shows the current state and lets you 
 
 Command Palette → "ARIT: Toggle Extension (Enable/Disable)" or "ARIT: Run Setup"
 
-**Workspace initialization:** When you open a single-root workspace for the first time, ARIT Toolkit offers to create a `.arit-toolkit.jsonc` configuration file at the workspace root.
+**Workspace initialization:** When you open a single-root workspace for the first time, ARIT Toolkit offers to create a `.arit-toolkit.jsonc` configuration file at the workspace root. When the extension updates and introduces new configuration sections, you will be prompted to add them.
+
+**Config auto-commit:** In a Git repository, when the extension writes changes to `.arit-toolkit.jsonc` and the file is not gitignored, you are prompted to commit the change automatically. If the file has no actual Git changes, the prompt is skipped.
 
 **Workspace modes:**
 
@@ -96,31 +99,30 @@ Command Palette → "ARIT: Toggle Extension (Enable/Disable)" or "ARIT: Run Setu
 
 - Support for additional assistants (Cursor, Windsurf)
 - Full-text search across archived sessions
-- Export sessions to readable markdown format
 - Dashboard summarizing session activity per project
 
 ## Configuration
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `arit.timestampFormat` | `YYYYMMDDHHmm` | Format for the timestamp prefix |
-| `arit.timestampSeparator` | `-` | Separator between timestamp and filename |
-| `arit.logLevel` | `info` | Logging level for debug output |
+| Setting                   | Default        | Description                              |
+| ------------------------- | -------------- | ---------------------------------------- |
+| `arit.timestampFormat`    | `YYYYMMDDHHmm` | Format for the timestamp prefix          |
+| `arit.timestampSeparator` | `-`            | Separator between timestamp and filename |
+| `arit.logLevel`           | `info`         | Logging level for debug output           |
 
 **Timestamp formats:**
 
-| Format | Example | Description |
-|--------|---------|-------------|
-| `YYYYMMDDHHmm` | `202602051430` | Year, month, day, hour, minute |
-| `YYYYMMDD` | `20260205` | Year, month, day only |
-| `YYYYMMDDHHmmss` | `20260205143022` | Full timestamp with seconds |
-| `ISO` | `2026-02-05T14-30-22-123Z` | ISO 8601 (with milliseconds) |
+| Format           | Example                    | Description                    |
+| ---------------- | -------------------------- | ------------------------------ |
+| `YYYYMMDDHHmm`   | `202602051430`             | Year, month, day, hour, minute |
+| `YYYYMMDD`       | `20260205`                 | Year, month, day only          |
+| `YYYYMMDDHHmmss` | `20260205143022`           | Full timestamp with seconds    |
+| `ISO`            | `2026-02-05T14-30-22-123Z` | ISO 8601 (with milliseconds)   |
 
 ## Keyboard Shortcuts
 
-| Command | Windows/Linux | macOS | Context |
-|---------|---------------|-------|---------|
-| New File with Timestamp | `Ctrl+Alt+N` | `Cmd+Alt+N` | Explorer focused |
+| Command                   | Windows/Linux      | macOS             | Context          |
+| ------------------------- | ------------------ | ----------------- | ---------------- |
+| New File with Timestamp   | `Ctrl+Alt+N`       | `Cmd+Alt+N`       | Explorer focused |
 | New Folder with Timestamp | `Ctrl+Alt+Shift+N` | `Cmd+Alt+Shift+N` | Explorer focused |
 
 ## Installation

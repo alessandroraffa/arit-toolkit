@@ -8,94 +8,94 @@
 > specifications; instead it serves as the entry point for navigating the
 > full body of documentation.
 
-| Field              | Value                                                      |
-| ------------------ | ---------------------------------------------------------- |
-| System             | ARIT Toolkit -- VS Code Extension                          |
-| Repository         | <https://github.com/alessandroraffa/arit-toolkit>          |
-| Identifier         | `alessandroraffa.arit-toolkit`                             |
-| Current version    | 1.6.0 (versionCode `1001006000`)                           |
-| Licence            | MIT                                                        |
-| Architecture style | Feature-based modular architecture, dependency injection   |
-| Runtime deps       | None (VS Code API only)                                    |
-| Last updated       | 2026-02-18                                                 |
+| Field              | Value                                                    |
+| ------------------ | -------------------------------------------------------- |
+| System             | ARIT Toolkit -- VS Code Extension                        |
+| Repository         | <https://github.com/alessandroraffa/arit-toolkit>        |
+| Identifier         | `alessandroraffa.arit-toolkit`                           |
+| Current version    | 1.6.0 (versionCode `1001006000`)                         |
+| Licence            | MIT                                                      |
+| Architecture style | Feature-based modular architecture, dependency injection |
+| Runtime deps       | None (VS Code API only)                                  |
+| Last updated       | 2026-02-18                                               |
 
 ---
 
-## 1  Introduction and Goals
+## 1 Introduction and Goals
 
-### 1.1  Requirements Overview
+### 1.1 Requirements Overview
 
 ARIT Toolkit is a VS Code extension that bundles productivity utilities
-for developers working inside a single-root workspace.  Its capabilities
+for developers working inside a single-root workspace. Its capabilities
 fall into two categories:
 
-| Category             | Capability                                            |
-| -------------------- | ----------------------------------------------------- |
-| File utilities       | Create or rename files/directories with UTC timestamp prefixes in configurable formats. |
-| Background services  | Periodically archive chat session files produced by AI coding assistants (Aider, Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue). |
+| Category            | Capability                                                                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| File utilities      | Create or rename files/directories with UTC timestamp prefixes in configurable formats.                                                        |
+| Background services | Periodically archive chat session files produced by AI coding assistants (Aider, Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue). |
 
 The extension is workspace-aware: a JSONC configuration file
 (`.arit-toolkit.jsonc`) at the workspace root stores the enabled state,
-the extension version, and per-feature settings.  A version-aware
+the extension version, and per-feature settings. A version-aware
 config-migration system ensures that users upgrading from older versions
 are prompted to opt in to new configuration sections.
 
-### 1.2  Quality Goals
+### 1.2 Quality Goals
 
-| Priority | Quality attribute      | Concrete goal                                                                 |
-| -------- | ---------------------- | ----------------------------------------------------------------------------- |
-| 1        | Maintainability        | Strict ESLint complexity limits (max 250 lines/file, 50 lines/fn, cyclomatic complexity <= 10, max nesting 3, max params 3). Feature-per-folder isolation. |
-| 2        | Reliability            | >= 80 % unit-test coverage (lines, functions, branches, statements). Strict TypeScript (`noImplicitAny`, `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`). |
-| 3        | Extensibility          | New features register through `FeatureRegistrationContext` without touching core modules. Config sections self-register via `ConfigSectionRegistry`. |
-| 4        | Security               | Zero runtime dependencies. No credential handling. No network calls. |
-| 5        | Developer experience   | One-click enable/disable via status bar. Rich markdown tooltip. Conventional commits + automated semantic-release pipeline. |
+| Priority | Quality attribute    | Concrete goal                                                                                                                                                       |
+| -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | Maintainability      | Strict ESLint complexity limits (max 250 lines/file, 50 lines/fn, cyclomatic complexity <= 10, max nesting 3, max params 3). Feature-per-folder isolation.          |
+| 2        | Reliability          | >= 80 % unit-test coverage (lines, functions, branches, statements). Strict TypeScript (`noImplicitAny`, `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`). |
+| 3        | Extensibility        | New features register through `FeatureRegistrationContext` without touching core modules. Config sections self-register via `ConfigSectionRegistry`.                |
+| 4        | Security             | Zero runtime dependencies. No credential handling. No network calls.                                                                                                |
+| 5        | Developer experience | One-click enable/disable via status bar. Rich markdown tooltip. Conventional commits + automated semantic-release pipeline.                                         |
 
-### 1.3  Stakeholders
+### 1.3 Stakeholders
 
-| Stakeholder          | Concern                                                    |
-| -------------------- | ---------------------------------------------------------- |
-| Extension users      | Stable, non-intrusive behaviour; clear onboarding; easy enable/disable; predictable timestamp formats. |
-| Extension maintainer | Small surface area; automated releases; enforceable code-quality gates; low coupling between features. |
+| Stakeholder          | Concern                                                                                                           |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Extension users      | Stable, non-intrusive behaviour; clear onboarding; easy enable/disable; predictable timestamp formats.            |
+| Extension maintainer | Small surface area; automated releases; enforceable code-quality gates; low coupling between features.            |
 | Contributors         | Fast feedback loop (`vitest`); clear module boundaries; well-documented patterns; conventional commit discipline. |
-| VS Code Marketplace  | Activation performance; no runtime deps; well-scoped permissions. |
+| VS Code Marketplace  | Activation performance; no runtime deps; well-scoped permissions.                                                 |
 
 ---
 
-## 2  Constraints
+## 2 Constraints
 
-### 2.1  Technical Constraints
+### 2.1 Technical Constraints
 
-| Constraint                 | Detail                                                                          |
-| -------------------------- | ------------------------------------------------------------------------------- |
+| Constraint                 | Detail                                                                                                                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | VS Code API surface        | The extension runs inside the VS Code extension host. All file I/O goes through `vscode.workspace.fs`; UI through `vscode.window`; commands through `vscode.commands`. |
-| Single-root workspace only | Advanced features (state toggle, config migration, agent-session archiving) require a single workspace root. Multi-root and no-workspace modes degrade gracefully. |
-| Node.js >= 22.22.0         | Required by `package.json` `engines` field.                                      |
-| VS Code >= 1.109.0         | Minimum host version; determines available API surface.                          |
-| CommonJS bundle            | VS Code extension host requires CJS. The project is authored in ESM-style TypeScript and bundled by esbuild into a single `dist/extension.js`. |
-| Zero runtime dependencies  | All functionality is implemented against Node.js built-ins and the VS Code API. |
+| Single-root workspace only | Advanced features (state toggle, config migration, agent-session archiving) require a single workspace root. Multi-root and no-workspace modes degrade gracefully.     |
+| Node.js >= 22.22.0         | Required by `package.json` `engines` field.                                                                                                                            |
+| VS Code >= 1.109.0         | Minimum host version; determines available API surface.                                                                                                                |
+| CommonJS bundle            | VS Code extension host requires CJS. The project is authored in ESM-style TypeScript and bundled by esbuild into a single `dist/extension.js`.                         |
+| Zero runtime dependencies  | All functionality is implemented against Node.js built-ins and the VS Code API.                                                                                        |
 
-### 2.2  Organisational Constraints
+### 2.2 Organisational Constraints
 
-| Constraint                     | Detail                                                                  |
-| ------------------------------ | ----------------------------------------------------------------------- |
-| Conventional Commits           | Enforced by commitlint + Husky pre-commit hook. Required for semantic-release. |
-| pnpm as package manager        | Enforced by a `preinstall` script guard.                                 |
-| Automated release pipeline     | semantic-release on `main` branch: version bump, changelog generation, `.vsix` packaging, Marketplace publish, GitHub release. |
+| Constraint                 | Detail                                                                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Conventional Commits       | Enforced by commitlint + Husky pre-commit hook. Required for semantic-release.                                                 |
+| pnpm as package manager    | Enforced by a `preinstall` script guard.                                                                                       |
+| Automated release pipeline | semantic-release on `main` branch: version bump, changelog generation, `.vsix` packaging, Marketplace publish, GitHub release. |
 
-### 2.3  Conventions
+### 2.3 Conventions
 
-| Convention                    | Detail                                                                   |
-| ----------------------------- | ------------------------------------------------------------------------ |
-| Feature isolation             | Each feature lives under `src/features/<name>/` and exposes a single `register*Feature()` entry point. Features depend on Core and Utils, never on each other. |
+| Convention                       | Detail                                                                                                                                                                            |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Feature isolation                | Each feature lives under `src/features/<name>/` and exposes a single `register*Feature()` entry point. Features depend on Core and Utils, never on each other.                    |
 | Config section self-registration | Features that add workspace-config sections register a `ConfigSectionDefinition` so the migration system can detect missing sections and offer them to users on every activation. |
-| UTC timestamps                | All generated timestamps use UTC (`getUTCFullYear()`, etc.).              |
-| Disposable pattern            | Every VS Code resource (watchers, event emitters, commands) is tracked via `context.subscriptions` for deterministic cleanup. |
+| UTC timestamps                   | All generated timestamps use UTC (`getUTCFullYear()`, etc.).                                                                                                                      |
+| Disposable pattern               | Every VS Code resource (watchers, event emitters, commands) is tracked via `context.subscriptions` for deterministic cleanup.                                                     |
 
 ---
 
-## 3  Context and Scope
+## 3 Context and Scope
 
-### 3.1  Business Context
+### 3.1 Business Context
 
 ```txt<>
                            +-----------------------+
@@ -119,15 +119,15 @@ are prompted to opt in to new configuration sections.
         Feature      Feature      Feature     Feature        System
 ```
 
-| External actor           | Interaction                                                         |
-| ------------------------ | ------------------------------------------------------------------- |
-| VS Code user             | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.arit-toolkit.jsonc` manually. |
-| `.arit-toolkit.jsonc`    | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits. |
-| VS Code settings         | `arit.timestampFormat`, `arit.timestampSeparator`, `arit.logLevel` -- read via `ConfigManager`. |
-| AI agent session files   | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/`, VS Code globalStorage/workspaceStorage directories. Only sessions belonging to the current workspace are copied to the archive path. |
-| VS Code Marketplace      | Publish target for `.vsix` packages via semantic-release pipeline.   |
+| External actor         | Interaction                                                                                                                                                                                              |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VS Code user           | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.arit-toolkit.jsonc` manually.                                                                     |
+| `.arit-toolkit.jsonc`  | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits.                                                                                    |
+| VS Code settings       | `arit.timestampFormat`, `arit.timestampSeparator`, `arit.logLevel` -- read via `ConfigManager`.                                                                                                          |
+| AI agent session files | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/`, VS Code globalStorage/workspaceStorage directories. Only sessions belonging to the current workspace are copied to the archive path. |
+| VS Code Marketplace    | Publish target for `.vsix` packages via semantic-release pipeline.                                                                                                                                       |
 
-### 3.2  Technical Context
+### 3.2 Technical Context
 
 ```text
 +------------------------------------------------------------------+
@@ -177,31 +177,31 @@ are prompted to opt in to new configuration sections.
 
 **External I/O channels:**
 
-| Channel                        | Protocol / API                          | Direction |
-| ------------------------------ | --------------------------------------- | --------- |
-| Workspace filesystem           | `vscode.workspace.fs` (read/write/stat/copy/delete/readDirectory) | R/W |
-| VS Code settings               | `vscode.workspace.getConfiguration()`   | Read      |
-| VS Code commands               | `vscode.commands.registerCommand()`     | Register  |
-| VS Code UI                     | `vscode.window.*` (status bar, input box, messages) | Write |
-| Global filesystem              | `vscode.workspace.fs` via `vscode.Uri.file()` for `~/.claude/`, `~/.continue/`, globalStorage, workspaceStorage | Read |
-| VS Code Output Channel         | `vscode.window.createOutputChannel()`   | Write     |
+| Channel                | Protocol / API                                                                                                  | Direction |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- | --------- |
+| Workspace filesystem   | `vscode.workspace.fs` (read/write/stat/copy/delete/readDirectory)                                               | R/W       |
+| VS Code settings       | `vscode.workspace.getConfiguration()`                                                                           | Read      |
+| VS Code commands       | `vscode.commands.registerCommand()`                                                                             | Register  |
+| VS Code UI             | `vscode.window.*` (status bar, input box, messages)                                                             | Write     |
+| Global filesystem      | `vscode.workspace.fs` via `vscode.Uri.file()` for `~/.claude/`, `~/.continue/`, globalStorage, workspaceStorage | Read      |
+| VS Code Output Channel | `vscode.window.createOutputChannel()`                                                                           | Write     |
 
 ---
 
-## 4  Solution Strategy
+## 4 Solution Strategy
 
-### 4.1  Technology Decisions
+### 4.1 Technology Decisions
 
-| Decision                       | Rationale                                                          |
-| ------------------------------ | ------------------------------------------------------------------ |
-| TypeScript (strict mode)       | Catches errors at compile time; enables IDE tooling; enforced by ESLint rules. |
-| esbuild for bundling           | Sub-second builds; single-file output (`dist/extension.js`); tree-shaking. |
-| Vitest for unit testing        | ESM-native; fast; compatible with VS Code mock pattern; V8 coverage provider. |
-| JSONC for workspace config     | Human-readable; allows inline comments; familiar to VS Code users. |
-| semantic-release               | Fully automated: version bump, changelog, `.vsix` package, Marketplace publish, GitHub release. |
-| Zero runtime dependencies      | Minimises attack surface, install size, and compatibility risk.     |
+| Decision                   | Rationale                                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------------------------- |
+| TypeScript (strict mode)   | Catches errors at compile time; enables IDE tooling; enforced by ESLint rules.                  |
+| esbuild for bundling       | Sub-second builds; single-file output (`dist/extension.js`); tree-shaking.                      |
+| Vitest for unit testing    | ESM-native; fast; compatible with VS Code mock pattern; V8 coverage provider.                   |
+| JSONC for workspace config | Human-readable; allows inline comments; familiar to VS Code users.                              |
+| semantic-release           | Fully automated: version bump, changelog, `.vsix` package, Marketplace publish, GitHub release. |
+| Zero runtime dependencies  | Minimises attack surface, install size, and compatibility risk.                                 |
 
-### 4.2  Architectural Approach
+### 4.2 Architectural Approach
 
 **Feature-based modular architecture** with explicit dependency boundaries:
 
@@ -216,17 +216,17 @@ are prompted to opt in to new configuration sections.
    together: creates core instances, builds the context, calls
    `registerAllFeatures()`, then triggers async initialisation.
 
-### 4.3  Key Design Decisions
+### 4.3 Key Design Decisions
 
-| # | Decision | Context | Consequences |
-|---|----------|---------|--------------|
-| 1 | Single-root workspace requirement for stateful features | Multi-root workspaces have no single root to place `.arit-toolkit.jsonc`. | Multi-root mode degrades gracefully: basic commands available, toggle and archiving disabled. Status bar shows warning. |
-| 2 | Global toggle + per-feature toggles | Users need coarse-grained and fine-grained control over background services. | `enabled: false` at root level stops all background activity. Each feature's `enabled` is preserved and resumes independently when global toggle returns to `true`. |
-| 3 | Presence-based config migration | Adding new config sections should not break existing users. | On activation, `ConfigMigrationService` detects sections whose keys are absent from the workspace config and prompts users individually. Declined sections are re-prompted on the next activation (only when the extension is globally enabled). |
-| 4 | mtime-based change detection for archiving | Reading and hashing large session files is expensive. | `vscode.workspace.fs.stat()` is fast and sufficient. Each source session maps to exactly one archived file (latest version), replaced on mtime change. |
-| 5 | Session Provider abstraction | AI agent tools store sessions in different locations and formats. | `SessionProvider` interface allows adding new agents without modifying the archive service. Each provider encapsulates discovery logic (workspace, global path, VS Code storage) and workspace filtering (only sessions belonging to the current workspace are archived). |
+| #   | Decision                                                | Context                                                                      | Consequences                                                                                                                                                                                                                                                              |
+| --- | ------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Single-root workspace requirement for stateful features | Multi-root workspaces have no single root to place `.arit-toolkit.jsonc`.    | Multi-root mode degrades gracefully: basic commands available, toggle and archiving disabled. Status bar shows warning.                                                                                                                                                   |
+| 2   | Global toggle + per-feature toggles                     | Users need coarse-grained and fine-grained control over background services. | `enabled: false` at root level stops all background activity. Each feature's `enabled` is preserved and resumes independently when global toggle returns to `true`.                                                                                                       |
+| 3   | Presence-based config migration                         | Adding new config sections should not break existing users.                  | On activation, `ConfigMigrationService` detects sections whose keys are absent from the workspace config and prompts users individually. Declined sections are re-prompted on the next activation (only when the extension is globally enabled).                          |
+| 4   | mtime-based change detection for archiving              | Reading and hashing large session files is expensive.                        | `vscode.workspace.fs.stat()` is fast and sufficient. Each source session maps to exactly one archived file (latest version), replaced on mtime change.                                                                                                                    |
+| 5   | Session Provider abstraction                            | AI agent tools store sessions in different locations and formats.            | `SessionProvider` interface allows adding new agents without modifying the archive service. Each provider encapsulates discovery logic (workspace, global path, VS Code storage) and workspace filtering (only sessions belonging to the current workspace are archived). |
 
-### 4.4  Activation and Initialisation Sequence
+### 4.4 Activation and Initialisation Sequence
 
 ```text
 activate(context)
@@ -278,9 +278,9 @@ stateManager.reinitialize()  [async, triggered by "Run Setup" button]
 
 ---
 
-## 8  Cross-cutting Concepts
+## 8 Cross-cutting Concepts
 
-### 8.1  Workspace State Persistence
+### 8.1 Workspace State Persistence
 
 The `.arit-toolkit.jsonc` file is the single source of truth for
 workspace-level state:
@@ -296,8 +296,8 @@ workspace-level state:
     "enabled": true,
     "archivePath": "docs/archive/agent-sessions",
     "intervalMinutes": 5,
-    "ignoreSessionsBefore": "20250101"
-  }
+    "ignoreSessionsBefore": "20250101",
+  },
 }
 ```
 
@@ -312,7 +312,7 @@ state into the existing `_fullConfig`, preserving all custom sections.
 **External edit detection:** A `FileSystemWatcher` on the config file
 re-reads on change/create and fires `onDidChangeState`.
 
-### 8.2  Config Migration
+### 8.2 Config Migration
 
 The migration system enables forward-compatible config evolution:
 
@@ -330,7 +330,7 @@ ConfigSectionRegistry          ConfigMigrationService
 - The merge is non-destructive: existing values are never overwritten.
 - `version` and `versionCode` are always updated.
 
-### 8.3  Version Code Encoding
+### 8.3 Version Code Encoding
 
 Semantic versions are encoded as numeric codes for fast comparison:
 
@@ -342,35 +342,35 @@ Examples: `1.0.0` -> `1001000000`, `1.3.0` -> `1001003000`.
 
 Each segment (major, minor, patch) supports values 0--999.
 
-### 8.4  Event-driven Feature Coordination
+### 8.4 Event-driven Feature Coordination
 
 Features coordinate through events, not direct calls:
 
-| Event                          | Emitter                | Consumers                        |
-| ------------------------------ | ---------------------- | -------------------------------- |
-| `onDidChangeState(boolean)`    | `ExtensionStateManager`| Status bar, Agent archiving      |
-| `onConfigSectionChanged(key)`  | `ExtensionStateManager`| Agent archiving (reconfigure)    |
-| `onConfigChange()`             | `ConfigManager`        | Logger (update log level)        |
+| Event                         | Emitter                 | Consumers                     |
+| ----------------------------- | ----------------------- | ----------------------------- |
+| `onDidChangeState(boolean)`   | `ExtensionStateManager` | Status bar, Agent archiving   |
+| `onConfigSectionChanged(key)` | `ExtensionStateManager` | Agent archiving (reconfigure) |
+| `onConfigChange()`            | `ConfigManager`         | Logger (update log level)     |
 
 This ensures features remain decoupled: they react to state changes
 rather than calling each other.
 
-### 8.5  Global Toggle Semantics
+### 8.5 Global Toggle Semantics
 
 The two-level toggle system works as follows:
 
 | Global `enabled` | Feature `enabled` | Background service state |
-| ----------------- | ------------------ | ------------------------ |
-| `true`            | `true`             | Running                  |
-| `true`            | `false`            | Stopped                  |
-| `false`           | `true`             | Stopped (paused)         |
-| `false`           | `false`            | Stopped                  |
+| ---------------- | ----------------- | ------------------------ |
+| `true`           | `true`            | Running                  |
+| `true`           | `false`           | Stopped                  |
+| `false`          | `true`            | Stopped (paused)         |
+| `false`          | `false`           | Stopped                  |
 
 When the global toggle transitions `false` -> `true`, only features
 with their own `enabled: true` resume. Individual feature `enabled`
 flags are never modified by the global toggle.
 
-### 8.6  Agent Session Archiving Model
+### 8.6 Agent Session Archiving Model
 
 ```text
   Source                          Archive directory
@@ -411,7 +411,7 @@ is created with updated content.
 (`ctime`) is before midnight UTC of that date are skipped during the
 archive cycle. When omitted, all sessions are archived.
 
-### 8.7  Command Guarding
+### 8.7 Command Guarding
 
 Commands are registered in two modes:
 
@@ -421,35 +421,35 @@ Commands are registered in two modes:
   `stateManager.isEnabled` before execution; shows a warning message
   if the extension is disabled for the workspace.
 
-### 8.8  Logging
+### 8.8 Logging
 
 A singleton `Logger` wraps a VS Code `OutputChannel` with level-based
 filtering:
 
-| Level   | Includes                          |
-| ------- | --------------------------------- |
-| `off`   | Nothing                           |
-| `error` | Errors                            |
-| `warn`  | Errors, warnings                  |
-| `info`  | Errors, warnings, informational   |
-| `debug` | Everything                        |
+| Level   | Includes                        |
+| ------- | ------------------------------- |
+| `off`   | Nothing                         |
+| `error` | Errors                          |
+| `warn`  | Errors, warnings                |
+| `info`  | Errors, warnings, informational |
+| `debug` | Everything                      |
 
 The level is configurable via `arit.logLevel` (VS Code setting) and
 updates reactively when the setting changes.
 
-### 8.9  Testing Strategy
+### 8.9 Testing Strategy
 
-| Layer       | Framework  | Scope                                                   |
-| ----------- | ---------- | ------------------------------------------------------- |
-| Unit        | Vitest     | All modules in `src/` with mocked VS Code API. Coverage threshold: 80 %. |
-| Integration | @vscode/test-electron | Extension activation and lifecycle in a real VS Code instance. |
+| Layer       | Framework             | Scope                                                                    |
+| ----------- | --------------------- | ------------------------------------------------------------------------ |
+| Unit        | Vitest                | All modules in `src/` with mocked VS Code API. Coverage threshold: 80 %. |
+| Integration | @vscode/test-electron | Extension activation and lifecycle in a real VS Code instance.           |
 
 The VS Code API mock (`test/unit/mocks/vscode.ts`) provides
 deterministic implementations of `workspace.fs`, `Uri`, `window`,
 `commands`, `EventEmitter`, `FileSystemWatcher`, and enum types
 (`StatusBarAlignment`, `FileType`).
 
-### 8.10  Release Pipeline
+### 8.10 Release Pipeline
 
 ```text
 git push main
@@ -469,34 +469,34 @@ semantic-release
 Release rules: `feat:` -> minor, `fix:|perf:|refactor:` -> patch,
 all others -> no release.
 
-### 8.11  Code Quality Enforcement
+### 8.11 Code Quality Enforcement
 
-| Tool         | Scope          | Key rules                                               |
-| ------------ | -------------- | ------------------------------------------------------- |
-| TypeScript   | Compilation    | `strict: true`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` |
-| ESLint       | Source files   | max 250 lines/file (warn), 50 lines/fn (warn), complexity <= 10, max nesting 3, max params 3, 1 class/file (error) |
-| ESLint       | Test files     | Relaxed complexity; `any` allowed; vitest plugin rules   |
-| Prettier     | All files      | 90-char line width, 2-space indent, single quotes, trailing commas ES5 |
-| commitlint   | Commit msgs    | Conventional Commits format, lowercase subject           |
-| Husky        | Pre-commit     | `eslint --fix` + `prettier --write` on staged files      |
+| Tool       | Scope        | Key rules                                                                                                          |
+| ---------- | ------------ | ------------------------------------------------------------------------------------------------------------------ |
+| TypeScript | Compilation  | `strict: true`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`                                           |
+| ESLint     | Source files | max 250 lines/file (warn), 50 lines/fn (warn), complexity <= 10, max nesting 3, max params 3, 1 class/file (error) |
+| ESLint     | Test files   | Relaxed complexity; `any` allowed; vitest plugin rules                                                             |
+| Prettier   | All files    | 90-char line width, 2-space indent, single quotes, trailing commas ES5                                             |
+| commitlint | Commit msgs  | Conventional Commits format, lowercase subject                                                                     |
+| Husky      | Pre-commit   | `eslint --fix` + `prettier --write` on staged files                                                                |
 
 ---
 
-## 12  Glossary
+## 12 Glossary
 
-| Term                    | Definition                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| **Archive cycle**       | A single pass of the `AgentSessionArchiveService` that queries all providers, detects mtime changes, and copies/replaces session files in the archive directory. |
-| **Config migration**    | The process of detecting configuration sections missing from an older workspace config and prompting the user to add them with default values. |
-| **Config section**      | A top-level key in `.arit-toolkit.jsonc` owned by a specific feature (e.g., `agentSessionsArchiving`). |
-| **Feature**             | A self-contained module under `src/features/<name>/` that registers commands, UI elements, and/or background services. |
-| **Global toggle**       | The top-level `enabled` boolean in `.arit-toolkit.jsonc` that controls whether all background services are active. |
-| **Guarded command**     | A VS Code command that checks `stateManager.isEnabled` before executing and shows a warning if the extension is disabled. |
-| **mtime**               | File modification timestamp obtained via `vscode.workspace.fs.stat()`, used for change detection without reading file contents. |
-| **Onboarding**          | The first-time notification shown when a user opens a single-root workspace that does not yet have `.arit-toolkit.jsonc`. |
-| **Reinitialize**        | A manual re-trigger of the initialization flow (config read, state fire, migration) via the "Run Setup" tooltip button, without reloading VS Code. Runs migration unconditionally regardless of enabled state. |
-| **Session file**        | A file produced by an AI coding assistant that contains chat interaction history (not rules or configuration). |
-| **Session provider**    | An implementation of `SessionProvider` that discovers session files for a specific AI coding assistant. |
-| **Single-root workspace** | A VS Code workspace with exactly one root folder. Required for advanced features that persist state to disk. |
-| **Version code**        | A numeric encoding of a semantic version (`1XXXYYYZZZ`) used for fast comparison in the migration system. |
-| **Workspace config**    | The `.arit-toolkit.jsonc` file at the workspace root, managed by `ExtensionStateManager`. |
+| Term                      | Definition                                                                                                                                                                                                     |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Archive cycle**         | A single pass of the `AgentSessionArchiveService` that queries all providers, detects mtime changes, and copies/replaces session files in the archive directory.                                               |
+| **Config migration**      | The process of detecting configuration sections missing from an older workspace config and prompting the user to add them with default values.                                                                 |
+| **Config section**        | A top-level key in `.arit-toolkit.jsonc` owned by a specific feature (e.g., `agentSessionsArchiving`).                                                                                                         |
+| **Feature**               | A self-contained module under `src/features/<name>/` that registers commands, UI elements, and/or background services.                                                                                         |
+| **Global toggle**         | The top-level `enabled` boolean in `.arit-toolkit.jsonc` that controls whether all background services are active.                                                                                             |
+| **Guarded command**       | A VS Code command that checks `stateManager.isEnabled` before executing and shows a warning if the extension is disabled.                                                                                      |
+| **mtime**                 | File modification timestamp obtained via `vscode.workspace.fs.stat()`, used for change detection without reading file contents.                                                                                |
+| **Onboarding**            | The first-time notification shown when a user opens a single-root workspace that does not yet have `.arit-toolkit.jsonc`.                                                                                      |
+| **Reinitialize**          | A manual re-trigger of the initialization flow (config read, state fire, migration) via the "Run Setup" tooltip button, without reloading VS Code. Runs migration unconditionally regardless of enabled state. |
+| **Session file**          | A file produced by an AI coding assistant that contains chat interaction history (not rules or configuration).                                                                                                 |
+| **Session provider**      | An implementation of `SessionProvider` that discovers session files for a specific AI coding assistant.                                                                                                        |
+| **Single-root workspace** | A VS Code workspace with exactly one root folder. Required for advanced features that persist state to disk.                                                                                                   |
+| **Version code**          | A numeric encoding of a semantic version (`1XXXYYYZZZ`) used for fast comparison in the migration system.                                                                                                      |
+| **Workspace config**      | The `.arit-toolkit.jsonc` file at the workspace root, managed by `ExtensionStateManager`.                                                                                                                      |

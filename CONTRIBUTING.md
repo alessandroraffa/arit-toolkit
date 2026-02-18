@@ -212,16 +212,16 @@ This project enforces strict code quality rules via ESLint. Both source files (`
 
 ### Source file limits
 
-| Rule | Limit | Purpose |
-| --- | --- | --- |
-| `max-lines` | 250 | Keep files small and focused |
-| `max-lines-per-function` | 50 | Keep functions single-purpose |
-| `complexity` | 10 | Limit cyclomatic complexity |
-| `max-depth` | 3 | Avoid deep nesting |
-| `max-nested-callbacks` | 3 | Flat callback structure |
-| `max-params` | 3 | Use context objects for more params |
-| `max-statements` | 15 | Concise function bodies |
-| `max-classes-per-file` | 1 | One class per file |
+| Rule                     | Limit | Purpose                             |
+| ------------------------ | ----- | ----------------------------------- |
+| `max-lines`              | 250   | Keep files small and focused        |
+| `max-lines-per-function` | 50    | Keep functions single-purpose       |
+| `complexity`             | 10    | Limit cyclomatic complexity         |
+| `max-depth`              | 3     | Avoid deep nesting                  |
+| `max-nested-callbacks`   | 3     | Flat callback structure             |
+| `max-params`             | 3     | Use context objects for more params |
+| `max-statements`         | 15    | Concise function bodies             |
+| `max-classes-per-file`   | 1     | One class per file                  |
 
 When approaching these limits, extract helper functions, use early returns, or split into smaller modules.
 
@@ -259,19 +259,19 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) with **enfor
 
 ### Commit Types
 
-| Type | Description | Version Bump |
-|------|-------------|--------------|
-| `feat` | New feature | Minor (0.X.0) |
-| `fix` | Bug fix | Patch (0.0.X) |
-| `perf` | Performance improvement | Patch |
-| `refactor` | Code refactoring | Patch |
-| `docs` | Documentation only | No release |
-| `style` | Code style (formatting) | No release |
-| `test` | Adding/updating tests | No release |
-| `build` | Build system changes | No release |
-| `ci` | CI configuration | No release |
-| `chore` | Maintenance tasks | No release |
-| `revert` | Revert a commit | Depends |
+| Type       | Description             | Version Bump  |
+| ---------- | ----------------------- | ------------- |
+| `feat`     | New feature             | Minor (0.X.0) |
+| `fix`      | Bug fix                 | Patch (0.0.X) |
+| `perf`     | Performance improvement | Patch         |
+| `refactor` | Code refactoring        | Patch         |
+| `docs`     | Documentation only      | No release    |
+| `style`    | Code style (formatting) | No release    |
+| `test`     | Adding/updating tests   | No release    |
+| `build`    | Build system changes    | No release    |
+| `ci`       | CI configuration        | No release    |
+| `chore`    | Maintenance tasks       | No release    |
+| `revert`   | Revert a commit         | Depends       |
 
 ### Examples
 

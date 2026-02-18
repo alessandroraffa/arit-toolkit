@@ -1,7 +1,10 @@
 {
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSaveTimeout": 5000,
+  "editor.codeActionsOnSaveTimeout": 5000,
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
@@ -11,7 +14,8 @@
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
-      "source.fixAll.markdownlint": "explicit"
+      "source.fixAll": "always",
+      "source.fixAll.markdownlint": "always"
     }
   },
   "[json]": {
@@ -21,6 +25,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "eslint.validate": ["typescript"],
+  "markdownlint.run": "onSave",
   "markdownlint.config": {},
   "files.exclude": {
     "dist": true,

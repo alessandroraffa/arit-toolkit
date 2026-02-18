@@ -187,6 +187,8 @@
     "lint:fix": "eslint src test --fix && markdownlint-cli2 --fix '**/*.md'",
     "lint:md": "markdownlint-cli2 '**/*.md'",
     "lint:md:fix": "markdownlint-cli2 --fix '**/*.md'",
+    "check:md": "prettier --check --ignore-path .prettierignore '**/*.md' && markdownlint-cli2 '**/*.md'",
+    "format:md": "prettier --write --ignore-path .prettierignore '**/*.md' && markdownlint-cli2 --fix '**/*.md'",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "test": "pnpm run test:unit && pnpm run test:integration",

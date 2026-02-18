@@ -1,4 +1,5 @@
 # Generated / non-source folders
+
 node_modules/
 dist/
 build/
@@ -12,11 +13,9 @@ logs/
 .vscode-test/
 
 # Generated docs (agent session archives)
+
 docs/archive/
 
-# Generated changelog (managed by semantic-release)
-CHANGELOG.md
+# Specific generated files
 
-# Binary / package artifacts
-*.vsix
-pnpm-lock.yaml
+CHANGELOG.md

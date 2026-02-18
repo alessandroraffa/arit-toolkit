@@ -1,5 +1,19 @@
 // markdownlint-cli2 configuration
 // https://github.com/DavidAnson/markdownlint-cli2
 {
-  "ignores": ["node_modules/**", ".vscode-test/**", "CHANGELOG.md"],
+  "ignores": [
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    "out/**",
+    ".next/**",
+    ".firebase/**",
+    ".yarn/**",
+    ".cache/**",
+    "logs/**",
+    ".vscode-test/**",
+    "docs/archive/**",
+    "CHANGELOG.md",
+  ],
 }
