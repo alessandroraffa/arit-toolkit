@@ -1,3 +1,13 @@
+## [1.7.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.6.0...v1.7.0) (2026-02-18)
+
+### Features
+
+* **agentSessionsArchiving:** add date cutoff filter for session archiving ([7251bf5](https://github.com/alessandroraffa/arit-toolkit/commit/7251bf5948b7375a35f2356bcbdc9a2d12318385))
+
+### Bug Fixes
+
+* **extensionStateManager:** run config migration after onboarding acceptance ([88b306b](https://github.com/alessandroraffa/arit-toolkit/commit/88b306bdb83dd01e667b30f966a58155cc31f287))
+
 ## [1.6.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.5.2...v1.6.0) (2026-02-16)
 
 ### Features
