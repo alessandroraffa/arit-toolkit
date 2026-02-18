@@ -12,10 +12,23 @@ export function renderSessionToMarkdown(session: NormalizedSession): string {
   lines.push('');
 
   for (const turn of session.turns) {
+    if (isEmptyTurn(turn)) {
+      continue;
+    }
     lines.push(...renderTurn(turn));
   }
 
   return lines.join('\n');
+}
+
+function isEmptyTurn(turn: NormalizedTurn): boolean {
+  return (
+    !turn.content.trim() &&
+    turn.toolCalls.length === 0 &&
+    !turn.thinking &&
+    turn.filesRead.length === 0 &&
+    turn.filesModified.length === 0
+  );
 }
 
 function renderTurn(turn: NormalizedTurn): string[] {

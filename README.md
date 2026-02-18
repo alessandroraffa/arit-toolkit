@@ -31,7 +31,7 @@ Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-
 
 - Sessions are copied (not moved) to the archive directory
 - Each session maps to exactly one archived file — when the source changes, the old archive is replaced
-- Archive filenames use the session's last modification timestamp: `{YYYYMMDDHHmm}-{name}{ext}`
+- Archive filenames use the session's creation timestamp: `{YYYYMMDDHHmm}-{name}{ext}`
 - Only sessions belonging to the current workspace are archived
 
 **Configuration** (in `.arit-toolkit.jsonc`):
@@ -47,7 +47,7 @@ Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-
 }
 ```
 
-Set `ignoreSessionsBefore` to a `YYYYMMDD` date to skip archiving sessions older than that date. Omit the field to archive everything.
+Set `ignoreSessionsBefore` to a `YYYYMMDD` date to skip sessions created before that date. Omit the field to archive everything.
 
 **Toggle:** Command Palette → "ARIT: Toggle Agent Sessions Archiving"
 

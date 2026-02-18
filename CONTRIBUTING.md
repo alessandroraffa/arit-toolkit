@@ -152,7 +152,7 @@ arit-toolkit/
 │   │   │   └── statusBarItem.ts  # Status bar UI management
 │   │   └── agentSessionsArchiving/  # AI agent session archiving
 │   │       ├── index.ts             # Feature registration
-│   │       ├── archiveService.ts    # Core archive loop (mtime-based)
+│   │       ├── archiveService.ts    # Core archive loop (ctime naming, mtime sync)
 │   │       ├── constants.ts
 │   │       ├── types.ts             # SessionProvider / SessionFile interfaces
 │   │       └── providers/           # One provider per AI assistant

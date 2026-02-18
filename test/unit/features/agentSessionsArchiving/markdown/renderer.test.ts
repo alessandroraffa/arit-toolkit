@@ -179,6 +179,87 @@ describe('renderSessionToMarkdown', () => {
     expect(md).not.toContain('## Turn');
   });
 
+  it('should skip empty assistant turns', () => {
+    const session: NormalizedSession = {
+      providerName: 'claude-code',
+      providerDisplayName: 'Claude Code',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'user',
+          content: 'Hello',
+          toolCalls: [],
+          filesRead: [],
+          filesModified: [],
+        },
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [],
+          filesRead: [],
+          filesModified: [],
+        },
+        {
+          role: 'assistant',
+          content: 'Real response.',
+          toolCalls: [],
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    const assistantMatches = md.match(/\*\*Assistant:\*\*/g) ?? [];
+    expect(assistantMatches).toHaveLength(1);
+    expect(md).toContain('**Assistant:** Real response.');
+  });
+
+  it('should skip whitespace-only assistant turns', () => {
+    const session: NormalizedSession = {
+      providerName: 'claude-code',
+      providerDisplayName: 'Claude Code',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'assistant',
+          content: '\n\n',
+          toolCalls: [],
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    expect(md).not.toContain('**Assistant:**');
+  });
+
+  it('should keep turn with only thinking', () => {
+    const session: NormalizedSession = {
+      providerName: 'claude-code',
+      providerDisplayName: 'Claude Code',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'assistant',
+          content: '',
+          toolCalls: [],
+          thinking: 'Some reasoning...',
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    expect(md).toContain('**Assistant:**');
+    expect(md).toContain('Some reasoning...');
+  });
+
   it('should render empty session with just header', () => {
     const session: NormalizedSession = {
       providerName: 'test',
