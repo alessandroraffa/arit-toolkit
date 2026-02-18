@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { workspace } from '../../../mocks/vscode';
 import {
-  getMtime,
+  getFileTimes,
   belongsToWorkspace,
 } from '../../../../../src/features/agentSessionsArchiving/providers/providerUtils';
 
@@ -10,19 +10,19 @@ describe('providerUtils', () => {
     vi.clearAllMocks();
   });
 
-  describe('getMtime', () => {
-    it('should return mtime when stat succeeds', async () => {
-      workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 42000 });
+  describe('getFileTimes', () => {
+    it('should return mtime and ctime when stat succeeds', async () => {
+      workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 42000, ctime: 40000 });
 
-      const result = await getMtime({ fsPath: '/some/file' } as any);
+      const result = await getFileTimes({ fsPath: '/some/file' } as any);
 
-      expect(result).toBe(42000);
+      expect(result).toEqual({ mtime: 42000, ctime: 40000 });
     });
 
     it('should return undefined when stat fails', async () => {
       workspace.fs.stat = vi.fn().mockRejectedValue(new Error('not found'));
 
-      const result = await getMtime({ fsPath: '/missing' } as any);
+      const result = await getFileTimes({ fsPath: '/missing' } as any);
 
       expect(result).toBeUndefined();
     });

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { SessionFile, SessionProvider } from '../types';
-import { getMtime, belongsToWorkspace } from './providerUtils';
+import { getFileTimes, belongsToWorkspace } from './providerUtils';
 
 const EXTENSION_ID = 'saoudrizwan.claude-dev';
 const SESSION_FILE = 'api_conversation_history.json';
@@ -41,8 +41,8 @@ export class ClineProvider implements SessionProvider {
     workspacePath: string
   ): Promise<SessionFile | undefined> {
     const uri = vscode.Uri.joinPath(tasksUri, taskId, SESSION_FILE);
-    const mtime = await getMtime(uri);
-    if (mtime === undefined) {
+    const times = await getFileTimes(uri);
+    if (times === undefined) {
       return undefined;
     }
     if (!(await belongsToWorkspace(uri, workspacePath))) {
@@ -53,7 +53,8 @@ export class ClineProvider implements SessionProvider {
       providerName: this.name,
       archiveName: `cline-${taskId}`,
       displayName: `Cline task ${taskId}`,
-      mtime,
+      mtime: times.mtime,
+      ctime: times.ctime,
       extension: '.json',
     };
   }

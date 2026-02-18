@@ -21,7 +21,7 @@ describe('CopilotChatProvider', () => {
       ['3b809804.json', FileType.File],
       ['a1b2c3d4.json', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1500 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1500, ctime: 1400 });
 
     const sessions = await provider.findSessions('/workspace');
 
@@ -37,7 +37,7 @@ describe('CopilotChatProvider', () => {
       ['session-1.jsonl', FileType.File],
       ['session-2.jsonl', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000, ctime: 1900 });
 
     const sessions = await provider.findSessions('/workspace');
 
@@ -53,7 +53,7 @@ describe('CopilotChatProvider', () => {
       ['old-session.json', FileType.File],
       ['new-session.jsonl', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1500 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1500, ctime: 1400 });
 
     const sessions = await provider.findSessions('/workspace');
 
@@ -75,7 +75,7 @@ describe('CopilotChatProvider', () => {
       ['session.json', FileType.File],
       ['session.txt', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100, ctime: 90 });
 
     const sessions = await provider.findSessions('/workspace');
 
@@ -88,7 +88,7 @@ describe('CopilotChatProvider', () => {
       ['session.json', FileType.File],
       ['subdir', FileType.Directory],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100, ctime: 90 });
 
     const sessions = await provider.findSessions('/workspace');
 
@@ -102,7 +102,7 @@ describe('CopilotChatProvider', () => {
     ]);
     workspace.fs.stat = vi
       .fn()
-      .mockResolvedValueOnce({ mtime: 100 })
+      .mockResolvedValueOnce({ mtime: 100, ctime: 90 })
       .mockRejectedValueOnce(new Error('fail'));
 
     const sessions = await provider.findSessions('/workspace');

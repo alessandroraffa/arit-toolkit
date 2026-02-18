@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import type { SessionFile, SessionProvider } from '../types';
-import { getMtime } from './providerUtils';
+import { getFileTimes } from './providerUtils';
 
 const SESSIONS_DIR = 'chatSessions';
 
@@ -43,8 +43,8 @@ export class CopilotChatProvider implements SessionProvider {
     name: string
   ): Promise<SessionFile | undefined> {
     const uri = vscode.Uri.joinPath(dirUri, name);
-    const mtime = await getMtime(uri);
-    if (mtime === undefined) {
+    const times = await getFileTimes(uri);
+    if (times === undefined) {
       return undefined;
     }
     const ext = path.extname(name);
@@ -54,7 +54,8 @@ export class CopilotChatProvider implements SessionProvider {
       providerName: this.name,
       archiveName: `copilot-chat-${sessionId}`,
       displayName: `Copilot Chat ${sessionId}`,
-      mtime,
+      mtime: times.mtime,
+      ctime: times.ctime,
       extension: ext,
     };
   }

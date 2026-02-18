@@ -399,13 +399,17 @@ changes, the old archive file is deleted and a new one with an updated
 timestamp prefix is created.
 
 **Archive file naming:** `{YYYYMMDDHHmm}-{archiveName}{extension}`,
-where the timestamp is derived from the session file's last modification
-time (`mtime`), not the current time.
+where the timestamp is derived from the session file's creation time
+(`ctime`), not the modification time or the current time.
+
+**Change detection:** When a session file's `mtime` changes, the old
+archive file is deleted and a new one (with the same ctime-based prefix)
+is created with updated content.
 
 **Date cutoff filtering:** The optional `ignoreSessionsBefore` field
-(format `YYYYMMDD`) sets a UTC date cutoff. Sessions whose `mtime` is
-before midnight UTC of that date are skipped during the archive cycle.
-When omitted, all sessions are archived.
+(format `YYYYMMDD`) sets a UTC date cutoff. Sessions whose creation time
+(`ctime`) is before midnight UTC of that date are skipped during the
+archive cycle. When omitted, all sessions are archived.
 
 ### 8.7  Command Guarding
 

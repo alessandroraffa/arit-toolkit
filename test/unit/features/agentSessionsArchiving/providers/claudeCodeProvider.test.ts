@@ -20,7 +20,7 @@ describe('ClaudeCodeProvider', () => {
       ['session1.jsonl', FileType.File],
       ['session2.jsonl', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
 
     const sessions = await provider.findSessions('/my/project');
 
@@ -43,7 +43,7 @@ describe('ClaudeCodeProvider', () => {
       ['subdir', FileType.Directory],
       ['session.jsonl', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500, ctime: 400 });
 
     const sessions = await provider.findSessions('/my/project');
 
@@ -58,7 +58,7 @@ describe('ClaudeCodeProvider', () => {
     ]);
     workspace.fs.stat = vi
       .fn()
-      .mockResolvedValueOnce({ mtime: 1000 })
+      .mockResolvedValueOnce({ mtime: 1000, ctime: 900 })
       .mockRejectedValueOnce(new Error('permission denied'));
 
     const sessions = await provider.findSessions('/my/project');
@@ -80,7 +80,7 @@ describe('ClaudeCodeProvider', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValue([['abc123.jsonl', FileType.File]]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100, ctime: 90 });
 
     const sessions = await provider.findSessions('/workspace');
 

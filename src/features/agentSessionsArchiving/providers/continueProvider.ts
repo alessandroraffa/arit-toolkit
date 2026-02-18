@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import type { SessionFile, SessionProvider } from '../types';
-import { getMtime, belongsToWorkspace } from './providerUtils';
+import { getFileTimes, belongsToWorkspace } from './providerUtils';
 
 export class ContinueProvider implements SessionProvider {
   public readonly name = 'continue';
@@ -50,8 +50,8 @@ export class ContinueProvider implements SessionProvider {
     name: string
   ): Promise<SessionFile | undefined> {
     const uri = vscode.Uri.joinPath(dirUri, name);
-    const mtime = await getMtime(uri);
-    if (mtime === undefined) {
+    const times = await getFileTimes(uri);
+    if (times === undefined) {
       return undefined;
     }
     const sessionId = name.replace('.json', '');
@@ -60,7 +60,8 @@ export class ContinueProvider implements SessionProvider {
       providerName: this.name,
       archiveName: `continue-${sessionId}`,
       displayName: `Continue session ${sessionId}`,
-      mtime,
+      mtime: times.mtime,
+      ctime: times.ctime,
       extension: '.json',
     };
   }

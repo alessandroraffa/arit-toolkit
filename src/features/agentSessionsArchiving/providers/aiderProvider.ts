@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { SessionFile, SessionProvider } from '../types';
-import { getMtime } from './providerUtils';
+import { getFileTimes } from './providerUtils';
 
 const FILES = [
   { name: '.aider.chat.history.md', archiveName: 'aider-chat-history', ext: '.md' },
@@ -17,14 +17,15 @@ export class AiderProvider implements SessionProvider {
 
     for (const file of FILES) {
       const uri = vscode.Uri.joinPath(rootUri, file.name);
-      const mtime = await getMtime(uri);
-      if (mtime !== undefined) {
+      const times = await getFileTimes(uri);
+      if (times !== undefined) {
         results.push({
           uri,
           providerName: this.name,
           archiveName: file.archiveName,
           displayName: `Aider ${file.name}`,
-          mtime,
+          mtime: times.mtime,
+          ctime: times.ctime,
           extension: file.ext,
         });
       }

@@ -16,7 +16,7 @@ describe('AiderProvider', () => {
   });
 
   it('should find both aider files when they exist', async () => {
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
 
     const sessions = await provider.findSessions('/workspace');
 
@@ -40,7 +40,7 @@ describe('AiderProvider', () => {
     workspace.fs.stat = vi
       .fn()
       .mockRejectedValueOnce(new Error('not found'))
-      .mockResolvedValueOnce({ mtime: 2000 });
+      .mockResolvedValueOnce({ mtime: 2000, ctime: 1900 });
 
     const sessions = await provider.findSessions('/workspace');
 
@@ -49,7 +49,7 @@ describe('AiderProvider', () => {
   });
 
   it('should set correct displayName for each file', async () => {
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500, ctime: 400 });
 
     const sessions = await provider.findSessions('/workspace');
 
@@ -58,7 +58,7 @@ describe('AiderProvider', () => {
   });
 
   it('should construct uri from workspace root path', async () => {
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100, ctime: 90 });
 
     const sessions = await provider.findSessions('/my/project');
 

@@ -22,7 +22,7 @@ describe('ClineProvider', () => {
       ['task-001', FileType.Directory],
       ['task-002', FileType.Directory],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValue(
@@ -45,7 +45,7 @@ describe('ClineProvider', () => {
       ['task-001', FileType.Directory],
       ['task-002', FileType.Directory],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValueOnce(
@@ -69,7 +69,7 @@ describe('ClineProvider', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValue([['task-001', FileType.Directory]]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
     workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('read error'));
 
     const sessions = await provider.findSessions('/projects/my-app');
@@ -91,7 +91,7 @@ describe('ClineProvider', () => {
       ['task-001', FileType.Directory],
       ['some-file.txt', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500, ctime: 400 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValue(
@@ -111,7 +111,7 @@ describe('ClineProvider', () => {
     ]);
     workspace.fs.stat = vi
       .fn()
-      .mockResolvedValueOnce({ mtime: 1000 })
+      .mockResolvedValueOnce({ mtime: 1000, ctime: 900 })
       .mockRejectedValueOnce(new Error('not found'));
     workspace.fs.readFile = vi
       .fn()

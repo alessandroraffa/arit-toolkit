@@ -21,7 +21,7 @@ describe('ContinueProvider', () => {
       ['74d8c74c.json', FileType.File],
       ['abc12345.json', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 3000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 3000, ctime: 2900 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValue(
@@ -44,7 +44,7 @@ describe('ContinueProvider', () => {
       ['session-a.json', FileType.File],
       ['session-b.json', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 3000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 3000, ctime: 2900 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValueOnce(
@@ -68,7 +68,7 @@ describe('ContinueProvider', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValue([['session.json', FileType.File]]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 3000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 3000, ctime: 2900 });
     workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('read error'));
 
     const sessions = await provider.findSessions('/projects/my-app');
@@ -90,7 +90,7 @@ describe('ContinueProvider', () => {
       ['session.json', FileType.File],
       ['config.yaml', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100, ctime: 90 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValue(
@@ -109,7 +109,7 @@ describe('ContinueProvider', () => {
       ['session.json', FileType.File],
       ['subdir', FileType.Directory],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 100, ctime: 90 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValue(
@@ -129,7 +129,7 @@ describe('ContinueProvider', () => {
     ]);
     workspace.fs.stat = vi
       .fn()
-      .mockResolvedValueOnce({ mtime: 100 })
+      .mockResolvedValueOnce({ mtime: 100, ctime: 90 })
       .mockRejectedValueOnce(new Error('fail'));
     workspace.fs.readFile = vi
       .fn()

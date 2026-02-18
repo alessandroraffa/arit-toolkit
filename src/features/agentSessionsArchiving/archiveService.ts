@@ -91,7 +91,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         continue;
       }
       for (const session of sessions) {
-        if (session.mtime < cutoffMs) {
+        if (session.ctime < cutoffMs) {
           continue;
         }
         await this.archiveSession(session, archiveUri);
@@ -113,7 +113,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     }
 
     await this.ensureDirectory(archiveUri);
-    const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.mtime));
+    const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.ctime));
 
     if (entry) {
       await this.deleteFile(vscode.Uri.joinPath(archiveUri, entry.archiveFileName));

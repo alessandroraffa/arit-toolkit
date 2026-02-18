@@ -21,7 +21,7 @@ describe('RooCodeProvider', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValue([['task-abc', FileType.Directory]]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000, ctime: 1900 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValue(
@@ -44,7 +44,7 @@ describe('RooCodeProvider', () => {
       ['task-abc', FileType.Directory],
       ['task-def', FileType.Directory],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000, ctime: 1900 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValueOnce(
@@ -68,7 +68,7 @@ describe('RooCodeProvider', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValue([['task-abc', FileType.Directory]]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 2000, ctime: 1900 });
     workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('read error'));
 
     const sessions = await provider.findSessions('/projects/my-app');
@@ -90,7 +90,7 @@ describe('RooCodeProvider', () => {
       ['task-abc', FileType.Directory],
       ['readme.md', FileType.File],
     ]);
-    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500 });
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 500, ctime: 400 });
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValue(

@@ -6,6 +6,7 @@ export interface SessionFile {
   readonly archiveName: string;
   readonly displayName: string;
   readonly mtime: number;
+  readonly ctime: number;
   readonly extension: string;
 }
 

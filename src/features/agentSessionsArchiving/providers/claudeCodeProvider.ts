@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
 import type { SessionFile, SessionProvider } from '../types';
-import { getMtime } from './providerUtils';
+import { getFileTimes } from './providerUtils';
 
 export class ClaudeCodeProvider implements SessionProvider {
   public readonly name = 'claude-code';
@@ -39,8 +39,8 @@ export class ClaudeCodeProvider implements SessionProvider {
     name: string
   ): Promise<SessionFile | undefined> {
     const uri = vscode.Uri.joinPath(dirUri, name);
-    const mtime = await getMtime(uri);
-    if (mtime === undefined) {
+    const times = await getFileTimes(uri);
+    if (times === undefined) {
       return undefined;
     }
     return {
@@ -48,7 +48,8 @@ export class ClaudeCodeProvider implements SessionProvider {
       providerName: this.name,
       archiveName: `claude-code-${path.parse(name).name}`,
       displayName: `Claude Code ${name}`,
-      mtime,
+      mtime: times.mtime,
+      ctime: times.ctime,
       extension: path.extname(name) || '',
     };
   }

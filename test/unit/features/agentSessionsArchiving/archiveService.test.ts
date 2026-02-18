@@ -23,6 +23,7 @@ function createMockSession(overrides: Partial<SessionFile> = {}): SessionFile {
     archiveName: 'test-session',
     displayName: 'Test Session',
     mtime: 1000,
+    ctime: 900,
     extension: '.json',
     ...overrides,
   };
@@ -134,9 +135,13 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
 
-    it('should use session mtime for archive filename timestamp', async () => {
-      // mtime 1_609_459_200_000 = 2021-01-01T00:00:00.000Z → 202101010000
-      const session = createMockSession({ mtime: 1_609_459_200_000 });
+    it('should use session ctime for archive filename timestamp', async () => {
+      // ctime 1_609_459_200_000 = 2021-01-01T00:00:00.000Z → 202101010000
+      // mtime 1_612_137_600_000 = 2021-02-01T00:00:00.000Z → 202102010000
+      const session = createMockSession({
+        ctime: 1_609_459_200_000,
+        mtime: 1_612_137_600_000,
+      });
       const provider = createMockProvider([session]);
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
@@ -150,6 +155,7 @@ describe('AgentSessionArchiveService', () => {
       const copyCall = vi.mocked(workspace.fs.copy).mock.calls[0]!;
       const destPath = (copyCall[1] as { fsPath: string }).fsPath;
       expect(destPath).toContain('202101010000-test-session.json');
+      expect(destPath).not.toContain('202102010000');
 
       service.dispose();
     });
@@ -255,8 +261,8 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
 
-    it('should skip sessions before ignoreSessionsBefore cutoff', async () => {
-      const session = createMockSession({ mtime: Date.UTC(2024, 11, 31) });
+    it('should skip sessions created before ignoreSessionsBefore cutoff', async () => {
+      const session = createMockSession({ ctime: Date.UTC(2024, 11, 31) });
       const provider = createMockProvider([session]);
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
@@ -272,8 +278,8 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
 
-    it('should archive sessions on or after ignoreSessionsBefore cutoff', async () => {
-      const session = createMockSession({ mtime: Date.UTC(2025, 0, 1) });
+    it('should archive sessions created on or after ignoreSessionsBefore cutoff', async () => {
+      const session = createMockSession({ ctime: Date.UTC(2025, 0, 1) });
       const provider = createMockProvider([session]);
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
@@ -290,7 +296,7 @@ describe('AgentSessionArchiveService', () => {
     });
 
     it('should archive all sessions when ignoreSessionsBefore is undefined', async () => {
-      const session = createMockSession({ mtime: 1000 });
+      const session = createMockSession({ ctime: 1000 });
       const provider = createMockProvider([session]);
       const service = new AgentSessionArchiveService(
         workspaceRootUri,

@@ -1,10 +1,15 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 
-export async function getMtime(uri: vscode.Uri): Promise<number | undefined> {
+export interface FileTimes {
+  readonly mtime: number;
+  readonly ctime: number;
+}
+
+export async function getFileTimes(uri: vscode.Uri): Promise<FileTimes | undefined> {
   try {
     const stat = await vscode.workspace.fs.stat(uri);
-    return stat.mtime;
+    return { mtime: stat.mtime, ctime: stat.ctime };
   } catch {
     return undefined;
   }
