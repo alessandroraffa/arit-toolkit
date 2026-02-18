@@ -1,3 +1,9 @@
+## [1.7.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.1...v1.7.2) (2026-02-18)
+
+### Bug Fixes
+
+* **configAutoCommit:** skip commit prompt when config file has no changes ([b6da927](https://github.com/alessandroraffa/arit-toolkit/commit/b6da927fd4c5f8430630441263b52a1a88fba397))
+
 ## [1.7.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.0...v1.7.1) (2026-02-18)
 
 ### Bug Fixes
