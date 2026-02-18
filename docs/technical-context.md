@@ -13,11 +13,11 @@
 | System             | ARIT Toolkit -- VS Code Extension                          |
 | Repository         | <https://github.com/alessandroraffa/arit-toolkit>          |
 | Identifier         | `alessandroraffa.arit-toolkit`                             |
-| Current version    | 1.4.1 (versionCode `1001004001`)                           |
+| Current version    | 1.6.0 (versionCode `1001006000`)                           |
 | Licence            | MIT                                                        |
 | Architecture style | Feature-based modular architecture, dependency injection   |
 | Runtime deps       | None (VS Code API only)                                    |
-| Last updated       | 2025-07-22                                                 |
+| Last updated       | 2026-02-18                                                 |
 
 ---
 
@@ -295,7 +295,8 @@ workspace-level state:
   "agentSessionsArchiving": {
     "enabled": true,
     "archivePath": "docs/archive/agent-sessions",
-    "intervalMinutes": 5
+    "intervalMinutes": 5,
+    "ignoreSessionsBefore": "20250101"
   }
 }
 ```
