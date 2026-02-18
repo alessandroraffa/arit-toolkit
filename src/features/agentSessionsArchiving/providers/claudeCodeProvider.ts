@@ -23,7 +23,7 @@ export class ClaudeCodeProvider implements SessionProvider {
 
     const results: SessionFile[] = [];
     for (const [name, type] of entries) {
-      if (type !== vscode.FileType.File) {
+      if (type !== vscode.FileType.File || !name.endsWith('.jsonl')) {
         continue;
       }
       const session = await this.toSessionFile(projectUri, name);

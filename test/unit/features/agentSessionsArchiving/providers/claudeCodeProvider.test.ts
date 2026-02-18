@@ -76,6 +76,21 @@ describe('ClaudeCodeProvider', () => {
     expect(readDirCall[0].fsPath).toContain('-Users-dev-my-project');
   });
 
+  it('should skip non-jsonl files', async () => {
+    workspace.fs.readDirectory = vi.fn().mockResolvedValue([
+      ['.DS_Store', FileType.File],
+      ['sessions-index.json', FileType.File],
+      ['session1.jsonl', FileType.File],
+      ['notes.txt', FileType.File],
+    ]);
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
+
+    const sessions = await provider.findSessions('/my/project');
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]!.archiveName).toBe('claude-code-session1');
+  });
+
   it('should set correct displayName', async () => {
     workspace.fs.readDirectory = vi
       .fn()
