@@ -1,3 +1,11 @@
+## [1.7.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.0...v1.7.1) (2026-02-18)
+
+### Bug Fixes
+
+* **agentSessionsArchiving:** filter non-jsonl files in claude code provider ([31704f7](https://github.com/alessandroraffa/arit-toolkit/commit/31704f773fff55f9989d6549419ce216fc7fd29e))
+* **agentSessionsArchiving:** skip empty turns in markdown renderer ([9f7df34](https://github.com/alessandroraffa/arit-toolkit/commit/9f7df34deec1720de6bb9077bd1a5562e50b44fe))
+* **agentSessionsArchiving:** use creation time for archive filename prefix ([d786260](https://github.com/alessandroraffa/arit-toolkit/commit/d7862606104ac06c9a921ec3e2ccbad8a6a48dfa))
+
 ## [1.7.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.6.0...v1.7.0) (2026-02-18)
 
 ### Features
