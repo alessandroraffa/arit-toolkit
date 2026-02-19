@@ -1,3 +1,10 @@
+## [1.7.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.2...v1.7.3) (2026-02-19)
+
+### Code Refactoring
+
+* **core:** move git utilities from utils to core ([adfaedd](https://github.com/alessandroraffa/arit-toolkit/commit/adfaedd52d13e0a669972096ce989279bd4b4df4))
+* **statusBarToggle:** remove cross-feature dependency via service registry ([726ec38](https://github.com/alessandroraffa/arit-toolkit/commit/726ec388577f4cba83082f699892790282b0c619))
+
 ## [1.7.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.1...v1.7.2) (2026-02-18)
 
 ### Bug Fixes
