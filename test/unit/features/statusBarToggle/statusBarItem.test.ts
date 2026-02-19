@@ -10,6 +10,12 @@ describe('statusBarItem', () => {
     isEnabled: boolean;
     isSingleRoot: boolean;
     workspaceMode: string;
+    registeredServices: {
+      key: string;
+      label: string;
+      icon: string;
+      toggleCommandId: string;
+    }[];
     getConfigSection: ReturnType<typeof vi.fn>;
   };
   let mockLogger: {
@@ -23,6 +29,7 @@ describe('statusBarItem', () => {
       isEnabled: true,
       isSingleRoot: true,
       workspaceMode: 'single-root',
+      registeredServices: [],
       getConfigSection: vi.fn().mockReturnValue(undefined),
     };
     mockLogger = {
@@ -206,6 +213,14 @@ describe('statusBarItem', () => {
 
   describe('tooltip background services', () => {
     it('should show archiving active with disable button', () => {
+      mockStateManager.registeredServices = [
+        {
+          key: 'agentSessionsArchiving',
+          label: 'Agent Sessions Archiving',
+          icon: '$(archive)',
+          toggleCommandId: 'arit.toggleAgentSessionsArchiving',
+        },
+      ];
       mockStateManager.getConfigSection.mockReturnValue({ enabled: true });
       const item = createStatusBarItem(
         mockStateManager as any,
@@ -221,6 +236,14 @@ describe('statusBarItem', () => {
     });
 
     it('should show archiving inactive with enable button', () => {
+      mockStateManager.registeredServices = [
+        {
+          key: 'agentSessionsArchiving',
+          label: 'Agent Sessions Archiving',
+          icon: '$(archive)',
+          toggleCommandId: 'arit.toggleAgentSessionsArchiving',
+        },
+      ];
       mockStateManager.getConfigSection.mockReturnValue({ enabled: false });
       const item = createStatusBarItem(
         mockStateManager as any,

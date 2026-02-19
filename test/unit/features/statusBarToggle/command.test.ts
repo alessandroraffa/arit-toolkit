@@ -34,6 +34,7 @@ describe('toggleEnabledCommand', () => {
       isSingleRoot: true,
       toggle: vi.fn().mockResolvedValue(true),
       getConfigSection: vi.fn().mockReturnValue(undefined),
+      registeredServices: [],
     };
     mockLogger = {
       debug: vi.fn(),
@@ -150,6 +151,7 @@ describe('reinitializeCommand', () => {
       isSingleRoot: true,
       reinitialize: vi.fn().mockResolvedValue(undefined),
       getConfigSection: vi.fn().mockReturnValue(undefined),
+      registeredServices: [],
     };
     mockLogger = {
       debug: vi.fn(),

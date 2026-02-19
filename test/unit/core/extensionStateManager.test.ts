@@ -494,6 +494,28 @@ describe('ExtensionStateManager', () => {
     });
   });
 
+  describe('service registry', () => {
+    it('should start with no registered services', () => {
+      const manager = createManager();
+      expect(manager.registeredServices).toEqual([]);
+    });
+
+    it('should register and return services', () => {
+      const manager = createManager();
+      const descriptor = {
+        key: 'myService',
+        label: 'My Service',
+        icon: '$(gear)',
+        toggleCommandId: 'arit.toggleMyService',
+      };
+
+      manager.registerService(descriptor);
+
+      expect(manager.registeredServices).toHaveLength(1);
+      expect(manager.registeredServices[0]).toEqual(descriptor);
+    });
+  });
+
   describe('dispose', () => {
     it('should clean up watcher', async () => {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];

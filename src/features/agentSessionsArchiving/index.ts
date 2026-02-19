@@ -1,6 +1,7 @@
 import type { FeatureRegistrationContext } from '../index';
 import type { AgentSessionsArchivingConfig } from '../../types';
 import type { ConfigSectionRegistry } from '../../core/configMigration';
+import type { ExtensionStateManager } from '../../core';
 import { AgentSessionArchiveService } from './archiveService';
 import { getDefaultProviders } from './providers';
 import {
@@ -11,7 +12,10 @@ import {
   INTRODUCED_AT_VERSION_CODE,
 } from './constants';
 
-function registerMigration(registry: ConfigSectionRegistry): void {
+function registerWithCore(
+  registry: ConfigSectionRegistry,
+  stateManager: ExtensionStateManager
+): void {
   registry.register({
     key: CONFIG_KEY,
     label: 'Agent Sessions Archiving',
@@ -22,6 +26,12 @@ function registerMigration(registry: ConfigSectionRegistry): void {
       intervalMinutes: DEFAULT_INTERVAL_MINUTES,
     },
     introducedAtVersionCode: INTRODUCED_AT_VERSION_CODE,
+  });
+  stateManager.registerService({
+    key: CONFIG_KEY,
+    label: 'Agent Sessions Archiving',
+    icon: '$(archive)',
+    toggleCommandId: COMMAND_ID_TOGGLE,
   });
 }
 
@@ -34,7 +44,7 @@ export function registerAgentSessionsArchivingFeature(
     return;
   }
 
-  registerMigration(ctx.migrationRegistry);
+  registerWithCore(ctx.migrationRegistry, stateManager);
 
   const providers = getDefaultProviders(ctx.context);
   const service = new AgentSessionArchiveService(workspaceRoot, providers, logger);
@@ -75,5 +85,3 @@ export function registerAgentSessionsArchivingFeature(
   );
   ctx.context.subscriptions.push(sectionDisposable);
 }
-
-export { CONFIG_KEY } from './constants';

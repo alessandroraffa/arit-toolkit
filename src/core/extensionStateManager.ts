@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { WorkspaceMode } from '../types';
+import type { WorkspaceMode, ServiceDescriptor } from '../types';
 import type { Logger } from './logger';
 import type { ConfigMigrationService } from './configMigration/migrationService';
 import type { ConfigAutoCommitService } from './configAutoCommit';
@@ -17,6 +17,7 @@ export class ExtensionStateManager {
 
   private readonly _workspaceMode: WorkspaceMode;
   private readonly _workspaceRoot: vscode.Uri | undefined;
+  private readonly _services: ServiceDescriptor[] = [];
   private readonly _sectionListeners = new Map<string, Set<SectionListener>>();
   private watcher: vscode.FileSystemWatcher | undefined;
   private _isInitialized = false;
@@ -64,6 +65,14 @@ export class ExtensionStateManager {
 
   public setAutoCommitService(service: ConfigAutoCommitService): void {
     this._autoCommitService = service;
+  }
+
+  public registerService(descriptor: ServiceDescriptor): void {
+    this._services.push(descriptor);
+  }
+
+  public get registeredServices(): readonly ServiceDescriptor[] {
+    return this._services;
   }
 
   public getConfigSection(key: string): unknown {

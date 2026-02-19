@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import type { ExtensionStateManager } from '../../core/extensionStateManager';
 import type { Logger } from '../../core/logger';
-import type { AgentSessionsArchivingConfig } from '../../types';
 import {
   COMMAND_ID_TOGGLE,
   COMMAND_ID_REINITIALIZE,
@@ -10,8 +9,6 @@ import {
   STATUS_BAR_TEXT,
   STATUS_BAR_NAME,
 } from './constants';
-import { CONFIG_KEY as ARCHIVING_CONFIG_KEY } from '../agentSessionsArchiving';
-import { COMMAND_ID_TOGGLE as ARCHIVING_TOGGLE_CMD } from '../agentSessionsArchiving/constants';
 
 export function createStatusBarItem(
   stateManager: ExtensionStateManager,
@@ -87,22 +84,25 @@ function buildDisabledSection(): string {
 }
 
 function buildServicesSection(stateManager: ExtensionStateManager): string {
-  const archivingConfig = stateManager.getConfigSection(ARCHIVING_CONFIG_KEY) as
-    | AgentSessionsArchivingConfig
-    | undefined;
-  if (!archivingConfig) {
-    return '';
+  let result = '';
+  for (const service of stateManager.registeredServices) {
+    const config = stateManager.getConfigSection(service.key) as
+      | { enabled?: boolean }
+      | undefined;
+    if (!config) {
+      continue;
+    }
+
+    const icon = config.enabled ? '$(check)' : '$(circle-slash)';
+    const status = config.enabled ? 'Active' : 'Inactive';
+    const toggleIcon = config.enabled ? '$(debug-stop)' : '$(play)';
+    const toggleLabel = config.enabled ? 'Disable' : 'Enable';
+
+    result +=
+      `${service.icon} ${service.label}\u2002${icon} ${status}\n\n` +
+      `[${toggleIcon} ${toggleLabel}](command:${service.toggleCommandId})\n\n`;
   }
-
-  const icon = archivingConfig.enabled ? '$(check)' : '$(circle-slash)';
-  const status = archivingConfig.enabled ? 'Active' : 'Inactive';
-  const toggleIcon = archivingConfig.enabled ? '$(debug-stop)' : '$(play)';
-  const toggleLabel = archivingConfig.enabled ? 'Disable' : 'Enable';
-
-  return (
-    `$(archive) Agent Sessions Archiving\u2002${icon} ${status}\n\n` +
-    `[${toggleIcon} ${toggleLabel}](command:${ARCHIVING_TOGGLE_CMD})\n\n`
-  );
+  return result;
 }
 
 function buildMultiRootTooltip(): vscode.MarkdownString {

@@ -19,8 +19,8 @@ export interface FeatureRegistrationContext {
 }
 
 export function registerAllFeatures(ctx: FeatureRegistrationContext): void {
-  registerStatusBarToggleFeature(ctx);
   registerTimestampedFileFeature(ctx.registry, ctx.config, ctx.logger);
   registerTimestampedDirectoryFeature(ctx.registry, ctx.config, ctx.logger);
   registerAgentSessionsArchivingFeature(ctx);
+  registerStatusBarToggleFeature(ctx);
 }

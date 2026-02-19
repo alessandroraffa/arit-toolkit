@@ -10,6 +10,13 @@ export interface WorkspaceConfig {
   versionCode?: number;
 }
 
+export interface ServiceDescriptor {
+  key: string;
+  label: string;
+  icon: string;
+  toggleCommandId: string;
+}
+
 export interface AgentSessionsArchivingConfig {
   enabled: boolean;
   archivePath: string;
