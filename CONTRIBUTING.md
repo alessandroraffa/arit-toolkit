@@ -53,7 +53,7 @@ To report a security vulnerability, please see [SECURITY.md](SECURITY.md) for re
 
 ### Prerequisites
 
-- Node.js 22+
+- Node.js >= 22.22.0
 - pnpm 10+ (install via `corepack enable pnpm`)
 - VS Code 1.109.0+
 
