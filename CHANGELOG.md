@@ -1,3 +1,9 @@
+## [1.7.4](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.3...v1.7.4) (2026-02-19)
+
+### Bug Fixes
+
+* **extensionStateManager:** preserve config sections during reinitialize ([c22f90b](https://github.com/alessandroraffa/arit-toolkit/commit/c22f90bbc4e3340c254672560a17e26dffb1ce58))
+
 ## [1.7.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.2...v1.7.3) (2026-02-19)
 
 ### Code Refactoring
