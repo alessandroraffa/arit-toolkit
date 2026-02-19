@@ -133,7 +133,10 @@ export class ExtensionStateManager {
       this._onDidChangeState.fire(this._isEnabled);
       await this.runMigration();
     } else {
-      await this.showOnboardingNotification();
+      const accepted = await this.showOnboardingNotification();
+      if (accepted) {
+        await this.runMigration();
+      }
     }
   }
 
@@ -170,6 +173,7 @@ export class ExtensionStateManager {
     if (!this._workspaceRoot) {
       return;
     }
+    await this.readStateFromFile();
     await this.writeStateToFile(true);
     this._isInitialized = true;
     this._isEnabled = true;
@@ -201,6 +205,10 @@ export class ExtensionStateManager {
         `Read workspace config: enabled=${String(this._isEnabled)}, versionCode=${String(this._configVersionCode)}`
       );
     } catch {
+      if (this._fullConfig) {
+        this.logger.warn('Failed to re-read workspace config, keeping existing state');
+        return;
+      }
       this._isInitialized = false;
       this._isEnabled = false;
       this._fullConfig = undefined;
