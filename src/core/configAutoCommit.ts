@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { Logger } from './logger';
-import { isGitIgnored, hasGitChanges, gitStageAndCommit } from '../utils/git';
+import { isGitIgnored, hasGitChanges, gitStageAndCommit } from './git';
 
 const COMMIT_MESSAGE = 'chore: update arit-toolkit config';
 

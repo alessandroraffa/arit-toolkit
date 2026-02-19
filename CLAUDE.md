@@ -36,7 +36,7 @@ When approaching limits: extract helpers, use early returns, split into smaller 
 
 - **Core** (`src/core/`): Shared infrastructure. Stable, no feature-specific logic.
 - **Features** (`src/features/<name>/`): Self-contained bounded contexts. Features depend on Core but **never on each other**.
-- **Utils** (`src/utils/`): Pure functions with zero dependencies on VS Code API or Core.
+- **Utils** (`src/utils/`): Pure functions with zero dependencies on VS Code API, Core, or Node.js I/O.
 
 When adding a feature, follow the structure of existing features.
 

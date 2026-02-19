@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { window } from '../mocks/vscode';
 
-vi.mock('../../../src/utils/git', () => ({
+vi.mock('../../../src/core/git', () => ({
   isGitIgnored: vi.fn(),
   hasGitChanges: vi.fn(),
   gitStageAndCommit: vi.fn(),
 }));
 
 const { isGitIgnored, hasGitChanges, gitStageAndCommit } =
-  await import('../../../src/utils/git');
+  await import('../../../src/core/git');
 const { ConfigAutoCommitService } = await import('../../../src/core/configAutoCommit');
 
 function createMockLogger() {

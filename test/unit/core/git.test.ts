@@ -21,7 +21,7 @@ vi.mock('node:util', () => ({
 
 // Must import after mocks are set up
 const { isGitIgnored, gitStageAndCommit, hasGitChanges } =
-  await import('../../../src/utils/git');
+  await import('../../../src/core/git');
 
 describe('isGitIgnored', () => {
   beforeEach(() => {
