@@ -130,6 +130,8 @@ arit-toolkit/
 │   │   ├── configManager.ts      # Configuration handling
 │   │   ├── commandRegistry.ts    # Command registration (guarded/unguarded)
 │   │   ├── extensionStateManager.ts  # Workspace state persistence
+│   │   ├── git.ts                # Git utilities (gitignore, staging, commit)
+│   │   ├── configAutoCommit.ts   # Config auto-commit service
 │   │   └── configMigration/      # Version-aware config migration
 │   │       ├── index.ts
 │   │       ├── migrationService.ts
@@ -155,8 +157,19 @@ arit-toolkit/
 │   │       ├── archiveService.ts    # Core archive loop (ctime naming, mtime sync)
 │   │       ├── constants.ts
 │   │       ├── types.ts             # SessionProvider / SessionFile interfaces
+│   │       ├── markdown/            # Markdown conversion
+│   │       │   ├── index.ts
+│   │       │   ├── types.ts
+│   │       │   ├── renderer.ts
+│   │       │   └── parsers/         # One parser per session format
+│   │       │       ├── index.ts
+│   │       │       ├── claudeCodeParser.ts
+│   │       │       ├── clineRooCodeParser.ts
+│   │       │       ├── continueParser.ts
+│   │       │       └── copilotChatParser.ts
 │   │       └── providers/           # One provider per AI assistant
 │   │           ├── index.ts         # Barrel export
+│   │           ├── providerUtils.ts # Shared provider utilities
 │   │           ├── aiderProvider.ts
 │   │           ├── claudeCodeProvider.ts
 │   │           ├── clineProvider.ts
@@ -180,7 +193,9 @@ arit-toolkit/
 │           ├── index.ts
 │           └── extension.test.ts
 ├── .editorconfig                 # Cross-editor formatting rules
-├── .markdownlint.jsonc           # Markdown linting configuration
+├── .markdownlint.jsonc           # Markdown linting rules
+├── .markdownlint-cli2.jsonc      # markdownlint-cli2 configuration
+├── .markdownlintignore           # Markdown lint ignore patterns
 ├── .prettierrc                   # Prettier configuration
 ├── .releaserc.json               # semantic-release configuration
 ├── commitlint.config.mjs         # Commit message validation
