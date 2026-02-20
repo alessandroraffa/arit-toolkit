@@ -1,3 +1,9 @@
+## [1.9.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.8.0...v1.9.0) (2026-02-20)
+
+### Features
+
+* **agentSessionsArchiving:** deduplicate archived sessions on cycle start ([748b055](https://github.com/alessandroraffa/arit-toolkit/commit/748b05599c45424ac9916ba7b4b0cc684e41ddb1))
+
 ## [1.8.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.4...v1.8.0) (2026-02-20)
 
 ### Features
