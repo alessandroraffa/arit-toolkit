@@ -41,6 +41,12 @@ updates:
       types:
         patterns:
           - '@types/*'
+    ignore:
+      - dependency-name: minimatch
+        versions:
+          - '>= 4.0.0'
+        update-types:
+          - 'version-update:semver-major'
 
   - package-ecosystem: github-actions
     directory: /
