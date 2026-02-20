@@ -3,6 +3,7 @@ import { window } from '../../mocks/vscode';
 import {
   toggleEnabledCommand,
   checkupCommand,
+  buildCheckupMessage,
 } from '../../../../src/features/statusBarToggle/command';
 
 describe('toggleEnabledCommand', () => {
@@ -128,7 +129,7 @@ describe('checkupCommand', () => {
   let mockStateManager: {
     isEnabled: boolean;
     isSingleRoot: boolean;
-    reinitialize: ReturnType<typeof vi.fn>;
+    checkup: ReturnType<typeof vi.fn>;
     getConfigSection: ReturnType<typeof vi.fn>;
   };
   let mockLogger: {
@@ -149,7 +150,9 @@ describe('checkupCommand', () => {
     mockStateManager = {
       isEnabled: true,
       isSingleRoot: true,
-      reinitialize: vi.fn().mockResolvedValue(undefined),
+      checkup: vi
+        .fn()
+        .mockResolvedValue({ configUpdated: false, commitResult: 'no-changes' }),
       getConfigSection: vi.fn().mockReturnValue(undefined),
       registeredServices: [],
     };
@@ -167,7 +170,7 @@ describe('checkupCommand', () => {
     };
   });
 
-  it('should call stateManager.reinitialize', async () => {
+  it('should call stateManager.checkup', async () => {
     const command = checkupCommand({
       stateManager: mockStateManager as any,
       logger: mockLogger as any,
@@ -176,7 +179,7 @@ describe('checkupCommand', () => {
 
     await command();
 
-    expect(mockStateManager.reinitialize).toHaveBeenCalled();
+    expect(mockStateManager.checkup).toHaveBeenCalled();
   });
 
   it('should update status bar item after checkup', async () => {
@@ -191,6 +194,20 @@ describe('checkupCommand', () => {
     expect(mockStatusBarItem.text).toBe('$(tools) ARIT');
   });
 
+  it('should show summary message', async () => {
+    const command = checkupCommand({
+      stateManager: mockStateManager as any,
+      logger: mockLogger as any,
+      statusBarItem: mockStatusBarItem as any,
+    });
+
+    await command();
+
+    expect(window.showInformationMessage).toHaveBeenCalledWith(
+      'ARIT Toolkit: Config is up to date.'
+    );
+  });
+
   it('should log checkup action', async () => {
     const command = checkupCommand({
       stateManager: mockStateManager as any,
@@ -201,5 +218,43 @@ describe('checkupCommand', () => {
     await command();
 
     expect(mockLogger.info).toHaveBeenCalledWith('ARIT Toolkit checkup completed');
+  });
+});
+
+describe('buildCheckupMessage', () => {
+  it('should return up to date when no changes', () => {
+    expect(
+      buildCheckupMessage({ configUpdated: false, commitResult: 'no-changes' })
+    ).toBe('ARIT Toolkit: Config is up to date.');
+  });
+
+  it('should return up to date for git-ignored', () => {
+    expect(
+      buildCheckupMessage({ configUpdated: false, commitResult: 'git-ignored' })
+    ).toBe('ARIT Toolkit: Config is up to date.');
+  });
+
+  it('should mention config updated and committed', () => {
+    expect(buildCheckupMessage({ configUpdated: true, commitResult: 'committed' })).toBe(
+      'ARIT Toolkit: Config updated. changes committed.'
+    );
+  });
+
+  it('should mention config updated with uncommitted changes', () => {
+    expect(buildCheckupMessage({ configUpdated: true, commitResult: 'skipped' })).toBe(
+      'ARIT Toolkit: Config updated. file has uncommitted changes.'
+    );
+  });
+
+  it('should mention config updated when git-ignored', () => {
+    expect(
+      buildCheckupMessage({ configUpdated: true, commitResult: 'git-ignored' })
+    ).toBe('ARIT Toolkit: Config updated.');
+  });
+
+  it('should mention commit failed', () => {
+    expect(buildCheckupMessage({ configUpdated: true, commitResult: 'failed' })).toBe(
+      'ARIT Toolkit: Config updated. commit failed — check output log.'
+    );
   });
 });

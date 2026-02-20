@@ -127,7 +127,7 @@ describe('ExtensionStateManager – config preservation', () => {
     });
   });
 
-  describe('reinitialize – migration after onboarding', () => {
+  describe('checkup – migration after onboarding', () => {
     it('should run migration after onboarding acceptance', async () => {
       workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('File not found'));
       workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
@@ -136,11 +136,11 @@ describe('ExtensionStateManager – config preservation', () => {
       const manager = createManager();
       await manager.initialize('1.0.0');
 
-      // Reinitialize: file still missing, user accepts onboarding
+      // Checkup: file still missing, user accepts onboarding
       mockMigrationService.migrate.mockClear();
       window.showInformationMessage = vi.fn().mockResolvedValue('Initialize');
 
-      await manager.reinitialize();
+      await manager.checkup();
 
       expect(mockMigrationService.migrate).toHaveBeenCalled();
     });
@@ -154,7 +154,7 @@ describe('ExtensionStateManager – config preservation', () => {
 
       mockMigrationService.migrate.mockClear();
 
-      await manager.reinitialize();
+      await manager.checkup();
 
       expect(mockMigrationService.migrate).not.toHaveBeenCalled();
     });

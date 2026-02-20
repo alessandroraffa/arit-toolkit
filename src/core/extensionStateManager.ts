@@ -11,6 +11,17 @@ const CONFIG_HEADER =
 
 type SectionListener = (value: unknown) => void;
 
+export interface CheckupResult {
+  configUpdated: boolean;
+  commitResult:
+    | 'committed'
+    | 'skipped'
+    | 'no-changes'
+    | 'git-ignored'
+    | 'failed'
+    | 'not-applicable';
+}
+
 export class ExtensionStateManager {
   private readonly _onDidChangeState = new vscode.EventEmitter<boolean>();
   public readonly onDidChangeState: vscode.Event<boolean> = this._onDidChangeState.event;
@@ -124,19 +135,16 @@ export class ExtensionStateManager {
     }
   }
 
-  public async reinitialize(): Promise<void> {
+  public async checkup(): Promise<CheckupResult> {
+    const skip: CheckupResult = { configUpdated: false, commitResult: 'not-applicable' };
     if (!this.isSingleRoot || !this._workspaceRoot || !this._extensionVersion) {
-      return;
+      return skip;
     }
-    await this.readStateFromFile();
-    if (this._isInitialized) {
-      this._onDidChangeState.fire(this._isEnabled);
-      await this.runMigration();
-    } else {
-      const accepted = await this.showOnboardingNotification();
-      if (accepted) {
-        await this.runMigration();
-      }
+    this._autoCommitService?.suspend();
+    try {
+      return await this.performCheckup();
+    } finally {
+      this._autoCommitService?.resume();
     }
   }
 
@@ -252,9 +260,28 @@ export class ExtensionStateManager {
     void this._autoCommitService?.onConfigWritten();
   }
 
-  private async runMigration(): Promise<void> {
+  private async performCheckup(): Promise<CheckupResult> {
+    await this.readStateFromFile();
+    let configUpdated = false;
+    if (!this._isInitialized) {
+      if (!(await this.showOnboardingNotification())) {
+        return { configUpdated: false, commitResult: 'not-applicable' };
+      }
+      configUpdated = true;
+    }
+    this._onDidChangeState.fire(this._isEnabled);
+    if (await this.runMigration()) {
+      configUpdated = true;
+    }
+    const commitResult = this._autoCommitService
+      ? await this._autoCommitService.commitIfNeeded()
+      : ('not-applicable' as const);
+    return { configUpdated, commitResult };
+  }
+
+  private async runMigration(): Promise<boolean> {
     if (!this._extensionVersion || !this._fullConfig) {
-      return;
+      return false;
     }
     const merged = await this.migrationService.migrate(
       this._fullConfig,
@@ -262,7 +289,7 @@ export class ExtensionStateManager {
       this._extensionVersion
     );
     if (!merged) {
-      return;
+      return false;
     }
     const oldConfig = { ...this._fullConfig };
     await this.writeFullConfig(merged);
@@ -270,6 +297,7 @@ export class ExtensionStateManager {
     this._configVersionCode = merged.versionCode as number | undefined;
     this.notifySectionListeners(oldConfig, merged);
     this.logger.info(`Workspace config migrated to version ${this._extensionVersion}`);
+    return true;
   }
 
   private notifySectionListeners(
