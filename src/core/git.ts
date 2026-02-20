@@ -40,7 +40,16 @@ export async function hasGitChanges(filePath: string, cwd: string): Promise<bool
 }
 
 /**
+ * Unstages a single file (reverses `git add`).
+ * Throws if the git command fails.
+ */
+export async function gitUnstage(filePath: string, cwd: string): Promise<void> {
+  await execFileAsync('git', ['reset', 'HEAD', '--', filePath], { cwd });
+}
+
+/**
  * Stages a single file and commits it with the given message.
+ * If the commit fails, the file is unstaged before the error is rethrown.
  * Throws if the git commands fail.
  */
 export async function gitStageAndCommit(
@@ -49,5 +58,12 @@ export async function gitStageAndCommit(
   cwd: string
 ): Promise<void> {
   await execFileAsync('git', ['add', '--', filePath], { cwd });
-  await execFileAsync('git', ['commit', '-m', message, '--', filePath], { cwd });
+  try {
+    await execFileAsync('git', ['commit', '-m', message, '--', filePath], { cwd });
+  } catch (err) {
+    await gitUnstage(filePath, cwd).catch(() => {
+      /* best-effort unstage */
+    });
+    throw err;
+  }
 }

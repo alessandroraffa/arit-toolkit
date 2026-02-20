@@ -20,7 +20,7 @@ vi.mock('node:util', () => ({
 }));
 
 // Must import after mocks are set up
-const { isGitIgnored, gitStageAndCommit, hasGitChanges } =
+const { isGitIgnored, gitStageAndCommit, gitUnstage, hasGitChanges } =
   await import('../../../src/core/git');
 
 describe('isGitIgnored', () => {
@@ -146,6 +146,90 @@ describe('gitStageAndCommit', () => {
     await expect(
       gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update', '/workspace')
     ).rejects.toThrow('add failed');
+  });
+
+  it('should unstage file and rethrow when git commit fails', async () => {
+    let callCount = 0;
+    const calls: string[][] = [];
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        calls.push(args);
+        callCount++;
+        if (callCount === 1) {
+          // git add succeeds
+          cb(null, '', '');
+        } else if (callCount === 2) {
+          // git commit fails
+          cb(new Error('commit failed'), '', '');
+        } else {
+          // git reset (unstage) succeeds
+          cb(null, '', '');
+        }
+      }
+    );
+
+    await expect(
+      gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update', '/workspace')
+    ).rejects.toThrow('commit failed');
+
+    expect(calls).toHaveLength(3);
+    expect(calls[0]).toEqual(['add', '--', '.arit-toolkit.jsonc']);
+    expect(calls[1]).toEqual([
+      'commit',
+      '-m',
+      'chore: update',
+      '--',
+      '.arit-toolkit.jsonc',
+    ]);
+    expect(calls[2]).toEqual(['reset', 'HEAD', '--', '.arit-toolkit.jsonc']);
+  });
+});
+
+describe('gitUnstage', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should call git reset HEAD with correct arguments', async () => {
+    const calls: string[][] = [];
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        calls.push(args);
+        cb(null, '', '');
+      }
+    );
+
+    await gitUnstage('.arit-toolkit.jsonc', '/workspace');
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual(['reset', 'HEAD', '--', '.arit-toolkit.jsonc']);
+  });
+
+  it('should throw when git reset fails', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        cb(new Error('reset failed'), '', '');
+      }
+    );
+
+    await expect(gitUnstage('.arit-toolkit.jsonc', '/workspace')).rejects.toThrow(
+      'reset failed'
+    );
   });
 });
 
