@@ -1,3 +1,20 @@
+## [1.8.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.4...v1.8.0) (2026-02-20)
+
+### Features
+
+* **checkup:** implement comprehensive config health check ([a05a831](https://github.com/alessandroraffa/arit-toolkit/commit/a05a831047e87046620f72730dc21fafd8a0ae7b))
+* **configAutoCommit:** add suspend/resume and explicit commit method ([3e26f24](https://github.com/alessandroraffa/arit-toolkit/commit/3e26f248eb93af9f73afb6da6164320e94c6ad1f))
+
+### Bug Fixes
+
+* **agentSessionsArchiving:** handle current copilot chat session format ([8c9ca5c](https://github.com/alessandroraffa/arit-toolkit/commit/8c9ca5c18a79b33bb891a26a7c759ab72574848f))
+* **configAutoCommit:** show error notification when commit fails ([c942709](https://github.com/alessandroraffa/arit-toolkit/commit/c9427090d0c6a420a0b4c412b004a48e5ac6c4e7))
+* **git:** unstage file when commit fails after staging ([b1a029c](https://github.com/alessandroraffa/arit-toolkit/commit/b1a029c5ff0b16123b3b6add21d9aa26eae4d048))
+
+### Code Refactoring
+
+* rename "run setup" command to "checkup" ([bab01fa](https://github.com/alessandroraffa/arit-toolkit/commit/bab01fa454a9233237217a6f3b6045d74e749304))
+
 ## [1.7.4](https://github.com/alessandroraffa/arit-toolkit/compare/v1.7.3...v1.7.4) (2026-02-19)
 
 ### Bug Fixes
