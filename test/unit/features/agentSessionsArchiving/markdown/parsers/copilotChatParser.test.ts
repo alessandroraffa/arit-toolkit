@@ -95,4 +95,116 @@ describe('CopilotChatParser', () => {
     const result = parser.parse('{}', 'chat-1');
     expect(result.turns).toHaveLength(0);
   });
+
+  // --- Real-world Copilot Chat format (kind: null for text, prepareToolInvocation + toolInvocationSerialized for tools) ---
+
+  it('handles null-kind response items as text content (current Copilot format)', () => {
+    const content = JSON.stringify({
+      requests: [
+        {
+          message: { text: 'Explain this' },
+          response: [
+            {
+              value: 'Here is the explanation.',
+              supportThemeIcons: false,
+              supportHtml: false,
+              baseUri: {},
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parser.parse(content, 'chat-2');
+
+    expect(result.turns).toHaveLength(2);
+    expect(result.turns[1]!.content).toBe('Here is the explanation.');
+  });
+
+  it('handles prepareToolInvocation + toolInvocationSerialized pattern (current Copilot format)', () => {
+    const content = JSON.stringify({
+      requests: [
+        {
+          message: { text: 'Find test files' },
+          response: [
+            { kind: 'prepareToolInvocation', toolName: 'copilot_findFiles' },
+            {
+              kind: 'toolInvocationSerialized',
+              invocationMessage: {
+                value: 'Searching for test files',
+                supportThemeIcons: false,
+              },
+              pastTenseMessage: { value: 'Found 3 test files', supportThemeIcons: false },
+              toolId: 'copilot_findFiles',
+              toolCallId: 'abc-123',
+              isConfirmed: { type: 1 },
+              isComplete: true,
+            },
+            { value: 'Done.' },
+          ],
+        },
+      ],
+    });
+
+    const result = parser.parse(content, 'chat-2');
+
+    const assistant = result.turns[1]!;
+    expect(assistant.toolCalls).toHaveLength(1);
+    expect(assistant.toolCalls[0]!.name).toBe('copilot_findFiles');
+    expect(assistant.toolCalls[0]!.input).toBe('Searching for test files');
+    expect(assistant.content).toBe('Done.');
+  });
+
+  it('handles string invocationMessage in toolInvocationSerialized', () => {
+    const content = JSON.stringify({
+      requests: [
+        {
+          message: { text: 'Replace something' },
+          response: [
+            { kind: 'prepareToolInvocation', toolName: 'copilot_multiReplaceString' },
+            {
+              kind: 'toolInvocationSerialized',
+              invocationMessage: 'Using "Multi-Replace String in Files"',
+              toolId: 'copilot_multiReplaceString',
+              toolCallId: 'xyz-789',
+              isConfirmed: { type: 1 },
+              isComplete: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parser.parse(content, 'chat-2');
+
+    const assistant = result.turns[1]!;
+    expect(assistant.toolCalls).toHaveLength(1);
+    expect(assistant.toolCalls[0]!.name).toBe('copilot_multiReplaceString');
+    expect(assistant.toolCalls[0]!.input).toBe('Using "Multi-Replace String in Files"');
+  });
+
+  it('uses toolId as fallback tool name when prepareToolInvocation is absent', () => {
+    const content = JSON.stringify({
+      requests: [
+        {
+          message: { text: 'Do something' },
+          response: [
+            {
+              kind: 'toolInvocationSerialized',
+              invocationMessage: { value: 'Running tool' },
+              toolId: 'copilot_someOrphanTool',
+              toolCallId: 'orphan-1',
+              isComplete: true,
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = parser.parse(content, 'chat-2');
+
+    const assistant = result.turns[1]!;
+    expect(assistant.toolCalls).toHaveLength(1);
+    expect(assistant.toolCalls[0]!.name).toBe('copilot_someOrphanTool');
+  });
 });

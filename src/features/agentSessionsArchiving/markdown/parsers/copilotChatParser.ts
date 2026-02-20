@@ -10,12 +10,20 @@ interface MessagePart {
   kind?: string;
 }
 
+// invocationMessage / pastTenseMessage can be a plain string (newer Copilot
+// format) or an object with a nested `value` (older format).
+type CopilotMessage = { value?: string } | string;
+
 interface ResponseItem {
-  kind: string;
+  // `kind` is null for plain-text response items in the current Copilot format.
+  kind?: string | null;
   value?: string;
+  // `toolName` appears on `prepareToolInvocation` items (current format).
   toolName?: string;
-  invocationMessage?: { value?: string };
-  pastTenseMessage?: { value?: string };
+  // `toolId` is present on `toolInvocationSerialized` items (current format).
+  toolId?: string;
+  invocationMessage?: CopilotMessage;
+  pastTenseMessage?: CopilotMessage;
 }
 
 interface CopilotRequest {
@@ -107,32 +115,55 @@ export class CopilotChatParser implements SessionParser {
   } {
     const textParts: string[] = [];
     const toolCalls: ToolCall[] = [];
-    let thinking = '';
+    const thinkingParts: string[] = [];
+    let pendingToolName: string | undefined;
 
     for (const item of items) {
-      if (item.kind === 'markdownContent' && item.value) {
+      if (item.kind === 'prepareToolInvocation') {
+        pendingToolName = item.toolName;
+      } else if (item.kind === 'toolInvocationSerialized') {
+        const tool = this.buildToolCall(item, pendingToolName);
+        pendingToolName = undefined;
+        if (tool) toolCalls.push(tool);
+      } else if (item.kind === 'thinking' && item.value) {
+        thinkingParts.push(item.value);
+      } else if ((!item.kind || item.kind === 'markdownContent') && item.value) {
         textParts.push(item.value);
       }
-      if (item.kind === 'thinking' && item.value) {
-        thinking += (thinking ? '\n\n' : '') + item.value;
-      }
-      if (item.kind === 'toolInvocationSerialized' && item.toolName) {
-        toolCalls.push(this.makeToolInvocation(item));
-      }
     }
 
-    return { text: textParts.join('\n\n'), toolCalls, thinking };
+    return {
+      text: textParts.join('\n\n'),
+      toolCalls,
+      thinking: thinkingParts.join('\n\n'),
+    };
   }
 
-  private makeToolInvocation(item: ResponseItem): ToolCall {
-    const tc: ToolCall = { name: item.toolName ?? '' };
-    if (item.invocationMessage?.value) {
-      return { ...tc, input: item.invocationMessage.value };
-    }
-    if (item.pastTenseMessage?.value) {
-      return { ...tc, output: item.pastTenseMessage.value };
-    }
+  private buildToolCall(
+    item: ResponseItem,
+    pendingName: string | undefined
+  ): ToolCall | undefined {
+    const name = item.toolName ?? pendingName ?? item.toolId ?? '';
+    if (!name) return undefined;
+    return this.makeToolInvocation(name, item.invocationMessage, item.pastTenseMessage);
+  }
+
+  private makeToolInvocation(
+    name: string,
+    invMsg: CopilotMessage | undefined,
+    pastMsg: CopilotMessage | undefined
+  ): ToolCall {
+    const tc: ToolCall = { name };
+    const input = this.extractMessageText(invMsg);
+    if (input) return { ...tc, input };
+    const output = this.extractMessageText(pastMsg);
+    if (output) return { ...tc, output };
     return tc;
+  }
+
+  private extractMessageText(msg: CopilotMessage | undefined): string {
+    if (typeof msg === 'string') return msg;
+    return msg?.value ?? '';
   }
 
   private emptySession(sessionId: string): NormalizedSession {
