@@ -1,6 +1,6 @@
 export const FEATURE_NAME = 'Status Bar Toggle';
 export const COMMAND_ID_TOGGLE = 'arit.toggleEnabled';
-export const COMMAND_ID_REINITIALIZE = 'arit.reinitialize';
+export const COMMAND_ID_CHECKUP = 'arit.checkup';
 export const STATUS_BAR_PRIORITY = 100;
 
 export const ICON_CODICON = '$(tools)';

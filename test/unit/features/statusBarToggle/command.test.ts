@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { window } from '../../mocks/vscode';
 import {
   toggleEnabledCommand,
-  reinitializeCommand,
+  checkupCommand,
 } from '../../../../src/features/statusBarToggle/command';
 
 describe('toggleEnabledCommand', () => {
@@ -124,7 +124,7 @@ describe('toggleEnabledCommand', () => {
   });
 });
 
-describe('reinitializeCommand', () => {
+describe('checkupCommand', () => {
   let mockStateManager: {
     isEnabled: boolean;
     isSingleRoot: boolean;
@@ -168,7 +168,7 @@ describe('reinitializeCommand', () => {
   });
 
   it('should call stateManager.reinitialize', async () => {
-    const command = reinitializeCommand({
+    const command = checkupCommand({
       stateManager: mockStateManager as any,
       logger: mockLogger as any,
       statusBarItem: mockStatusBarItem as any,
@@ -179,8 +179,8 @@ describe('reinitializeCommand', () => {
     expect(mockStateManager.reinitialize).toHaveBeenCalled();
   });
 
-  it('should update status bar item after reinitialize', async () => {
-    const command = reinitializeCommand({
+  it('should update status bar item after checkup', async () => {
+    const command = checkupCommand({
       stateManager: mockStateManager as any,
       logger: mockLogger as any,
       statusBarItem: mockStatusBarItem as any,
@@ -191,8 +191,8 @@ describe('reinitializeCommand', () => {
     expect(mockStatusBarItem.text).toBe('$(tools) ARIT');
   });
 
-  it('should log reinitialize action', async () => {
-    const command = reinitializeCommand({
+  it('should log checkup action', async () => {
+    const command = checkupCommand({
       stateManager: mockStateManager as any,
       logger: mockLogger as any,
       statusBarItem: mockStatusBarItem as any,
@@ -200,6 +200,6 @@ describe('reinitializeCommand', () => {
 
     await command();
 
-    expect(mockLogger.info).toHaveBeenCalledWith('ARIT Toolkit setup executed');
+    expect(mockLogger.info).toHaveBeenCalledWith('ARIT Toolkit checkup completed');
   });
 });

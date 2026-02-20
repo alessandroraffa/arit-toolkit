@@ -3,7 +3,7 @@ import type { ExtensionStateManager } from '../../core/extensionStateManager';
 import type { Logger } from '../../core/logger';
 import {
   COMMAND_ID_TOGGLE,
-  COMMAND_ID_REINITIALIZE,
+  COMMAND_ID_CHECKUP,
   STATUS_BAR_PRIORITY,
   ICON_CODICON,
   STATUS_BAR_TEXT,
@@ -67,7 +67,7 @@ function buildSingleRootTooltip(
   }
 
   md.appendMarkdown(`---\n\n`);
-  md.appendMarkdown(`[$(gear) Run Setup](command:${COMMAND_ID_REINITIALIZE})\u2002`);
+  md.appendMarkdown(`[$(gear) Checkup](command:${COMMAND_ID_CHECKUP})\u2002`);
   md.appendMarkdown(buildGlobalToggleButton(stateManager.isEnabled));
 
   return md;

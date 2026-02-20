@@ -270,23 +270,23 @@ describe('statusBarItem', () => {
     });
   });
 
-  describe('tooltip run setup button', () => {
-    it('should show run setup button when enabled', () => {
+  describe('tooltip checkup button', () => {
+    it('should show checkup button when enabled', () => {
       mockStateManager.isEnabled = true;
       const item = createStatusBarItem(mockStateManager as any, mockLogger as any);
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
-      expect(tooltip.value).toContain('Run Setup');
-      expect(tooltip.value).toContain('command:arit.reinitialize');
+      expect(tooltip.value).toContain('Checkup');
+      expect(tooltip.value).toContain('command:arit.checkup');
     });
 
-    it('should show run setup button when disabled', () => {
+    it('should show checkup button when disabled', () => {
       mockStateManager.isEnabled = false;
       const item = createStatusBarItem(mockStateManager as any, mockLogger as any);
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
-      expect(tooltip.value).toContain('Run Setup');
-      expect(tooltip.value).toContain('command:arit.reinitialize');
+      expect(tooltip.value).toContain('Checkup');
+      expect(tooltip.value).toContain('command:arit.checkup');
     });
   });
 });

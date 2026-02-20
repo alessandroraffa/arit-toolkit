@@ -66,8 +66,8 @@
         "icon": "$(tools)"
       },
       {
-        "command": "arit.reinitialize",
-        "title": "ARIT: Run Setup",
+        "command": "arit.checkup",
+        "title": "ARIT: Checkup",
         "icon": "$(gear)"
       },
       {

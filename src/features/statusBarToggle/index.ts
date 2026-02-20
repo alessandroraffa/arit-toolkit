@@ -1,7 +1,7 @@
 import type { FeatureRegistrationContext } from '../index';
 import { createStatusBarItem, updateStatusBarItem } from './statusBarItem';
-import { toggleEnabledCommand, reinitializeCommand } from './command';
-import { COMMAND_ID_TOGGLE, COMMAND_ID_REINITIALIZE } from './constants';
+import { toggleEnabledCommand, checkupCommand } from './command';
+import { COMMAND_ID_TOGGLE, COMMAND_ID_CHECKUP } from './constants';
 
 export function registerStatusBarToggleFeature(ctx: FeatureRegistrationContext): void {
   const { registry, stateManager, config, logger, context } = ctx;
@@ -10,8 +10,8 @@ export function registerStatusBarToggleFeature(ctx: FeatureRegistrationContext):
 
   const commandDeps = { stateManager, logger, statusBarItem };
   registry.register(COMMAND_ID_TOGGLE, toggleEnabledCommand(commandDeps));
-  registry.register(COMMAND_ID_REINITIALIZE, reinitializeCommand(commandDeps));
-  logger.debug(`Registered commands: ${COMMAND_ID_TOGGLE}, ${COMMAND_ID_REINITIALIZE}`);
+  registry.register(COMMAND_ID_CHECKUP, checkupCommand(commandDeps));
+  logger.debug(`Registered commands: ${COMMAND_ID_TOGGLE}, ${COMMAND_ID_CHECKUP}`);
 
   const stateDisposable = stateManager.onDidChangeState(() => {
     updateStatusBarItem(statusBarItem, stateManager);
