@@ -112,7 +112,7 @@ describe('ConfigAutoCommitService', () => {
     expect(gitStageAndCommit).not.toHaveBeenCalled();
   });
 
-  it('should log warning when commit fails', async () => {
+  it('should log warning and show error message when commit fails', async () => {
     vi.mocked(isGitIgnored).mockResolvedValue(false);
     vi.mocked(hasGitChanges).mockResolvedValue(true);
     vi.mocked(window.showInformationMessage).mockResolvedValue('Commit' as any);
@@ -127,6 +127,9 @@ describe('ConfigAutoCommitService', () => {
 
     expect(logger.warn).toHaveBeenCalledWith(
       expect.stringContaining('Failed to commit config change')
+    );
+    expect(window.showErrorMessage).toHaveBeenCalledWith(
+      'ARIT Toolkit: Failed to commit config change. Check the output log for details.'
     );
   });
 

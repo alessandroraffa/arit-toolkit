@@ -36,10 +36,12 @@ export class ConfigAutoCommitService {
       'Skip'
     );
 
-    if (action !== 'Commit') {
-      return;
+    if (action === 'Commit') {
+      await this.performCommit();
     }
+  }
 
+  private async performCommit(): Promise<void> {
     try {
       await gitStageAndCommit(
         this.configFileName,
@@ -49,6 +51,9 @@ export class ConfigAutoCommitService {
       this.logger.info('Config change committed');
     } catch (err) {
       this.logger.warn(`Failed to commit config change: ${String(err)}`);
+      void vscode.window.showErrorMessage(
+        'ARIT Toolkit: Failed to commit config change. Check the output log for details.'
+      );
     }
   }
 }
