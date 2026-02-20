@@ -239,7 +239,7 @@ activate(context)
   |     |
   |     +-- registerStatusBarToggleFeature(ctx)
   |     |     +-- register arit.toggleEnabled command
-  |     |     +-- register arit.reinitialize command
+  |     |     +-- register arit.checkup command
   |     +-- registerTimestampedFileFeature(registry, config, logger)
   |     +-- registerTimestampedDirectoryFeature(registry, config, logger)
   |     +-- registerAgentSessionsArchivingFeature(ctx)
@@ -266,14 +266,19 @@ activate(context)
               +-- showOnboardingNotification()
               +-- if accepted: runMigration()
 
-stateManager.reinitialize()  [async, triggered by "Run Setup" button]
+stateManager.checkup()  [async, triggered by "Checkup" button]
   |
+  +-- guard: skip if not single-root, no workspace root, or no extension version
+  +-- autoCommitService.suspend()
   +-- readStateFromFile()
-  +-- if initialised:
-  |     +-- fire onDidChangeState
-  |     +-- runMigration()  (unconditionally — user explicitly requested)
   +-- if not initialised:
-        +-- showOnboardingNotification()
+  |     +-- showOnboardingNotification()
+  |     +-- if declined: resume auto-commit and return
+  +-- fire onDidChangeState
+  +-- runMigration()  (unconditionally — user explicitly requested)
+  +-- autoCommitService.commitIfNeeded()
+  +-- autoCommitService.resume()  (in finally)
+  +-- return CheckupResult { configUpdated, commitResult }
 ```
 
 ---
@@ -484,19 +489,19 @@ all others -> no release.
 
 ## 12 Glossary
 
-| Term                      | Definition                                                                                                                                                                                                     |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Archive cycle**         | A single pass of the `AgentSessionArchiveService` that queries all providers, detects mtime changes, and copies/replaces session files in the archive directory.                                               |
-| **Config migration**      | The process of detecting configuration sections missing from an older workspace config and prompting the user to add them with default values.                                                                 |
-| **Config section**        | A top-level key in `.arit-toolkit.jsonc` owned by a specific feature (e.g., `agentSessionsArchiving`).                                                                                                         |
-| **Feature**               | A self-contained module under `src/features/<name>/` that registers commands, UI elements, and/or background services.                                                                                         |
-| **Global toggle**         | The top-level `enabled` boolean in `.arit-toolkit.jsonc` that controls whether all background services are active.                                                                                             |
-| **Guarded command**       | A VS Code command that checks `stateManager.isEnabled` before executing and shows a warning if the extension is disabled.                                                                                      |
-| **mtime**                 | File modification timestamp obtained via `vscode.workspace.fs.stat()`, used for change detection without reading file contents.                                                                                |
-| **Onboarding**            | The first-time notification shown when a user opens a single-root workspace that does not yet have `.arit-toolkit.jsonc`.                                                                                      |
-| **Reinitialize**          | A manual re-trigger of the initialization flow (config read, state fire, migration) via the "Run Setup" tooltip button, without reloading VS Code. Runs migration unconditionally regardless of enabled state. |
-| **Session file**          | A file produced by an AI coding assistant that contains chat interaction history (not rules or configuration).                                                                                                 |
-| **Session provider**      | An implementation of `SessionProvider` that discovers session files for a specific AI coding assistant.                                                                                                        |
-| **Single-root workspace** | A VS Code workspace with exactly one root folder. Required for advanced features that persist state to disk.                                                                                                   |
-| **Version code**          | A numeric encoding of a semantic version (`1XXXYYYZZZ`) used for fast comparison in the migration system.                                                                                                      |
-| **Workspace config**      | The `.arit-toolkit.jsonc` file at the workspace root, managed by `ExtensionStateManager`.                                                                                                                      |
+| Term                      | Definition                                                                                                                                                                                                                                            |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Archive cycle**         | A single pass of the `AgentSessionArchiveService` that queries all providers, detects mtime changes, and copies/replaces session files in the archive directory.                                                                                      |
+| **Config migration**      | The process of detecting configuration sections missing from an older workspace config and prompting the user to add them with default values.                                                                                                        |
+| **Config section**        | A top-level key in `.arit-toolkit.jsonc` owned by a specific feature (e.g., `agentSessionsArchiving`).                                                                                                                                                |
+| **Feature**               | A self-contained module under `src/features/<name>/` that registers commands, UI elements, and/or background services.                                                                                                                                |
+| **Global toggle**         | The top-level `enabled` boolean in `.arit-toolkit.jsonc` that controls whether all background services are active.                                                                                                                                    |
+| **Guarded command**       | A VS Code command that checks `stateManager.isEnabled` before executing and shows a warning if the extension is disabled.                                                                                                                             |
+| **mtime**                 | File modification timestamp obtained via `vscode.workspace.fs.stat()`, used for change detection without reading file contents.                                                                                                                       |
+| **Onboarding**            | The first-time notification shown when a user opens a single-root workspace that does not yet have `.arit-toolkit.jsonc`.                                                                                                                             |
+| **Checkup**               | A comprehensive health check triggered via the "Checkup" tooltip button. Reads config, runs migration, preserves user customizations, and optionally commits the updated config file. Suspends auto-commit during execution to avoid race conditions. |
+| **Session file**          | A file produced by an AI coding assistant that contains chat interaction history (not rules or configuration).                                                                                                                                        |
+| **Session provider**      | An implementation of `SessionProvider` that discovers session files for a specific AI coding assistant.                                                                                                                                               |
+| **Single-root workspace** | A VS Code workspace with exactly one root folder. Required for advanced features that persist state to disk.                                                                                                                                          |
+| **Version code**          | A numeric encoding of a semantic version (`1XXXYYYZZZ`) used for fast comparison in the migration system.                                                                                                                                             |
+| **Workspace config**      | The `.arit-toolkit.jsonc` file at the workspace root, managed by `ExtensionStateManager`.                                                                                                                                                             |
