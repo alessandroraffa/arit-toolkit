@@ -14,6 +14,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   private intervalHandle: ReturnType<typeof setInterval> | undefined;
   private _currentConfig: AgentSessionsArchivingConfig | undefined;
   private readonly lastArchivedMap = new Map<string, ArchivedEntry>();
+  private _needsDedup = true;
 
   constructor(
     private readonly workspaceRootUri: vscode.Uri,
@@ -29,6 +30,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     this.stop();
     this._currentConfig = config;
     const intervalMs = config.intervalMinutes * 60_000;
+    this._needsDedup = true;
     this.logger.info(
       `Agent sessions archiving started (interval: ${String(config.intervalMinutes)}m)`
     );
@@ -71,12 +73,20 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     if (!this._currentConfig) {
       return;
     }
-    const workspacePath = this.workspaceRootUri.fsPath;
     const archiveUri = vscode.Uri.joinPath(
       this.workspaceRootUri,
       this._currentConfig.archivePath
     );
-    const cutoffMs = this._currentConfig.ignoreSessionsBefore
+    if (this._needsDedup) {
+      await this.deduplicateAndHydrate(archiveUri);
+      this._needsDedup = false;
+    }
+    await this.archiveFromProviders(archiveUri);
+  }
+
+  private async archiveFromProviders(archiveUri: vscode.Uri): Promise<void> {
+    const workspacePath = this.workspaceRootUri.fsPath;
+    const cutoffMs = this._currentConfig?.ignoreSessionsBefore
       ? parseYYYYMMDD(this._currentConfig.ignoreSessionsBefore)
       : 0;
 
@@ -198,6 +208,59 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     }
     await vscode.workspace.fs.delete(oldUri, { recursive: true });
     this.logger.info(`Moved archive from ${oldPath} to ${newPath}`);
+  }
+
+  private async deduplicateAndHydrate(archiveUri: vscode.Uri): Promise<void> {
+    let entries: [string, vscode.FileType][];
+    try {
+      entries = await vscode.workspace.fs.readDirectory(archiveUri);
+    } catch {
+      return;
+    }
+    const grouped = this.groupArchiveFiles(entries);
+    for (const [archiveName, files] of grouped) {
+      if (files.length > 1) {
+        await this.removeDuplicates(archiveUri, files);
+      }
+      const best = files[0];
+      if (best && !this.lastArchivedMap.has(archiveName)) {
+        this.lastArchivedMap.set(archiveName, { mtime: 0, archiveFileName: best.name });
+      }
+    }
+  }
+
+  private groupArchiveFiles(
+    entries: [string, vscode.FileType][]
+  ): Map<string, { ts: string; name: string }[]> {
+    const PATTERN = /^(\d{12})-(.+)\.\w+$/;
+    const groups = new Map<string, { ts: string; name: string }[]>();
+    for (const [name, type] of entries) {
+      if (type !== vscode.FileType.File) {
+        continue;
+      }
+      const m = PATTERN.exec(name);
+      if (!m?.[1] || !m[2]) {
+        continue;
+      }
+      const list = groups.get(m[2]) ?? [];
+      list.push({ ts: m[1], name });
+      groups.set(m[2], list);
+    }
+    return groups;
+  }
+
+  private async removeDuplicates(
+    archiveUri: vscode.Uri,
+    files: { ts: string; name: string }[]
+  ): Promise<void> {
+    files.sort((a, b) => b.ts.localeCompare(a.ts));
+    for (let i = 1; i < files.length; i++) {
+      const dup = files[i];
+      if (dup) {
+        await this.deleteFile(vscode.Uri.joinPath(archiveUri, dup.name));
+        this.logger.info(`Removed duplicate archive: ${dup.name}`);
+      }
+    }
   }
 
   private async ensureDirectory(uri: vscode.Uri): Promise<void> {
