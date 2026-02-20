@@ -147,4 +147,133 @@ describe('ConfigAutoCommitService', () => {
 
     expect(isGitIgnored).toHaveBeenCalledTimes(1);
   });
+
+  describe('suspend / resume', () => {
+    it('should skip onConfigWritten when suspended', async () => {
+      vi.mocked(isGitIgnored).mockResolvedValue(false);
+      vi.mocked(hasGitChanges).mockResolvedValue(true);
+
+      const service = new ConfigAutoCommitService(
+        '/workspace',
+        '.arit-toolkit.jsonc',
+        logger as any
+      );
+      service.suspend();
+      await service.onConfigWritten();
+
+      expect(hasGitChanges).not.toHaveBeenCalled();
+      expect(window.showInformationMessage).not.toHaveBeenCalled();
+    });
+
+    it('should resume normal behavior after resume', async () => {
+      vi.mocked(isGitIgnored).mockResolvedValue(false);
+      vi.mocked(hasGitChanges).mockResolvedValue(true);
+      vi.mocked(window.showInformationMessage).mockResolvedValue('Skip' as any);
+
+      const service = new ConfigAutoCommitService(
+        '/workspace',
+        '.arit-toolkit.jsonc',
+        logger as any
+      );
+      service.suspend();
+      await service.onConfigWritten();
+      service.resume();
+      await service.onConfigWritten();
+
+      expect(window.showInformationMessage).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('commitIfNeeded', () => {
+    it('should return git-ignored when file is gitignored', async () => {
+      vi.mocked(isGitIgnored).mockResolvedValue(true);
+
+      const service = new ConfigAutoCommitService(
+        '/workspace',
+        '.arit-toolkit.jsonc',
+        logger as any
+      );
+      const result = await service.commitIfNeeded();
+
+      expect(result).toBe('git-ignored');
+    });
+
+    it('should return no-changes when file has no changes', async () => {
+      vi.mocked(isGitIgnored).mockResolvedValue(false);
+      vi.mocked(hasGitChanges).mockResolvedValue(false);
+
+      const service = new ConfigAutoCommitService(
+        '/workspace',
+        '.arit-toolkit.jsonc',
+        logger as any
+      );
+      const result = await service.commitIfNeeded();
+
+      expect(result).toBe('no-changes');
+    });
+
+    it('should return committed when user accepts and commit succeeds', async () => {
+      vi.mocked(isGitIgnored).mockResolvedValue(false);
+      vi.mocked(hasGitChanges).mockResolvedValue(true);
+      vi.mocked(window.showInformationMessage).mockResolvedValue('Commit' as any);
+      vi.mocked(gitStageAndCommit).mockResolvedValue(undefined);
+
+      const service = new ConfigAutoCommitService(
+        '/workspace',
+        '.arit-toolkit.jsonc',
+        logger as any
+      );
+      const result = await service.commitIfNeeded();
+
+      expect(result).toBe('committed');
+      expect(logger.info).toHaveBeenCalledWith('Config change committed');
+    });
+
+    it('should return skipped when user clicks Skip', async () => {
+      vi.mocked(isGitIgnored).mockResolvedValue(false);
+      vi.mocked(hasGitChanges).mockResolvedValue(true);
+      vi.mocked(window.showInformationMessage).mockResolvedValue('Skip' as any);
+
+      const service = new ConfigAutoCommitService(
+        '/workspace',
+        '.arit-toolkit.jsonc',
+        logger as any
+      );
+      const result = await service.commitIfNeeded();
+
+      expect(result).toBe('skipped');
+    });
+
+    it('should return skipped when user dismisses notification', async () => {
+      vi.mocked(isGitIgnored).mockResolvedValue(false);
+      vi.mocked(hasGitChanges).mockResolvedValue(true);
+      vi.mocked(window.showInformationMessage).mockResolvedValue(undefined as any);
+
+      const service = new ConfigAutoCommitService(
+        '/workspace',
+        '.arit-toolkit.jsonc',
+        logger as any
+      );
+      const result = await service.commitIfNeeded();
+
+      expect(result).toBe('skipped');
+    });
+
+    it('should return failed and show error when commit fails', async () => {
+      vi.mocked(isGitIgnored).mockResolvedValue(false);
+      vi.mocked(hasGitChanges).mockResolvedValue(true);
+      vi.mocked(window.showInformationMessage).mockResolvedValue('Commit' as any);
+      vi.mocked(gitStageAndCommit).mockRejectedValue(new Error('hook failed'));
+
+      const service = new ConfigAutoCommitService(
+        '/workspace',
+        '.arit-toolkit.jsonc',
+        logger as any
+      );
+      const result = await service.commitIfNeeded();
+
+      expect(result).toBe('failed');
+      expect(window.showErrorMessage).toHaveBeenCalled();
+    });
+  });
 });
