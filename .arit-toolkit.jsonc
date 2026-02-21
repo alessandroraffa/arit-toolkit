@@ -7,6 +7,6 @@
     "archivePath": "docs/archive/agent-sessions",
     "intervalMinutes": 5
   },
-  "version": "1.7.4",
-  "versionCode": 1001007004
+  "version": "1.9.1",
+  "versionCode": 1001009001
 }
