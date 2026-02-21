@@ -151,7 +151,7 @@
             "Year, month, day, hour, minute (202602051430)",
             "Year, month, day only (20260205)",
             "Full timestamp with seconds (20260205143022)",
-            "ISO 8601 format (2026-02-05T14-30-22-000Z)"
+            "ISO 8601 format (2026-02-05T14-30-22-123Z)"
           ],
           "description": "Format for the timestamp prefix"
         },

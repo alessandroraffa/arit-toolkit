@@ -211,7 +211,6 @@ arit-toolkit/
 1. Create a new directory under `src/features/<featureName>/`
 2. Implement:
    - `constants.ts` - Command IDs and constants
-   - `utils.ts` - Pure utility functions
    - `command.ts` - Command handler factories
    - `index.ts` - Feature registration via `FeatureRegistrationContext`
 3. Write unit tests first (TDD) in `test/unit/features/<featureName>/`
