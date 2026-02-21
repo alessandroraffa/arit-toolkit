@@ -42,6 +42,8 @@ updates:
         patterns:
           - '@types/*'
     ignore:
+      - dependency-name: ajv
+        # pnpm cannot update transitive dependencies; ajv is pinned via pnpm.overrides
       - dependency-name: minimatch
         versions:
           - '>= 4.0.0'
