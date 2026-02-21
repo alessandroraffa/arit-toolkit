@@ -1,3 +1,9 @@
+## [1.9.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.9.0...v1.9.1) (2026-02-21)
+
+### Bug Fixes
+
+* **configAutoCommit:** skip git hooks on programmatic config commits ([9972d65](https://github.com/alessandroraffa/arit-toolkit/commit/9972d65cea2cb8876d9de0db6108bc74e6022759))
+
 ## [1.9.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.8.0...v1.9.0) (2026-02-20)
 
 ### Features
