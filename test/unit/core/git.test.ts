@@ -118,7 +118,9 @@ describe('gitStageAndCommit', () => {
       }
     );
 
-    await gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update config', '/workspace');
+    await gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update config', {
+      cwd: '/workspace',
+    });
 
     expect(calls).toHaveLength(2);
     expect(calls[0]).toEqual(['add', '--', '.arit-toolkit.jsonc']);
@@ -144,7 +146,7 @@ describe('gitStageAndCommit', () => {
     );
 
     await expect(
-      gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update', '/workspace')
+      gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update', { cwd: '/workspace' })
     ).rejects.toThrow('add failed');
   });
 
@@ -174,7 +176,7 @@ describe('gitStageAndCommit', () => {
     );
 
     await expect(
-      gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update', '/workspace')
+      gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update', { cwd: '/workspace' })
     ).rejects.toThrow('commit failed');
 
     expect(calls).toHaveLength(3);
@@ -187,6 +189,57 @@ describe('gitStageAndCommit', () => {
       '.arit-toolkit.jsonc',
     ]);
     expect(calls[2]).toEqual(['reset', 'HEAD', '--', '.arit-toolkit.jsonc']);
+  });
+
+  it('should pass HUSKY=0 env to git commit when skipHooks is true', async () => {
+    const capturedOpts: unknown[] = [];
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        capturedOpts.push(opts);
+        cb(null, '', '');
+      }
+    );
+
+    await gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update config', {
+      cwd: '/workspace',
+      skipHooks: true,
+    });
+
+    // git add opts (index 0) — no env override needed
+    expect(capturedOpts[0]).toEqual({ cwd: '/workspace' });
+    // git commit opts (index 1) — HUSKY=0 to bypass hooks
+    const commitOpts = capturedOpts[1] as { cwd: string; env: Record<string, string> };
+    expect(commitOpts.cwd).toBe('/workspace');
+    expect(commitOpts.env).toBeDefined();
+    expect(commitOpts.env.HUSKY).toBe('0');
+  });
+
+  it('should not set HUSKY env when skipHooks is omitted', async () => {
+    const capturedOpts: unknown[] = [];
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        capturedOpts.push(opts);
+        cb(null, '', '');
+      }
+    );
+
+    await gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update config', {
+      cwd: '/workspace',
+    });
+
+    // Both git add and git commit should only have { cwd }
+    expect(capturedOpts[0]).toEqual({ cwd: '/workspace' });
+    expect(capturedOpts[1]).toEqual({ cwd: '/workspace' });
   });
 });
 

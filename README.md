@@ -80,7 +80,7 @@ Command Palette → "ARIT: Toggle Extension (Enable/Disable)" or "ARIT: Checkup"
 
 **Workspace initialization:** When you open a single-root workspace for the first time, ARIT Toolkit offers to create a `.arit-toolkit.jsonc` configuration file at the workspace root. When the extension updates and introduces new configuration sections, you will be prompted to add them.
 
-**Config auto-commit:** In a Git repository, when the extension writes changes to `.arit-toolkit.jsonc` and the file is not gitignored, you are prompted to commit the change automatically. If the file has no actual Git changes, the prompt is skipped.
+**Config auto-commit:** In a Git repository, when the extension writes changes to `.arit-toolkit.jsonc` and the file is not gitignored, you are prompted to commit the change automatically. If the file has no actual Git changes, the prompt is skipped. Git hooks (pre-commit, commit-msg) are bypassed for these automated commits because VS Code's extension host process has a restricted environment where tools like `pnpm` may not be available.
 
 **Workspace modes:**
 

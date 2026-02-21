@@ -77,9 +77,27 @@ describe('ConfigAutoCommitService', () => {
     expect(gitStageAndCommit).toHaveBeenCalledWith(
       '.arit-toolkit.jsonc',
       'chore: update arit-toolkit config',
-      '/workspace'
+      { cwd: '/workspace', skipHooks: true }
     );
     expect(logger.info).toHaveBeenCalledWith('Config change committed');
+  });
+
+  it('should log debug message about hooks bypass before committing', async () => {
+    vi.mocked(isGitIgnored).mockResolvedValue(false);
+    vi.mocked(hasGitChanges).mockResolvedValue(true);
+    vi.mocked(window.showInformationMessage).mockResolvedValue('Commit' as any);
+    vi.mocked(gitStageAndCommit).mockResolvedValue(undefined);
+
+    const service = new ConfigAutoCommitService(
+      '/workspace',
+      '.arit-toolkit.jsonc',
+      logger as any
+    );
+    await service.onConfigWritten();
+
+    expect(logger.debug).toHaveBeenCalledWith(
+      expect.stringContaining('git hooks bypassed')
+    );
   });
 
   it('should not commit when user clicks Skip', async () => {

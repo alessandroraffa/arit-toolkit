@@ -3,6 +3,12 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
+export interface StageAndCommitOptions {
+  cwd: string;
+  /** When true, sets HUSKY=0 to bypass git hooks on the commit. */
+  skipHooks?: boolean;
+}
+
 /**
  * Returns true if the given file path is ignored by git.
  * Returns true (treated as ignored) when git is unavailable or the workspace
@@ -55,11 +61,13 @@ export async function gitUnstage(filePath: string, cwd: string): Promise<void> {
 export async function gitStageAndCommit(
   filePath: string,
   message: string,
-  cwd: string
+  options: StageAndCommitOptions
 ): Promise<void> {
+  const { cwd, skipHooks } = options;
   await execFileAsync('git', ['add', '--', filePath], { cwd });
+  const commitOpts = skipHooks ? { cwd, env: { ...process.env, HUSKY: '0' } } : { cwd };
   try {
-    await execFileAsync('git', ['commit', '-m', message, '--', filePath], { cwd });
+    await execFileAsync('git', ['commit', '-m', message, '--', filePath], commitOpts);
   } catch (err) {
     await gitUnstage(filePath, cwd).catch(() => {
       /* best-effort unstage */

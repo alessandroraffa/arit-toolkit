@@ -89,11 +89,11 @@ export class ConfigAutoCommitService {
 
   private async performCommit(): Promise<void> {
     try {
-      await gitStageAndCommit(
-        this.configFileName,
-        COMMIT_MESSAGE,
-        this.workspaceRootPath
-      );
+      this.logger.debug('Committing config change (git hooks bypassed)');
+      await gitStageAndCommit(this.configFileName, COMMIT_MESSAGE, {
+        cwd: this.workspaceRootPath,
+        skipHooks: true,
+      });
       this.logger.info('Config change committed');
     } catch (err) {
       this.logger.warn(`Failed to commit config change: ${String(err)}`);
@@ -105,11 +105,11 @@ export class ConfigAutoCommitService {
 
   private async performCommitWithResult(): Promise<CommitResult> {
     try {
-      await gitStageAndCommit(
-        this.configFileName,
-        COMMIT_MESSAGE,
-        this.workspaceRootPath
-      );
+      this.logger.debug('Committing config change (git hooks bypassed)');
+      await gitStageAndCommit(this.configFileName, COMMIT_MESSAGE, {
+        cwd: this.workspaceRootPath,
+        skipHooks: true,
+      });
       this.logger.info('Config change committed');
       return 'committed';
     } catch (err) {
