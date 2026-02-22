@@ -1,8 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { ClaudeCodeParser } from '../../../../../../src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser';
+import type { ParseResult } from '../../../../../../src/features/agentSessionsArchiving/markdown/types';
 
 function jsonl(...events: object[]): string {
   return events.map((e) => JSON.stringify(e)).join('\n');
+}
+
+function expectParsed(result: ParseResult) {
+  expect(result.status).toBe('parsed');
+  if (result.status !== 'parsed') throw new Error('expected parsed');
+  return result.session;
 }
 
 describe('ClaudeCodeParser', () => {
@@ -17,13 +24,13 @@ describe('ClaudeCodeParser', () => {
       },
     });
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.providerName).toBe('claude-code');
-    expect(result.providerDisplayName).toBe('Claude Code');
-    expect(result.turns).toHaveLength(1);
-    expect(result.turns[0]!.role).toBe('user');
-    expect(result.turns[0]!.content).toBe('Hello world');
+    expect(session.providerName).toBe('claude-code');
+    expect(session.providerDisplayName).toBe('Claude Code');
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('Hello world');
   });
 
   it('should parse assistant message with text', () => {
@@ -35,11 +42,11 @@ describe('ClaudeCodeParser', () => {
       },
     });
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns).toHaveLength(1);
-    expect(result.turns[0]!.role).toBe('assistant');
-    expect(result.turns[0]!.content).toBe('I can help with that.');
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.role).toBe('assistant');
+    expect(session.turns[0]!.content).toBe('I can help with that.');
   });
 
   it('should parse assistant message with thinking', () => {
@@ -54,11 +61,11 @@ describe('ClaudeCodeParser', () => {
       },
     });
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns).toHaveLength(1);
-    expect(result.turns[0]!.thinking).toBe('Let me consider...');
-    expect(result.turns[0]!.content).toBe('Here is my answer.');
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.thinking).toBe('Let me consider...');
+    expect(session.turns[0]!.content).toBe('Here is my answer.');
   });
 
   it('should parse tool_use events', () => {
@@ -86,12 +93,12 @@ describe('ClaudeCodeParser', () => {
       }
     );
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns).toHaveLength(1);
-    expect(result.turns[0]!.toolCalls).toHaveLength(1);
-    expect(result.turns[0]!.toolCalls[0]!.name).toBe('Read');
-    expect(result.turns[0]!.filesRead).toContain('src/main.ts');
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls[0]!.name).toBe('Read');
+    expect(session.turns[0]!.filesRead).toContain('src/main.ts');
   });
 
   it('should extract file refs for Edit and Write tools', () => {
@@ -119,17 +126,30 @@ describe('ClaudeCodeParser', () => {
       }
     );
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns[0]!.filesModified).toContain('src/foo.ts');
+    expect(session.turns[0]!.filesModified).toContain('src/foo.ts');
   });
 
-  it('should handle empty content', () => {
+  it('should return unrecognized for empty content', () => {
     const result = parser.parse('', 'session-1');
-    expect(result.turns).toHaveLength(0);
+    expect(result.status).toBe('unrecognized');
   });
 
-  it('should skip malformed JSON lines', () => {
+  it('should skip malformed JSON lines after valid first line', () => {
+    const content =
+      JSON.stringify({
+        type: 'user',
+        message: { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
+      }) + '\nnot json';
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.content).toBe('Hello');
+  });
+
+  it('should return unrecognized when first line is not valid JSONL', () => {
     const content =
       'not json\n' +
       JSON.stringify({
@@ -138,9 +158,7 @@ describe('ClaudeCodeParser', () => {
       });
 
     const result = parser.parse(content, 'session-1');
-
-    expect(result.turns).toHaveLength(1);
-    expect(result.turns[0]!.content).toBe('Hello');
+    expect(result.status).toBe('unrecognized');
   });
 
   it('should skip unknown event types', () => {
@@ -149,9 +167,9 @@ describe('ClaudeCodeParser', () => {
       { type: 'user', message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] } }
     );
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns).toHaveLength(1);
+    expect(session.turns).toHaveLength(1);
   });
 
   it('should process tool_result events and attach output to tool calls', () => {
@@ -188,10 +206,10 @@ describe('ClaudeCodeParser', () => {
       }
     );
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns).toHaveLength(1);
-    expect(result.turns[0]!.toolCalls[0]!.output).toBe('file contents here');
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls[0]!.output).toBe('file contents here');
   });
 
   it('should flush pending tool calls when session ends without assistant event', () => {
@@ -205,12 +223,12 @@ describe('ClaudeCodeParser', () => {
       },
     });
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns).toHaveLength(1);
-    expect(result.turns[0]!.role).toBe('assistant');
-    expect(result.turns[0]!.toolCalls).toHaveLength(1);
-    expect(result.turns[0]!.toolCalls[0]!.name).toBe('Bash');
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.role).toBe('assistant');
+    expect(session.turns[0]!.toolCalls).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls[0]!.name).toBe('Bash');
   });
 
   it('should handle user message with string content', () => {
@@ -219,10 +237,10 @@ describe('ClaudeCodeParser', () => {
       message: { role: 'user', content: 'plain string content' },
     });
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns).toHaveLength(1);
-    expect(result.turns[0]!.content).toBe('plain string content');
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.content).toBe('plain string content');
   });
 
   it('should concatenate multiple thinking blocks', () => {
@@ -238,9 +256,9 @@ describe('ClaudeCodeParser', () => {
       },
     });
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns[0]!.thinking).toBe('First thought.\n\nSecond thought.');
+    expect(session.turns[0]!.thinking).toBe('First thought.\n\nSecond thought.');
   });
 
   it('should extract file refs for Write tool', () => {
@@ -265,8 +283,8 @@ describe('ClaudeCodeParser', () => {
       }
     );
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns[0]!.filesModified).toContain('new.ts');
+    expect(session.turns[0]!.filesModified).toContain('new.ts');
   });
 });

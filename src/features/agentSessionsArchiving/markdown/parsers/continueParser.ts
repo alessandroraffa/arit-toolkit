@@ -1,9 +1,4 @@
-import type {
-  SessionParser,
-  NormalizedSession,
-  NormalizedTurn,
-  ToolCall,
-} from '../types';
+import type { SessionParser, NormalizedTurn, ToolCall, ParseResult } from '../types';
 
 interface ContinueMessage {
   role: string;
@@ -53,20 +48,23 @@ function makeToolCall(step: ContinueStep): ToolCall {
 export class ContinueParser implements SessionParser {
   public readonly providerName = 'continue';
 
-  public parse(content: string, sessionId: string): NormalizedSession {
+  public parse(content: string, sessionId: string): ParseResult {
     let data: ContinueSessionData;
     try {
       data = JSON.parse(content) as ContinueSessionData;
     } catch {
-      return this.emptySession(sessionId);
+      return { status: 'unrecognized', reason: 'content is not valid JSON' };
     }
 
     const turns = this.processHistory(data);
     return {
-      providerName: 'continue',
-      providerDisplayName: 'Continue',
-      sessionId,
-      turns,
+      status: 'parsed',
+      session: {
+        providerName: 'continue',
+        providerDisplayName: 'Continue',
+        sessionId,
+        turns,
+      },
     };
   }
 
@@ -110,14 +108,5 @@ export class ContinueParser implements SessionParser {
     return context
       .map((item) => item.uri?.value ?? item.name ?? '')
       .filter((name) => name.length > 0);
-  }
-
-  private emptySession(sessionId: string): NormalizedSession {
-    return {
-      providerName: 'continue',
-      providerDisplayName: 'Continue',
-      sessionId,
-      turns: [],
-    };
   }
 }

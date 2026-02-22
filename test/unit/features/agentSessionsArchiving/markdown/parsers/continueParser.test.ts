@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { ContinueParser } from '../../../../../../src/features/agentSessionsArchiving/markdown/parsers/continueParser';
+import type { ParseResult } from '../../../../../../src/features/agentSessionsArchiving/markdown/types';
+
+function expectParsed(result: ParseResult) {
+  expect(result.status).toBe('parsed');
+  if (result.status !== 'parsed') throw new Error('expected parsed');
+  return result.session;
+}
 
 describe('ContinueParser', () => {
   const parser = new ContinueParser();
@@ -12,14 +19,14 @@ describe('ContinueParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.providerName).toBe('continue');
-    expect(result.providerDisplayName).toBe('Continue');
-    expect(result.turns).toHaveLength(2);
-    expect(result.turns[0]!.role).toBe('user');
-    expect(result.turns[0]!.content).toBe('What is TypeScript?');
-    expect(result.turns[1]!.role).toBe('assistant');
+    expect(session.providerName).toBe('continue');
+    expect(session.providerDisplayName).toBe('Continue');
+    expect(session.turns).toHaveLength(2);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('What is TypeScript?');
+    expect(session.turns[1]!.role).toBe('assistant');
   });
 
   it('should extract context files for first user message', () => {
@@ -31,9 +38,9 @@ describe('ContinueParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    expect(result.turns[0]!.filesRead).toEqual(['file:///src/main.ts', 'src/utils.ts']);
+    expect(session.turns[0]!.filesRead).toEqual(['file:///src/main.ts', 'src/utils.ts']);
   });
 
   it('should attach steps as tool calls to first assistant message', () => {
@@ -45,21 +52,21 @@ describe('ContinueParser', () => {
       steps: [{ name: 'runCommand', params: { cmd: 'ls' }, output: 'file1.ts' }],
     });
 
-    const result = parser.parse(content, 'session-1');
+    const session = expectParsed(parser.parse(content, 'session-1'));
 
-    const assistantTurn = result.turns[1]!;
+    const assistantTurn = session.turns[1]!;
     expect(assistantTurn.toolCalls).toHaveLength(1);
     expect(assistantTurn.toolCalls[0]!.name).toBe('runCommand');
     expect(assistantTurn.toolCalls[0]!.output).toBe('file1.ts');
   });
 
-  it('should return empty session for malformed JSON', () => {
+  it('should return unrecognized for malformed JSON', () => {
     const result = parser.parse('not json', 'session-1');
-    expect(result.turns).toHaveLength(0);
+    expect(result.status).toBe('unrecognized');
   });
 
   it('should handle missing history', () => {
-    const result = parser.parse('{}', 'session-1');
-    expect(result.turns).toHaveLength(0);
+    const session = expectParsed(parser.parse('{}', 'session-1'));
+    expect(session.turns).toHaveLength(0);
   });
 });

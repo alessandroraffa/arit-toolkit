@@ -3,6 +3,7 @@ import type { AgentSessionsArchivingConfig } from '../../types';
 import type { SessionProvider, SessionFile } from './types';
 import type { Logger } from '../../core/logger';
 import { generateTimestamp, parseYYYYMMDD } from '../../utils';
+import type { SessionParser, ParseResult } from './markdown';
 import { getParserForProvider, renderSessionToMarkdown } from './markdown';
 
 interface ArchivedEntry {
@@ -149,14 +150,18 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       return await this.copyRawArchive(session, archiveUri, timestamp);
     }
 
-    const mdFileName = `${timestamp}-${session.archiveName}.md`;
-    const mdUri = vscode.Uri.joinPath(archiveUri, mdFileName);
-
     try {
-      const rawBytes = await vscode.workspace.fs.readFile(session.uri);
-      const rawContent = new TextDecoder().decode(rawBytes);
-      const normalized = parser.parse(rawContent, session.archiveName);
-      const markdown = renderSessionToMarkdown(normalized);
+      const result = await this.readAndParse(session, parser);
+      if (result.status === 'unrecognized') {
+        this.logger.warn(
+          `Unrecognized format for ${session.displayName}: ${result.reason}`
+        );
+        return await this.copyRawArchive(session, archiveUri, timestamp);
+      }
+
+      const mdFileName = `${timestamp}-${session.archiveName}.md`;
+      const mdUri = vscode.Uri.joinPath(archiveUri, mdFileName);
+      const markdown = renderSessionToMarkdown(result.session);
       await vscode.workspace.fs.writeFile(mdUri, new TextEncoder().encode(markdown));
       return mdFileName;
     } catch (err) {
@@ -165,6 +170,15 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       );
       return await this.copyRawArchive(session, archiveUri, timestamp);
     }
+  }
+
+  private async readAndParse(
+    session: SessionFile,
+    parser: SessionParser
+  ): Promise<ParseResult> {
+    const rawBytes = await vscode.workspace.fs.readFile(session.uri);
+    const rawContent = new TextDecoder().decode(rawBytes);
+    return parser.parse(rawContent, session.archiveName);
   }
 
   private async copyRawArchive(

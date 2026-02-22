@@ -1,9 +1,4 @@
-import type {
-  SessionParser,
-  NormalizedSession,
-  NormalizedTurn,
-  ToolCall,
-} from '../types';
+import type { SessionParser, NormalizedTurn, ToolCall, ParseResult } from '../types';
 
 interface ContentBlock {
   type: string;
@@ -99,8 +94,12 @@ function processToolResult(block: ContentBlock, pending: PendingState): void {
 export class ClaudeCodeParser implements SessionParser {
   public readonly providerName = 'claude-code';
 
-  public parse(content: string, sessionId: string): NormalizedSession {
+  public parse(content: string, sessionId: string): ParseResult {
     const lines = content.split('\n').filter((line) => line.trim());
+    if (!this.looksLikeJsonl(lines)) {
+      return { status: 'unrecognized', reason: 'content is not valid JSONL events' };
+    }
+
     const turns: NormalizedTurn[] = [];
     let pending = emptyPending();
 
@@ -119,11 +118,25 @@ export class ClaudeCodeParser implements SessionParser {
     }
 
     return {
-      providerName: 'claude-code',
-      providerDisplayName: 'Claude Code',
-      sessionId,
-      turns,
+      status: 'parsed',
+      session: {
+        providerName: 'claude-code',
+        providerDisplayName: 'Claude Code',
+        sessionId,
+        turns,
+      },
     };
+  }
+
+  private looksLikeJsonl(lines: string[]): boolean {
+    const firstLine = lines[0];
+    if (!firstLine) return false;
+    try {
+      const first = JSON.parse(firstLine) as Record<string, unknown>;
+      return typeof first.type === 'string';
+    } catch {
+      return false;
+    }
   }
 
   private processEvent(

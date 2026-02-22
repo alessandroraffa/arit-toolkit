@@ -1,9 +1,4 @@
-import type {
-  SessionParser,
-  NormalizedSession,
-  NormalizedTurn,
-  ToolCall,
-} from '../types';
+import type { SessionParser, NormalizedTurn, ToolCall, ParseResult } from '../types';
 import { reconstructSessionFromJsonl } from './copilotJsonlReconstructor';
 
 interface MessagePart {
@@ -42,10 +37,13 @@ interface CopilotSession {
 export class CopilotChatParser implements SessionParser {
   public readonly providerName = 'copilot-chat';
 
-  public parse(content: string, sessionId: string): NormalizedSession {
+  public parse(content: string, sessionId: string): ParseResult {
     const data = this.parseContent(content);
     if (!data.requests || !Array.isArray(data.requests)) {
-      return this.emptySession(sessionId);
+      return {
+        status: 'unrecognized',
+        reason: 'no requests array found in session data',
+      };
     }
 
     const turns: NormalizedTurn[] = [];
@@ -54,10 +52,13 @@ export class CopilotChatParser implements SessionParser {
     }
 
     return {
-      providerName: 'copilot-chat',
-      providerDisplayName: 'GitHub Copilot Chat',
-      sessionId,
-      turns,
+      status: 'parsed',
+      session: {
+        providerName: 'copilot-chat',
+        providerDisplayName: 'GitHub Copilot Chat',
+        sessionId,
+        turns,
+      },
     };
   }
 
@@ -171,14 +172,5 @@ export class CopilotChatParser implements SessionParser {
   private extractMessageText(msg: CopilotMessage | undefined): string {
     if (typeof msg === 'string') return msg;
     return msg?.value ?? '';
-  }
-
-  private emptySession(sessionId: string): NormalizedSession {
-    return {
-      providerName: 'copilot-chat',
-      providerDisplayName: 'GitHub Copilot Chat',
-      sessionId,
-      turns: [],
-    };
   }
 }

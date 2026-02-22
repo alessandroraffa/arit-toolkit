@@ -1,9 +1,4 @@
-import type {
-  SessionParser,
-  NormalizedSession,
-  NormalizedTurn,
-  ToolCall,
-} from '../types';
+import type { SessionParser, NormalizedTurn, ToolCall, ParseResult } from '../types';
 
 interface ContentBlock {
   type: string;
@@ -82,15 +77,20 @@ export class ClineRooCodeParser implements SessionParser {
     private readonly displayName: string
   ) {}
 
-  public parse(content: string, sessionId: string): NormalizedSession {
+  public parse(content: string, sessionId: string): ParseResult {
     let messages: Message[];
     try {
       messages = JSON.parse(content) as Message[];
     } catch {
-      return this.emptySession(sessionId);
+      return { status: 'unrecognized', reason: 'content is not valid JSON' };
     }
 
-    if (!Array.isArray(messages)) return this.emptySession(sessionId);
+    if (!Array.isArray(messages)) {
+      return {
+        status: 'unrecognized',
+        reason: 'content is not a JSON array of messages',
+      };
+    }
 
     const turns: NormalizedTurn[] = [];
     for (const msg of messages) {
@@ -99,10 +99,13 @@ export class ClineRooCodeParser implements SessionParser {
     }
 
     return {
-      providerName: this.providerName,
-      providerDisplayName: this.displayName,
-      sessionId,
-      turns,
+      status: 'parsed',
+      session: {
+        providerName: this.providerName,
+        providerDisplayName: this.displayName,
+        sessionId,
+        turns,
+      },
     };
   }
 
@@ -128,15 +131,6 @@ export class ClineRooCodeParser implements SessionParser {
       toolCalls: ctx.toolCalls,
       filesRead: ctx.filesRead,
       filesModified: ctx.filesModified,
-    };
-  }
-
-  private emptySession(sessionId: string): NormalizedSession {
-    return {
-      providerName: this.providerName,
-      providerDisplayName: this.displayName,
-      sessionId,
-      turns: [],
     };
   }
 }

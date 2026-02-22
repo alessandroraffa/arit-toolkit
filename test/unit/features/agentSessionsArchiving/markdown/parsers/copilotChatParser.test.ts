@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { CopilotChatParser } from '../../../../../../src/features/agentSessionsArchiving/markdown/parsers/copilotChatParser';
+import type { ParseResult } from '../../../../../../src/features/agentSessionsArchiving/markdown/types';
+
+function expectParsed(result: ParseResult) {
+  expect(result.status).toBe('parsed');
+  if (result.status !== 'parsed') throw new Error('expected parsed');
+  return result.session;
+}
 
 describe('CopilotChatParser', () => {
   const parser = new CopilotChatParser();
@@ -14,15 +21,15 @@ describe('CopilotChatParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'chat-1');
+    const session = expectParsed(parser.parse(content, 'chat-1'));
 
-    expect(result.providerName).toBe('copilot-chat');
-    expect(result.providerDisplayName).toBe('GitHub Copilot Chat');
-    expect(result.turns).toHaveLength(2);
-    expect(result.turns[0]!.role).toBe('user');
-    expect(result.turns[0]!.content).toBe('How do I sort an array?');
-    expect(result.turns[1]!.role).toBe('assistant');
-    expect(result.turns[1]!.content).toBe('Use Array.sort().');
+    expect(session.providerName).toBe('copilot-chat');
+    expect(session.providerDisplayName).toBe('GitHub Copilot Chat');
+    expect(session.turns).toHaveLength(2);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('How do I sort an array?');
+    expect(session.turns[1]!.role).toBe('assistant');
+    expect(session.turns[1]!.content).toBe('Use Array.sort().');
   });
 
   it('should parse tool invocations', () => {
@@ -43,9 +50,9 @@ describe('CopilotChatParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'chat-1');
+    const session = expectParsed(parser.parse(content, 'chat-1'));
 
-    const assistantTurn = result.turns[1]!;
+    const assistantTurn = session.turns[1]!;
     expect(assistantTurn.toolCalls).toHaveLength(1);
     expect(assistantTurn.toolCalls[0]!.name).toBe('copilot_findFiles');
     expect(assistantTurn.toolCalls[0]!.input).toBe('Searching for test files');
@@ -64,9 +71,9 @@ describe('CopilotChatParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'chat-1');
+    const session = expectParsed(parser.parse(content, 'chat-1'));
 
-    expect(result.turns[1]!.thinking).toBe('Analyzing the code...');
+    expect(session.turns[1]!.thinking).toBe('Analyzing the code...');
   });
 
   it('should handle message with parts instead of text', () => {
@@ -81,19 +88,19 @@ describe('CopilotChatParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'chat-1');
+    const session = expectParsed(parser.parse(content, 'chat-1'));
 
-    expect(result.turns[0]!.content).toBe('Part 1\nPart 2');
+    expect(session.turns[0]!.content).toBe('Part 1\nPart 2');
   });
 
-  it('should return empty session for malformed JSON', () => {
-    const result = parser.parse('not json', 'chat-1');
-    expect(result.turns).toHaveLength(0);
+  it('should return unrecognized for malformed non-JSONL content', () => {
+    const result = parser.parse('not json at all %%%', 'chat-1');
+    expect(result.status).toBe('unrecognized');
   });
 
-  it('should return empty session when no requests array', () => {
+  it('should return unrecognized when no requests array', () => {
     const result = parser.parse('{}', 'chat-1');
-    expect(result.turns).toHaveLength(0);
+    expect(result.status).toBe('unrecognized');
   });
 
   // --- Real-world Copilot Chat format (kind: null for text, prepareToolInvocation + toolInvocationSerialized for tools) ---
@@ -115,10 +122,10 @@ describe('CopilotChatParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'chat-2');
+    const session = expectParsed(parser.parse(content, 'chat-2'));
 
-    expect(result.turns).toHaveLength(2);
-    expect(result.turns[1]!.content).toBe('Here is the explanation.');
+    expect(session.turns).toHaveLength(2);
+    expect(session.turns[1]!.content).toBe('Here is the explanation.');
   });
 
   it('handles prepareToolInvocation + toolInvocationSerialized pattern (current Copilot format)', () => {
@@ -146,9 +153,9 @@ describe('CopilotChatParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'chat-2');
+    const session = expectParsed(parser.parse(content, 'chat-2'));
 
-    const assistant = result.turns[1]!;
+    const assistant = session.turns[1]!;
     expect(assistant.toolCalls).toHaveLength(1);
     expect(assistant.toolCalls[0]!.name).toBe('copilot_findFiles');
     expect(assistant.toolCalls[0]!.input).toBe('Searching for test files');
@@ -175,9 +182,9 @@ describe('CopilotChatParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'chat-2');
+    const session = expectParsed(parser.parse(content, 'chat-2'));
 
-    const assistant = result.turns[1]!;
+    const assistant = session.turns[1]!;
     expect(assistant.toolCalls).toHaveLength(1);
     expect(assistant.toolCalls[0]!.name).toBe('copilot_multiReplaceString');
     expect(assistant.toolCalls[0]!.input).toBe('Using "Multi-Replace String in Files"');
@@ -201,9 +208,9 @@ describe('CopilotChatParser', () => {
       ],
     });
 
-    const result = parser.parse(content, 'chat-2');
+    const session = expectParsed(parser.parse(content, 'chat-2'));
 
-    const assistant = result.turns[1]!;
+    const assistant = session.turns[1]!;
     expect(assistant.toolCalls).toHaveLength(1);
     expect(assistant.toolCalls[0]!.name).toBe('copilot_someOrphanTool');
   });
@@ -228,14 +235,14 @@ describe('CopilotChatParser', () => {
       }),
     ].join('\n');
 
-    const result = parser.parse(lines, 'chat-jsonl');
+    const session = expectParsed(parser.parse(lines, 'chat-jsonl'));
 
-    expect(result.providerName).toBe('copilot-chat');
-    expect(result.turns).toHaveLength(2);
-    expect(result.turns[0]!.role).toBe('user');
-    expect(result.turns[0]!.content).toBe('How do I sort an array?');
-    expect(result.turns[1]!.role).toBe('assistant');
-    expect(result.turns[1]!.content).toBe('Use Array.sort().');
+    expect(session.providerName).toBe('copilot-chat');
+    expect(session.turns).toHaveLength(2);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('How do I sort an array?');
+    expect(session.turns[1]!.role).toBe('assistant');
+    expect(session.turns[1]!.content).toBe('Use Array.sort().');
   });
 
   it('should parse JSONL with streamed response appends', () => {
@@ -258,11 +265,11 @@ describe('CopilotChatParser', () => {
       }),
     ].join('\n');
 
-    const result = parser.parse(lines, 'chat-jsonl');
+    const session = expectParsed(parser.parse(lines, 'chat-jsonl'));
 
-    expect(result.turns).toHaveLength(2);
-    expect(result.turns[1]!.thinking).toBe('Let me think...');
-    expect(result.turns[1]!.content).toBe('Here is the explanation.');
+    expect(session.turns).toHaveLength(2);
+    expect(session.turns[1]!.thinking).toBe('Let me think...');
+    expect(session.turns[1]!.content).toBe('Here is the explanation.');
   });
 
   it('should parse JSONL with tool invocations', () => {
@@ -292,11 +299,11 @@ describe('CopilotChatParser', () => {
       }),
     ].join('\n');
 
-    const result = parser.parse(lines, 'chat-jsonl');
+    const session = expectParsed(parser.parse(lines, 'chat-jsonl'));
 
-    expect(result.turns).toHaveLength(2);
-    expect(result.turns[1]!.toolCalls).toHaveLength(1);
-    expect(result.turns[1]!.toolCalls[0]!.name).toBe('copilot_findFiles');
-    expect(result.turns[1]!.content).toBe('Done.');
+    expect(session.turns).toHaveLength(2);
+    expect(session.turns[1]!.toolCalls).toHaveLength(1);
+    expect(session.turns[1]!.toolCalls[0]!.name).toBe('copilot_findFiles');
+    expect(session.turns[1]!.content).toBe('Done.');
   });
 });

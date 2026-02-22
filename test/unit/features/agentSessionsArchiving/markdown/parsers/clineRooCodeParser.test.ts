@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { ClineRooCodeParser } from '../../../../../../src/features/agentSessionsArchiving/markdown/parsers/clineRooCodeParser';
+import type { ParseResult } from '../../../../../../src/features/agentSessionsArchiving/markdown/types';
+
+function expectParsed(result: ParseResult) {
+  expect(result.status).toBe('parsed');
+  if (result.status !== 'parsed') throw new Error('expected parsed');
+  return result.session;
+}
 
 describe('ClineRooCodeParser', () => {
   const parser = new ClineRooCodeParser('cline', 'Cline');
@@ -10,15 +17,15 @@ describe('ClineRooCodeParser', () => {
       { role: 'assistant', content: [{ type: 'text', text: 'I will fix it.' }] },
     ]);
 
-    const result = parser.parse(content, 'task-1');
+    const session = expectParsed(parser.parse(content, 'task-1'));
 
-    expect(result.providerName).toBe('cline');
-    expect(result.providerDisplayName).toBe('Cline');
-    expect(result.turns).toHaveLength(2);
-    expect(result.turns[0]!.role).toBe('user');
-    expect(result.turns[0]!.content).toBe('Fix the bug');
-    expect(result.turns[1]!.role).toBe('assistant');
-    expect(result.turns[1]!.content).toBe('I will fix it.');
+    expect(session.providerName).toBe('cline');
+    expect(session.providerDisplayName).toBe('Cline');
+    expect(session.turns).toHaveLength(2);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('Fix the bug');
+    expect(session.turns[1]!.role).toBe('assistant');
+    expect(session.turns[1]!.content).toBe('I will fix it.');
   });
 
   it('should parse tool_use blocks', () => {
@@ -35,11 +42,11 @@ describe('ClineRooCodeParser', () => {
       },
     ]);
 
-    const result = parser.parse(content, 'task-1');
+    const session = expectParsed(parser.parse(content, 'task-1'));
 
-    expect(result.turns[0]!.toolCalls).toHaveLength(1);
-    expect(result.turns[0]!.toolCalls[0]!.name).toBe('read_file');
-    expect(result.turns[0]!.filesRead).toContain('src/app.ts');
+    expect(session.turns[0]!.toolCalls).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls[0]!.name).toBe('read_file');
+    expect(session.turns[0]!.filesRead).toContain('src/app.ts');
   });
 
   it('should extract write_to_file as files modified', () => {
@@ -56,27 +63,27 @@ describe('ClineRooCodeParser', () => {
       },
     ]);
 
-    const result = parser.parse(content, 'task-1');
+    const session = expectParsed(parser.parse(content, 'task-1'));
 
-    expect(result.turns[0]!.filesModified).toContain('src/new.ts');
+    expect(session.turns[0]!.filesModified).toContain('src/new.ts');
   });
 
   it('should handle string content', () => {
     const content = JSON.stringify([{ role: 'user', content: 'Simple text message' }]);
 
-    const result = parser.parse(content, 'task-1');
+    const session = expectParsed(parser.parse(content, 'task-1'));
 
-    expect(result.turns[0]!.content).toBe('Simple text message');
+    expect(session.turns[0]!.content).toBe('Simple text message');
   });
 
-  it('should return empty session for malformed JSON', () => {
+  it('should return unrecognized for malformed JSON', () => {
     const result = parser.parse('not json', 'task-1');
-    expect(result.turns).toHaveLength(0);
+    expect(result.status).toBe('unrecognized');
   });
 
-  it('should return empty session for non-array JSON', () => {
+  it('should return unrecognized for non-array JSON', () => {
     const result = parser.parse('{"not": "array"}', 'task-1');
-    expect(result.turns).toHaveLength(0);
+    expect(result.status).toBe('unrecognized');
   });
 
   it('should work for Roo Code provider name', () => {
@@ -85,9 +92,9 @@ describe('ClineRooCodeParser', () => {
       { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
     ]);
 
-    const result = rooParser.parse(content, 'task-1');
+    const session = expectParsed(rooParser.parse(content, 'task-1'));
 
-    expect(result.providerName).toBe('roo-code');
-    expect(result.providerDisplayName).toBe('Roo Code');
+    expect(session.providerName).toBe('roo-code');
+    expect(session.providerDisplayName).toBe('Roo Code');
   });
 });
