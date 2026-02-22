@@ -1,3 +1,9 @@
+## [1.9.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.9.2...v1.9.3) (2026-02-22)
+
+### Code Refactoring
+
+* add parseresult type for format-aware session parsing ([1bfb952](https://github.com/alessandroraffa/arit-toolkit/commit/1bfb952edd5de1e5bcfc9103c79e903393d3e2b7))
+
 ## [1.9.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.9.1...v1.9.2) (2026-02-22)
 
 ### Bug Fixes
