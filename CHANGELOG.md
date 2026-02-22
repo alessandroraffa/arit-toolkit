@@ -1,3 +1,9 @@
+## [1.9.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.9.1...v1.9.2) (2026-02-22)
+
+### Bug Fixes
+
+* add jsonl format support to copilot chat session parser ([dc286c5](https://github.com/alessandroraffa/arit-toolkit/commit/dc286c5003eff8669e57bf4bcafae62ff304ccef))
+
 ## [1.9.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.9.0...v1.9.1) (2026-02-21)
 
 ### Bug Fixes
