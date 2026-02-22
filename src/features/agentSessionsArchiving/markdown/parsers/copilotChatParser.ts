@@ -4,6 +4,7 @@ import type {
   NormalizedTurn,
   ToolCall,
 } from '../types';
+import { reconstructSessionFromJsonl } from './copilotJsonlReconstructor';
 
 interface MessagePart {
   text?: string;
@@ -42,13 +43,7 @@ export class CopilotChatParser implements SessionParser {
   public readonly providerName = 'copilot-chat';
 
   public parse(content: string, sessionId: string): NormalizedSession {
-    let data: CopilotSession;
-    try {
-      data = JSON.parse(content) as CopilotSession;
-    } catch {
-      return this.emptySession(sessionId);
-    }
-
+    const data = this.parseContent(content);
     if (!data.requests || !Array.isArray(data.requests)) {
       return this.emptySession(sessionId);
     }
@@ -64,6 +59,18 @@ export class CopilotChatParser implements SessionParser {
       sessionId,
       turns,
     };
+  }
+
+  private parseContent(content: string): CopilotSession {
+    try {
+      return JSON.parse(content) as CopilotSession;
+    } catch {
+      return this.tryJsonl(content);
+    }
+  }
+
+  private tryJsonl(content: string): CopilotSession {
+    return reconstructSessionFromJsonl(content) as CopilotSession;
   }
 
   private processRequest(req: CopilotRequest, turns: NormalizedTurn[]): void {

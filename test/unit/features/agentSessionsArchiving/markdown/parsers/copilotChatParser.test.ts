@@ -207,4 +207,96 @@ describe('CopilotChatParser', () => {
     expect(assistant.toolCalls).toHaveLength(1);
     expect(assistant.toolCalls[0]!.name).toBe('copilot_someOrphanTool');
   });
+
+  // --- JSONL (append-only delta) format support ---
+
+  it('should parse JSONL content with initialize + append operations', () => {
+    const lines = [
+      JSON.stringify({
+        kind: 0,
+        v: { requests: [] },
+      }),
+      JSON.stringify({
+        kind: 2,
+        k: ['requests'],
+        v: [
+          {
+            message: { text: 'How do I sort an array?' },
+            response: [{ value: 'Use Array.sort().' }],
+          },
+        ],
+      }),
+    ].join('\n');
+
+    const result = parser.parse(lines, 'chat-jsonl');
+
+    expect(result.providerName).toBe('copilot-chat');
+    expect(result.turns).toHaveLength(2);
+    expect(result.turns[0]!.role).toBe('user');
+    expect(result.turns[0]!.content).toBe('How do I sort an array?');
+    expect(result.turns[1]!.role).toBe('assistant');
+    expect(result.turns[1]!.content).toBe('Use Array.sort().');
+  });
+
+  it('should parse JSONL with streamed response appends', () => {
+    const lines = [
+      JSON.stringify({
+        kind: 0,
+        v: {
+          requests: [{ message: { text: 'Explain this' }, response: [] }],
+        },
+      }),
+      JSON.stringify({
+        kind: 2,
+        k: ['requests', 0, 'response'],
+        v: [{ kind: 'thinking', value: 'Let me think...' }],
+      }),
+      JSON.stringify({
+        kind: 2,
+        k: ['requests', 0, 'response'],
+        v: [{ value: 'Here is the explanation.' }],
+      }),
+    ].join('\n');
+
+    const result = parser.parse(lines, 'chat-jsonl');
+
+    expect(result.turns).toHaveLength(2);
+    expect(result.turns[1]!.thinking).toBe('Let me think...');
+    expect(result.turns[1]!.content).toBe('Here is the explanation.');
+  });
+
+  it('should parse JSONL with tool invocations', () => {
+    const lines = [
+      JSON.stringify({
+        kind: 0,
+        v: { requests: [] },
+      }),
+      JSON.stringify({
+        kind: 2,
+        k: ['requests'],
+        v: [
+          {
+            message: { text: 'Find files' },
+            response: [
+              { kind: 'prepareToolInvocation', toolName: 'copilot_findFiles' },
+              {
+                kind: 'toolInvocationSerialized',
+                invocationMessage: 'Searching...',
+                toolId: 'copilot_findFiles',
+                isComplete: true,
+              },
+              { value: 'Done.' },
+            ],
+          },
+        ],
+      }),
+    ].join('\n');
+
+    const result = parser.parse(lines, 'chat-jsonl');
+
+    expect(result.turns).toHaveLength(2);
+    expect(result.turns[1]!.toolCalls).toHaveLength(1);
+    expect(result.turns[1]!.toolCalls[0]!.name).toBe('copilot_findFiles');
+    expect(result.turns[1]!.content).toBe('Done.');
+  });
 });
