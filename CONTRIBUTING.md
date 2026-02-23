@@ -154,7 +154,7 @@ arit-toolkit/
 │   │   │   └── statusBarItem.ts  # Status bar UI management
 │   │   └── agentSessionsArchiving/  # AI agent session archiving
 │   │       ├── index.ts             # Feature registration
-│   │       ├── archiveService.ts    # Core archive loop (ctime naming, mtime sync)
+│   │       ├── archiveService.ts    # Core archive loop (ctime naming, mtime sync, ParseResult fallback)
 │   │       ├── constants.ts
 │   │       ├── types.ts             # SessionProvider / SessionFile interfaces
 │   │       ├── markdown/            # Markdown conversion
@@ -166,7 +166,8 @@ arit-toolkit/
 │   │       │       ├── claudeCodeParser.ts
 │   │       │       ├── clineRooCodeParser.ts
 │   │       │       ├── continueParser.ts
-│   │       │       └── copilotChatParser.ts
+│   │       │       ├── copilotChatParser.ts
+│   │       │       └── copilotJsonlReconstructor.ts
 │   │       └── providers/           # One provider per AI assistant
 │   │           ├── index.ts         # Barrel export
 │   │           ├── providerUtils.ts # Shared provider utilities

@@ -13,11 +13,11 @@
 | System             | ARIT Toolkit -- VS Code Extension                        |
 | Repository         | <https://github.com/alessandroraffa/arit-toolkit>        |
 | Identifier         | `alessandroraffa.arit-toolkit`                           |
-| Current version    | 1.6.0 (versionCode `1001006000`)                         |
+| Current version    | 1.9.2 (versionCode `1001009002`)                         |
 | Licence            | MIT                                                      |
 | Architecture style | Feature-based modular architecture, dependency injection |
 | Runtime deps       | None (VS Code API only)                                  |
-| Last updated       | 2026-02-18                                               |
+| Last updated       | 2026-02-22                                               |
 
 ---
 
@@ -156,6 +156,7 @@ are prompted to opt in to new configuration sections.
 |  |  |                  | | Archiving         |              |    |
 |  |  |                  | |  - ArchiveService |              |    |
 |  |  |                  | |  - Providers (x6) |              |    |
+|  |  |                  | |  - Parsers (x4+1) |              |    |
 |  |  +------------------+ +-------------------+              |    |
 |  +----------------------------------------------------------+    |
 |                                                                  |
@@ -397,6 +398,19 @@ include only those belonging to the current workspace. Workspace-scoped
 providers (Aider, Claude Code, Copilot Chat) use path-based discovery;
 global-scoped providers (Cline, Roo Code, Continue) read session file
 content and check if it references the workspace root path.
+
+**Format-aware parsing (`ParseResult`):** Each session parser returns a
+`ParseResult` discriminated union: `{ status: 'parsed', session: NormalizedSession }`
+or `{ status: 'unrecognized', reason: string }`. When a parser cannot
+interpret a file (unexpected format or schema), `ArchiveService` logs a
+warning and falls back to copying the raw file instead of generating
+markdown.
+
+**JSONL delta reconstruction (`copilotJsonlReconstructor.ts`):** GitHub
+Copilot Chat stores newer sessions as append-only JSONL delta files. The
+reconstructor processes three event kinds — `0` (init), `1` (set field),
+`2` (append to field) — to produce a complete in-memory session object
+before it is passed to the standard `copilotChatParser`.
 
 **Replacement semantics (not accumulation):** Each source session has
 exactly one archived file at any time. When the source's `mtime`
