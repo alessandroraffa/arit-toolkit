@@ -39,5 +39,20 @@
       "args": ["-l", "-c", "source .vscode/nvm-auto.sh; exec zsh"]
     }
   },
-  "terminal.integrated.defaultProfile.osx": "zsh-nvm"
+  "terminal.integrated.defaultProfile.osx": "zsh-nvm",
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#1C2F43",
+    "editor.lineHighlightBackground": "#1073cf2d",
+    "editor.lineHighlightBorder": "#9fced11f",
+    "titleBar.activeBackground": "#28425E",
+    "titleBar.activeForeground": "#F8FAFC",
+    "titleBar.inactiveBackground": "#1C2F43",
+    "titleBar.inactiveForeground": "#F8FAFC",
+    "statusBar.background": "#1C2F43",
+    "statusBar.foreground": "#F8FAFC",
+    "statusBar.debuggingBackground": "#1C2F43",
+    "statusBar.debuggingForeground": "#F8FAFC",
+    "statusBar.noFolderBackground": "#1C2F43",
+    "statusBar.noFolderForeground": "#F8FAFC"
+  }
 }
