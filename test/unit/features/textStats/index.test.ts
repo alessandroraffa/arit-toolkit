@@ -57,7 +57,7 @@ describe('registerTextStatsFeature', () => {
   });
 
   it('should skip when not single-root workspace', () => {
-    (ctx.stateManager as Record<string, unknown>).isSingleRoot = false;
+    (ctx.stateManager as unknown as Record<string, unknown>).isSingleRoot = false;
     registerTextStatsFeature(ctx);
     expect(ctx.migrationRegistry.register).not.toHaveBeenCalled();
   });
