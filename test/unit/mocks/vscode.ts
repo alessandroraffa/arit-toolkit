@@ -22,6 +22,7 @@ export const mockStatusBarItem = {
   tooltip: undefined as unknown,
   command: undefined as string | undefined,
   backgroundColor: undefined as unknown,
+  color: undefined as unknown,
   name: undefined as string | undefined,
   show: vi.fn(),
   hide: vi.fn(),
@@ -35,7 +36,11 @@ export const window = {
   showInformationMessage: vi.fn(),
   showInputBox: vi.fn(),
   showTextDocument: vi.fn(),
+  showQuickPick: vi.fn(),
   createStatusBarItem: vi.fn(() => ({ ...mockStatusBarItem })),
+  onDidChangeActiveTextEditor: vi.fn(() => mockDisposable),
+  onDidChangeTextEditorSelection: vi.fn(() => mockDisposable),
+  activeTextEditor: undefined as unknown,
 };
 
 export const workspace = {
@@ -50,6 +55,7 @@ export const workspace = {
     }),
   })),
   onDidChangeConfiguration: vi.fn(() => mockDisposable),
+  onDidChangeTextDocument: vi.fn(() => mockDisposable),
   workspaceFolders: undefined as Array<{ uri: { fsPath: string } }> | undefined,
   fs: {
     writeFile: vi.fn(),
