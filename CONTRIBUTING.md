@@ -152,31 +152,49 @@ arit-toolkit/
 │   │   │   ├── constants.ts
 │   │   │   ├── index.ts
 │   │   │   └── statusBarItem.ts  # Status bar UI management
-│   │   └── agentSessionsArchiving/  # AI agent session archiving
-│   │       ├── index.ts             # Feature registration
-│   │       ├── archiveService.ts    # Core archive loop (ctime naming, mtime sync, ParseResult fallback)
-│   │       ├── constants.ts
-│   │       ├── types.ts             # SessionProvider / SessionFile interfaces
-│   │       ├── markdown/            # Markdown conversion
-│   │       │   ├── index.ts
-│   │       │   ├── types.ts
-│   │       │   ├── renderer.ts
-│   │       │   └── parsers/         # One parser per session format
-│   │       │       ├── index.ts
-│   │       │       ├── claudeCodeParser.ts
-│   │       │       ├── clineRooCodeParser.ts
-│   │       │       ├── continueParser.ts
-│   │       │       ├── copilotChatParser.ts
-│   │       │       └── copilotJsonlReconstructor.ts
-│   │       └── providers/           # One provider per AI assistant
+│   │   ├── agentSessionsArchiving/  # AI agent session archiving
+│   │   │   ├── index.ts             # Feature registration
+│   │   │   ├── archiveService.ts    # Core archive loop (ctime naming, mtime sync, ParseResult fallback)
+│   │   │   ├── constants.ts
+│   │   │   ├── types.ts             # SessionProvider / SessionFile interfaces
+│   │   │   ├── markdown/            # Markdown conversion
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── types.ts
+│   │   │   │   ├── renderer.ts
+│   │   │   │   └── parsers/         # One parser per session format
+│   │   │   │       ├── index.ts
+│   │   │   │       ├── claudeCodeParser.ts
+│   │   │   │       ├── clineRooCodeParser.ts
+│   │   │   │       ├── continueParser.ts
+│   │   │   │       ├── copilotChatParser.ts
+│   │   │   │       └── copilotJsonlReconstructor.ts
+│   │   │   └── providers/           # One provider per AI assistant
+│   │   │       ├── index.ts         # Barrel export
+│   │   │       ├── providerUtils.ts # Shared provider utilities
+│   │   │       ├── aiderProvider.ts
+│   │   │       ├── claudeCodeProvider.ts
+│   │   │       ├── clineProvider.ts
+│   │   │       ├── continueProvider.ts
+│   │   │       ├── copilotChatProvider.ts
+│   │   │       └── rooCodeProvider.ts
+│   │   └── textStats/               # Real-time text statistics in status bar
+│   │       ├── index.ts             # Feature registration and lifecycle wiring
+│   │       ├── updateHandler.ts     # Editor data extraction and metric update
+│   │       ├── controller.ts        # Debounced update scheduler with token counter
+│   │       ├── command.ts           # Toggle and tokenizer quick-pick commands
+│   │       ├── statusBarItem.ts     # Status bar item creation and display
+│   │       ├── formatter.ts         # Status bar text and tooltip formatting
+│   │       ├── textExtractor.ts     # Selection-aware text extraction
+│   │       ├── constants.ts         # Config key, command IDs, defaults
+│   │       └── metrics/             # Individual metric functions
 │   │           ├── index.ts         # Barrel export
-│   │           ├── providerUtils.ts # Shared provider utilities
-│   │           ├── aiderProvider.ts
-│   │           ├── claudeCodeProvider.ts
-│   │           ├── clineProvider.ts
-│   │           ├── continueProvider.ts
-│   │           ├── copilotChatProvider.ts
-│   │           └── rooCodeProvider.ts
+│   │           ├── characters.ts
+│   │           ├── words.ts
+│   │           ├── lines.ts
+│   │           ├── paragraphs.ts
+│   │           ├── readingTime.ts
+│   │           ├── size.ts
+│   │           └── tokens.ts        # Lazy-loaded tokenizer with model caching
 │   └── utils/
 │       ├── index.ts              # Barrel export
 │       ├── jsonc.ts              # JSONC parser/formatter

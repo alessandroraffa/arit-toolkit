@@ -72,6 +72,55 @@ Right-click a file → "ARIT: Prefix Creation Timestamp"
 Right-click a folder → "ARIT: Prefix Creation Timestamp to Folder"
 `assets/` → `202602051430-assets/`
 
+## Text Stats
+
+Real-time text statistics displayed in the status bar. Shows character count, token count, word count, line count, paragraph count, estimated reading time, and file size — updated live as you type or select text.
+
+**Status bar:** A dedicated item on the left side of the status bar shows a configurable summary. Click to change the tokenizer model. Hover for a detailed tooltip with all metrics.
+
+**Selection-aware:** When text is selected, all metrics switch to cover only the selection. Multiple selections are aggregated.
+
+**Tokenizer models:** Choose between OpenAI `cl100k_base`, OpenAI `o200k_base`, or Anthropic `claude` tokenizer for accurate token counting. Token counting is lazy-loaded on first use and cached per model.
+
+**Configuration** (in `.arit-toolkit.jsonc`):
+
+```jsonc
+{
+  "textStats": {
+    "enabled": true,
+    "delimiter": " | ",
+    "unitSpace": true,
+    "wpm": 200,
+    "tokenizer": "o200k",
+    "includeWhitespace": true,
+    "tokenSizeLimit": 500000,
+    "visibleMetrics": [
+      "chars",
+      "tokens",
+      "words",
+      "lines",
+      "paragraphs",
+      "readTime",
+      "size",
+    ],
+  },
+}
+```
+
+| Setting             | Default   | Description                                                  |
+| ------------------- | --------- | ------------------------------------------------------------ |
+| `enabled`           | `true`    | Enable or disable text stats                                 |
+| `delimiter`         | `" \| "`  | Separator between metrics in the status bar                  |
+| `unitSpace`         | `true`    | Space between value and unit (e.g., `42 chars`)              |
+| `wpm`               | `200`     | Words per minute for reading time estimation                 |
+| `tokenizer`         | `"o200k"` | Tokenizer model: `cl100k`, `o200k`, or `claude`              |
+| `includeWhitespace` | `true`    | Include whitespace in character count                        |
+| `tokenSizeLimit`    | `500000`  | Skip token counting for files exceeding this character count |
+| `visibleMetrics`    | all 7     | Which metrics to show and in what order                      |
+
+**Toggle:** Command Palette → "ARIT: Toggle Text Stats"
+**Change tokenizer:** Click the status bar item or Command Palette → "ARIT: Change Tokenizer"
+
 ## Extension Toggle
 
 An **ARIT** status bar item (bottom-right) shows the current state and lets you enable or disable advanced features with a click. Hover for a tooltip with active services and their status, with quick toggle buttons. A **Checkup** button in the tooltip runs a health check — it verifies version alignment, applies any pending config migration, preserves your customizations, and optionally commits the updated config file.
