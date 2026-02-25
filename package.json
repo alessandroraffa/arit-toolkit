@@ -204,6 +204,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@anthropic-ai/tokenizer": "^0.0.4",
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
     "@eslint/js": "^9.39.2",
@@ -224,6 +225,7 @@
     "eslint": "^9.39.2",
     "globals": "^15.15.0",
     "husky": "^9.1.7",
+    "js-tiktoken": "^1.0.21",
     "lint-staged": "^15.5.2",
     "markdownlint-cli2": "^0.20.0",
     "npm-run-all2": "^7.0.2",
