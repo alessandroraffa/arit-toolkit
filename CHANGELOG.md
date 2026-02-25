@@ -1,3 +1,23 @@
+## [1.10.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.9.3...v1.10.0) (2026-02-25)
+
+### Features
+
+* **text-stats:** add character count metric ([b647102](https://github.com/alessandroraffa/arit-toolkit/commit/b64710236a4f431ddf7a5ce14cdea26b409ccc83))
+* **text-stats:** add debounced update controller ([7254769](https://github.com/alessandroraffa/arit-toolkit/commit/72547695ccb3539b60273f2ec03935e27f580135))
+* **text-stats:** add line count metric ([c70a3d9](https://github.com/alessandroraffa/arit-toolkit/commit/c70a3d956326c10deed0d86d528f71886e566d21))
+* **text-stats:** add metrics barrel and formatter ([939f001](https://github.com/alessandroraffa/arit-toolkit/commit/939f001374e43dd00235574ad5321e2404c493b4))
+* **text-stats:** add paragraph count metric ([d75364a](https://github.com/alessandroraffa/arit-toolkit/commit/d75364a3250eb36fb2f23f2e8c8ea5286aaf6b98))
+* **text-stats:** add reading time metric ([2efd09f](https://github.com/alessandroraffa/arit-toolkit/commit/2efd09f3b1a1473dc6deaad666ca4a20a0ab1ee7))
+* **text-stats:** add size formatting metric ([261a557](https://github.com/alessandroraffa/arit-toolkit/commit/261a55793bca769d7d2a73369139d52b5903353e))
+* **text-stats:** add status bar item ([d2bb05b](https://github.com/alessandroraffa/arit-toolkit/commit/d2bb05b86ba8233b3fd7e311e2eae17d291509eb))
+* **text-stats:** add text extraction helpers ([3446620](https://github.com/alessandroraffa/arit-toolkit/commit/34466206b1fbe16b24ad116738d1c6e95e253fcb))
+* **text-stats:** add toggle and tokenizer quick pick commands ([21f4a35](https://github.com/alessandroraffa/arit-toolkit/commit/21f4a358e728d55e372614db58cc4cf6ac8ea375))
+* **text-stats:** add token count metric with lazy loading ([75f772c](https://github.com/alessandroraffa/arit-toolkit/commit/75f772cbfec709a3276b69df5aebd55375ad09ab))
+* **text-stats:** add tokenizer dependencies ([67be2db](https://github.com/alessandroraffa/arit-toolkit/commit/67be2db2dcca1260ff86dd525c2d8c6b5d04883e))
+* **text-stats:** add types and constants ([a7e3302](https://github.com/alessandroraffa/arit-toolkit/commit/a7e3302bc0d01fb8b7c0f9f192a7b8af85c319c4))
+* **text-stats:** add word count metric ([e2e9ca6](https://github.com/alessandroraffa/arit-toolkit/commit/e2e9ca6ec88ab77e564e24a54d5cd2c7657bd208))
+* **text-stats:** register feature and wire lifecycle ([32f5c4f](https://github.com/alessandroraffa/arit-toolkit/commit/32f5c4f6873c57206bbafe6951547bfad44b9f09))
+
 ## [1.9.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.9.2...v1.9.3) (2026-02-22)
 
 ### Code Refactoring
