@@ -23,3 +23,25 @@ export interface AgentSessionsArchivingConfig {
   intervalMinutes: number;
   ignoreSessionsBefore?: string;
 }
+
+export type TokenizerModel = 'cl100k' | 'o200k' | 'claude';
+
+export type MetricKey =
+  | 'chars'
+  | 'tokens'
+  | 'words'
+  | 'lines'
+  | 'paragraphs'
+  | 'readTime'
+  | 'size';
+
+export interface TextStatsConfig {
+  enabled: boolean;
+  delimiter: string;
+  unitSpace: boolean;
+  wpm: number;
+  tokenizer: TokenizerModel;
+  includeWhitespace: boolean;
+  tokenSizeLimit: number;
+  visibleMetrics: MetricKey[];
+}
