@@ -8,16 +8,16 @@
 > specifications; instead it serves as the entry point for navigating the
 > full body of documentation.
 
-| Field              | Value                                                    |
-| ------------------ | -------------------------------------------------------- |
-| System             | ARIT Toolkit -- VS Code Extension                        |
-| Repository         | <https://github.com/alessandroraffa/arit-toolkit>        |
-| Identifier         | `alessandroraffa.arit-toolkit`                           |
-| Current version    | 1.9.2 (versionCode `1001009002`)                         |
-| Licence            | MIT                                                      |
-| Architecture style | Feature-based modular architecture, dependency injection |
-| Runtime deps       | None (VS Code API only)                                  |
-| Last updated       | 2026-02-22                                               |
+| Field              | Value                                                                                                                                       |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| System             | ARIT Toolkit -- VS Code Extension                                                                                                           |
+| Repository         | <https://github.com/alessandroraffa/arit-toolkit>                                                                                           |
+| Identifier         | `alessandroraffa.arit-toolkit`                                                                                                              |
+| Current version    | 1.9.3 (versionCode `1001009003`); 1.10.0 pending release                                                                                    |
+| Licence            | MIT                                                                                                                                         |
+| Architecture style | Feature-based modular architecture, dependency injection                                                                                    |
+| Runtime deps       | None at runtime (VS Code API only). `js-tiktoken` and `@anthropic-ai/tokenizer` are dev dependencies bundled into the extension by esbuild. |
+| Last updated       | 2026-02-25                                                                                                                                  |
 
 ---
 
@@ -29,10 +29,11 @@ ARIT Toolkit is a VS Code extension that bundles productivity utilities
 for developers working inside a single-root workspace. Its capabilities
 fall into two categories:
 
-| Category            | Capability                                                                                                                                     |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| File utilities      | Create or rename files/directories with UTC timestamp prefixes in configurable formats.                                                        |
-| Background services | Periodically archive chat session files produced by AI coding assistants (Aider, Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue). |
+| Category            | Capability                                                                                                                                                            |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File utilities      | Create or rename files/directories with UTC timestamp prefixes in configurable formats.                                                                               |
+| Background services | Periodically archive chat session files produced by AI coding assistants (Aider, Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue).                        |
+| Status bar services | Display real-time text statistics (characters, tokens, words, lines, paragraphs, reading time, file size) with selection awareness and configurable tokenizer models. |
 
 The extension is workspace-aware: a JSONC configuration file
 (`.arit-toolkit.jsonc`) at the workspace root stores the enabled state,
@@ -47,7 +48,7 @@ are prompted to opt in to new configuration sections.
 | 1        | Maintainability      | Strict ESLint complexity limits (max 250 lines/file, 50 lines/fn, cyclomatic complexity <= 10, max nesting 3, max params 3). Feature-per-folder isolation.          |
 | 2        | Reliability          | >= 80 % unit-test coverage (lines, functions, branches, statements). Strict TypeScript (`noImplicitAny`, `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`). |
 | 3        | Extensibility        | New features register through `FeatureRegistrationContext` without touching core modules. Config sections self-register via `ConfigSectionRegistry`.                |
-| 4        | Security             | Zero runtime dependencies. No credential handling. No network calls.                                                                                                |
+| 4        | Security             | Zero runtime dependencies. Tokenizer vocabularies bundled at build time — no network calls. No credential handling.                                                 |
 | 5        | Developer experience | One-click enable/disable via status bar. Rich markdown tooltip. Conventional commits + automated semantic-release pipeline.                                         |
 
 ### 1.3 Stakeholders
@@ -65,14 +66,14 @@ are prompted to opt in to new configuration sections.
 
 ### 2.1 Technical Constraints
 
-| Constraint                 | Detail                                                                                                                                                                 |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| VS Code API surface        | The extension runs inside the VS Code extension host. All file I/O goes through `vscode.workspace.fs`; UI through `vscode.window`; commands through `vscode.commands`. |
-| Single-root workspace only | Advanced features (state toggle, config migration, agent-session archiving) require a single workspace root. Multi-root and no-workspace modes degrade gracefully.     |
-| Node.js >= 22.22.0         | Required by `package.json` `engines` field.                                                                                                                            |
-| VS Code >= 1.109.0         | Minimum host version; determines available API surface.                                                                                                                |
-| CommonJS bundle            | VS Code extension host requires CJS. The project is authored in ESM-style TypeScript and bundled by esbuild into a single `dist/extension.js`.                         |
-| Zero runtime dependencies  | All functionality is implemented against Node.js built-ins and the VS Code API.                                                                                        |
+| Constraint                 | Detail                                                                                                                                                                                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VS Code API surface        | The extension runs inside the VS Code extension host. All file I/O goes through `vscode.workspace.fs`; UI through `vscode.window`; commands through `vscode.commands`.                                                                                  |
+| Single-root workspace only | Advanced features (state toggle, config migration, agent-session archiving, text stats) require a single workspace root. Multi-root and no-workspace modes degrade gracefully.                                                                          |
+| Node.js >= 22.22.0         | Required by `package.json` `engines` field.                                                                                                                                                                                                             |
+| VS Code >= 1.109.0         | Minimum host version; determines available API surface.                                                                                                                                                                                                 |
+| CommonJS bundle            | VS Code extension host requires CJS. The project is authored in ESM-style TypeScript and bundled by esbuild into a single `dist/extension.js`.                                                                                                          |
+| Zero runtime dependencies  | All functionality is implemented against Node.js built-ins and the VS Code API. Tokenizer libraries (`js-tiktoken`, `@anthropic-ai/tokenizer`) are dev dependencies bundled by esbuild — they do not appear in the extension's runtime dependency tree. |
 
 ### 2.2 Organisational Constraints
 
@@ -111,12 +112,12 @@ are prompted to opt in to new configuration sections.
                            |    Extension          |
                            +-----------+-----------+
                                        |
-              +-----------+------------+-----------+-----------+
-              |           |            |           |           |
-              v           v            v           v           v
-        Timestamped  Timestamped  Status Bar  Agent Session  Config
-        File         Directory    Toggle      Archiving      Migration
-        Feature      Feature      Feature     Feature        System
+        +----------+-----------+-------+-------+-----------+-----------+
+        |          |           |               |           |           |
+        v          v           v               v           v           v
+  Timestamped Timestamped Status Bar    Text Stats   Agent Session  Config
+  File        Directory   Toggle        Feature      Archiving      Migration
+  Feature     Feature     Feature                    Feature        System
 ```
 
 | External actor         | Interaction                                                                                                                                                                                              |
@@ -124,6 +125,7 @@ are prompted to opt in to new configuration sections.
 | VS Code user           | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.arit-toolkit.jsonc` manually.                                                                     |
 | `.arit-toolkit.jsonc`  | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits.                                                                                    |
 | VS Code settings       | `arit.timestampFormat`, `arit.timestampSeparator`, `arit.logLevel` -- read via `ConfigManager`.                                                                                                          |
+| Active text editor     | Source for real-time text statistics. Text Stats listens to editor change, document change, and selection change events.                                                                                 |
 | AI agent session files | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/`, VS Code globalStorage/workspaceStorage directories. Only sessions belonging to the current workspace are copied to the archive path. |
 | VS Code Marketplace    | Publish target for `.vsix` packages via semantic-release pipeline.                                                                                                                                       |
 
@@ -146,6 +148,9 @@ are prompted to opt in to new configuration sections.
 |              ^                  |  - LogLevel                  |  |
 |              |  depends on      |  - WorkspaceMode             |  |
 |              |                  |  - WorkspaceConfig           |  |
+|              |                  |  - TokenizerModel            |  |
+|              |                  |  - MetricKey                 |  |
+|              |                  |  - TextStatsConfig           |  |
 |  +-----------+----------------------------------------------+    |
 |  |  Features                                                |    |
 |  |  +------------------+ +-------------------+              |    |
@@ -158,6 +163,12 @@ are prompted to opt in to new configuration sections.
 |  |  |                  | |  - Providers (x6) |              |    |
 |  |  |                  | |  - Parsers (x4+1) |              |    |
 |  |  +------------------+ +-------------------+              |    |
+|  |  +------------------+                                    |    |
+|  |  | textStats        |                                    |    |
+|  |  |  - Controller    |                                    |    |
+|  |  |  - Metrics (x7)  |                                    |    |
+|  |  |  - Tokenizers    |                                    |    |
+|  |  +------------------+                                    |    |
 |  +----------------------------------------------------------+    |
 |                                                                  |
 +------------------------------------------------------------------+
@@ -193,14 +204,14 @@ are prompted to opt in to new configuration sections.
 
 ### 4.1 Technology Decisions
 
-| Decision                   | Rationale                                                                                       |
-| -------------------------- | ----------------------------------------------------------------------------------------------- |
-| TypeScript (strict mode)   | Catches errors at compile time; enables IDE tooling; enforced by ESLint rules.                  |
-| esbuild for bundling       | Sub-second builds; single-file output (`dist/extension.js`); tree-shaking.                      |
-| Vitest for unit testing    | ESM-native; fast; compatible with VS Code mock pattern; V8 coverage provider.                   |
-| JSONC for workspace config | Human-readable; allows inline comments; familiar to VS Code users.                              |
-| semantic-release           | Fully automated: version bump, changelog, `.vsix` package, Marketplace publish, GitHub release. |
-| Zero runtime dependencies  | Minimises attack surface, install size, and compatibility risk.                                 |
+| Decision                   | Rationale                                                                                                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript (strict mode)   | Catches errors at compile time; enables IDE tooling; enforced by ESLint rules.                                                                                       |
+| esbuild for bundling       | Sub-second builds; single-file output (`dist/extension.js`); tree-shaking.                                                                                           |
+| Vitest for unit testing    | ESM-native; fast; compatible with VS Code mock pattern; V8 coverage provider.                                                                                        |
+| JSONC for workspace config | Human-readable; allows inline comments; familiar to VS Code users.                                                                                                   |
+| semantic-release           | Fully automated: version bump, changelog, `.vsix` package, Marketplace publish, GitHub release.                                                                      |
+| Zero runtime dependencies  | Minimises attack surface and compatibility risk. Tokenizer vocabularies are bundled at build time (increasing bundle from ~72 KB to ~6 MB) to avoid runtime fetches. |
 
 ### 4.2 Architectural Approach
 
@@ -244,13 +255,23 @@ activate(context)
   |     +-- registerTimestampedFileFeature(registry, config, logger)
   |     +-- registerTimestampedDirectoryFeature(registry, config, logger)
   |     +-- registerAgentSessionsArchivingFeature(ctx)
+  |     |     |
+  |     |     +-- migrationRegistry.register(agentSessionsArchiving section)
+  |     |     +-- getDefaultProviders(context)
+  |     |     +-- new AgentSessionArchiveService(...)
+  |     |     +-- registry.register(toggleCommand)
+  |     |     +-- subscribe to onDidChangeState
+  |     |     +-- subscribe to onConfigSectionChanged
+  |     +-- registerTextStatsFeature(ctx)
   |           |
-  |           +-- migrationRegistry.register(agentSessionsArchiving section)
-  |           +-- getDefaultProviders(context)
-  |           +-- new AgentSessionArchiveService(...)
-  |           +-- registry.register(toggleCommand)
+  |           +-- migrationRegistry.register(textStats section)
+  |           +-- stateManager.registerService(textStats)
+  |           +-- createTextStatsStatusBarItem()
+  |           +-- new TextStatsController()
+  |           +-- wireCommands (toggle + changeTokenizer)
   |           +-- subscribe to onDidChangeState
   |           +-- subscribe to onConfigSectionChanged
+  |           +-- subscribe to editor/document/selection change events
   |
   +-- stateManager.initialize(extensionVersion)  [async]
         |
@@ -304,6 +325,24 @@ workspace-level state:
     "intervalMinutes": 5,
     "ignoreSessionsBefore": "20250101",
   },
+  "textStats": {
+    "enabled": true,
+    "delimiter": " | ",
+    "unitSpace": true,
+    "wpm": 200,
+    "tokenizer": "o200k",
+    "includeWhitespace": true,
+    "tokenSizeLimit": 500000,
+    "visibleMetrics": [
+      "chars",
+      "tokens",
+      "words",
+      "lines",
+      "paragraphs",
+      "readTime",
+      "size",
+    ],
+  },
 }
 ```
 
@@ -352,11 +391,11 @@ Each segment (major, minor, patch) supports values 0--999.
 
 Features coordinate through events, not direct calls:
 
-| Event                         | Emitter                 | Consumers                     |
-| ----------------------------- | ----------------------- | ----------------------------- |
-| `onDidChangeState(boolean)`   | `ExtensionStateManager` | Status bar, Agent archiving   |
-| `onConfigSectionChanged(key)` | `ExtensionStateManager` | Agent archiving (reconfigure) |
-| `onConfigChange()`            | `ConfigManager`         | Logger (update log level)     |
+| Event                         | Emitter                 | Consumers                                 |
+| ----------------------------- | ----------------------- | ----------------------------------------- |
+| `onDidChangeState(boolean)`   | `ExtensionStateManager` | Status bar, Agent archiving, Text Stats   |
+| `onConfigSectionChanged(key)` | `ExtensionStateManager` | Agent archiving (reconfigure), Text Stats |
+| `onConfigChange()`            | `ConfigManager`         | Logger (update log level)                 |
 
 This ensures features remain decoupled: they react to state changes
 rather than calling each other.
@@ -499,6 +538,57 @@ all others -> no release.
 | commitlint | Commit msgs  | Conventional Commits format, lowercase subject                                                                     |
 | Husky      | Pre-commit   | `eslint --fix` + `prettier --write` on staged files                                                                |
 
+### 8.12 Text Stats Architecture
+
+Text Stats displays real-time text statistics in a dedicated status bar
+item. The feature follows the standard lifecycle pattern but adds
+editor-event-driven updates with debouncing.
+
+**Module decomposition:**
+
+| Module             | Responsibility                                                                            |
+| ------------------ | ----------------------------------------------------------------------------------------- |
+| `index.ts`         | Feature registration, lifecycle wiring, state management (`FeatureState`).                |
+| `updateHandler.ts` | Editor data extraction, file size computation, metric assembly, display update.           |
+| `controller.ts`    | `TextStatsController`: debounced scheduling (300 ms), `TokenCounter` instance management. |
+| `command.ts`       | Toggle command (show/hide status bar item), tokenizer quick-pick command.                 |
+| `statusBarItem.ts` | Status bar item creation (left-aligned), display update, show/hide.                       |
+| `formatter.ts`     | Formats `MetricsResult` into status bar text and rich markdown tooltip.                   |
+| `textExtractor.ts` | Selection-aware text extraction: full document or aggregated multi-selection.             |
+| `constants.ts`     | Config key, command IDs, default values, `INTRODUCED_AT_VERSION_CODE`.                    |
+| `metrics/`         | Seven metric functions: characters, words, lines, paragraphs, readingTime, size, tokens.  |
+
+**Tokenizer lazy-loading:**
+
+`TokenCounter` loads tokenizer vocabularies on first use, not at
+activation time. Each model (`cl100k`, `o200k`, `claude`) is cached
+independently. When the user changes tokenizer model via the quick-pick
+command, the controller invalidates the cache and a new encoder is
+loaded on the next update. Files exceeding `tokenSizeLimit` characters
+skip token counting entirely.
+
+**Debounce strategy:**
+
+Editor events (active editor change, document change, selection change)
+trigger `controller.scheduleUpdate()` which debounces with a 300 ms
+delay. Only the last pending update executes. This prevents excessive
+computation during rapid typing.
+
+**Selection awareness:**
+
+When one or more non-empty selections exist, all metrics are computed
+on the concatenated selection text. Line count uses
+`aggregateSelectionLines()` to avoid double-counting overlapping
+selection ranges. File size switches from `vscode.workspace.fs.stat()`
+to `Buffer.byteLength()` on the selection text.
+
+**Bundled dependencies:**
+
+`js-tiktoken` (OpenAI tokenizers) and `@anthropic-ai/tokenizer`
+(Claude tokenizer) are dev dependencies bundled by esbuild into the
+extension. The bundled vocabularies increase the extension size from
+~72 KB to ~6 MB. No runtime network calls are made.
+
 ---
 
 ## 12 Glossary
@@ -517,5 +607,8 @@ all others -> no release.
 | **Session file**          | A file produced by an AI coding assistant that contains chat interaction history (not rules or configuration).                                                                                                                                        |
 | **Session provider**      | An implementation of `SessionProvider` that discovers session files for a specific AI coding assistant.                                                                                                                                               |
 | **Single-root workspace** | A VS Code workspace with exactly one root folder. Required for advanced features that persist state to disk.                                                                                                                                          |
+| **Text Stats**            | A status bar feature that displays real-time text metrics (characters, tokens, words, lines, paragraphs, reading time, file size) for the active editor, with selection awareness and debounced updates.                                              |
+| **Token counter**         | A lazy-loaded component in the Text Stats feature that counts tokens using a configurable tokenizer model (`cl100k`, `o200k`, or `claude`). Encoders are cached per model and invalidated on model change.                                            |
+| **Tokenizer model**       | One of three supported token-counting schemes: `cl100k` (OpenAI cl100k_base), `o200k` (OpenAI o200k_base), or `claude` (Anthropic Claude). Selected via the `textStats.tokenizer` config or the quick-pick command.                                   |
 | **Version code**          | A numeric encoding of a semantic version (`1XXXYYYZZZ`) used for fast comparison in the migration system.                                                                                                                                             |
 | **Workspace config**      | The `.arit-toolkit.jsonc` file at the workspace root, managed by `ExtensionStateManager`.                                                                                                                                                             |
