@@ -16,6 +16,10 @@ logs/
 
 docs/archive/
 
+# Private / non-published content
+
+private/
+
 # Specific generated files
 
 CHANGELOG.md
