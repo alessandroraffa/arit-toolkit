@@ -1,3 +1,9 @@
+## [1.10.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.0...v1.10.1) (2026-02-25)
+
+### Bug Fixes
+
+* **text-stats:** use double cast in test to satisfy strict type check ([902f650](https://github.com/alessandroraffa/arit-toolkit/commit/902f650dec3ab2af3870c60cf3584112657ad51d))
+
 ## [1.10.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.9.3...v1.10.0) (2026-02-25)
 
 ### Features
