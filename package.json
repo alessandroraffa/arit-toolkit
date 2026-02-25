@@ -74,6 +74,16 @@
         "command": "arit.toggleAgentSessionsArchiving",
         "title": "ARIT: Toggle Agent Sessions Archiving",
         "icon": "$(archive)"
+      },
+      {
+        "command": "arit.textStats.toggle",
+        "title": "ARIT: Toggle Text Stats",
+        "icon": "$(symbol-number)"
+      },
+      {
+        "command": "arit.textStats.changeTokenizer",
+        "title": "ARIT: Change Tokenizer Model",
+        "icon": "$(symbol-number)"
       }
     ],
     "menus": {
