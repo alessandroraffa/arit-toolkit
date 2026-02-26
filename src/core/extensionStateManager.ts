@@ -159,6 +159,9 @@ export class ExtensionStateManager {
     await this.writeStateToFile(newState);
     this._isEnabled = newState;
     this._onDidChangeState.fire(newState);
+    if (newState) {
+      await this.runMigration();
+    }
     this.logger.info(
       `ARIT Toolkit ${newState ? 'enabled' : 'disabled'} for this workspace`
     );

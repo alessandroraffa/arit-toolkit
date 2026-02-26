@@ -41,7 +41,7 @@ function getDefaultConfig(): TextStatsConfig {
 function getConfig(sm: ExtensionStateManager): TextStatsConfig {
   const raw = sm.getConfigSection(CONFIG_KEY);
   if (!raw || typeof raw !== 'object') {
-    return getDefaultConfig();
+    return { ...getDefaultConfig(), enabled: false };
   }
   return raw as TextStatsConfig;
 }

@@ -376,6 +376,45 @@ describe('ExtensionStateManager', () => {
       expect(writtenContent).toContain('"enabled": false');
       expect(writtenContent).toContain('"featureA"');
     });
+
+    it('should run migration when toggling from disabled to enabled', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": false, "versionCode": 1001000000 }')
+        );
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+      const manager = createManager();
+      await manager.initialize('1.0.0');
+      // migration should NOT have been called during initialize (disabled)
+      expect(mockMigrationService.migrate).not.toHaveBeenCalled();
+
+      await manager.toggle(); // disabled → enabled
+
+      expect(manager.isEnabled).toBe(true);
+      expect(mockMigrationService.migrate).toHaveBeenCalled();
+    });
+
+    it('should NOT run migration when toggling from enabled to disabled', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+      const manager = createManager();
+      await manager.initialize('1.0.0');
+      mockMigrationService.migrate.mockClear();
+
+      await manager.toggle(); // enabled → disabled
+
+      expect(manager.isEnabled).toBe(false);
+      expect(mockMigrationService.migrate).not.toHaveBeenCalled();
+    });
   });
 
   describe('showOnboardingNotification', () => {

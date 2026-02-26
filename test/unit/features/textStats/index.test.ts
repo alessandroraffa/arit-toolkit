@@ -115,4 +115,88 @@ describe('registerTextStatsFeature', () => {
     // status bar item + controller disposable + 2 commands + state listener + section listener + 3 editor listeners
     expect(ctx.context.subscriptions.length).toBeGreaterThanOrEqual(5);
   });
+
+  describe('onDidChangeState listener', () => {
+    it('should NOT activate when config section does not exist in state manager', () => {
+      // Capture the onDidChangeState listener
+      let stateListener: ((globalEnabled: boolean) => void) | undefined;
+      vi.mocked(ctx.stateManager.onDidChangeState).mockImplementation(
+        (listener: (enabled: boolean) => void) => {
+          stateListener = listener;
+          return mockDisposable;
+        }
+      );
+      // getConfigSection returns undefined (section not yet added via migration)
+      vi.mocked(ctx.stateManager.getConfigSection).mockReturnValue(undefined);
+
+      const item = { ...mockStatusBarItem };
+      vi.mocked(window.createStatusBarItem).mockReturnValue(item);
+
+      registerTextStatsFeature(ctx);
+
+      // Simulate: onDidChangeState fires with true BEFORE migration adds the section
+      expect(stateListener).toBeDefined();
+      stateListener!(true);
+
+      // textStats should NOT show — user hasn't accepted the feature yet
+      expect(item.show).not.toHaveBeenCalled();
+    });
+
+    it('should activate when config section exists and is enabled', () => {
+      let stateListener: ((globalEnabled: boolean) => void) | undefined;
+      vi.mocked(ctx.stateManager.onDidChangeState).mockImplementation(
+        (listener: (enabled: boolean) => void) => {
+          stateListener = listener;
+          return mockDisposable;
+        }
+      );
+      vi.mocked(ctx.stateManager.getConfigSection).mockReturnValue({
+        enabled: true,
+        delimiter: ' | ',
+        unitSpace: true,
+        wpm: 200,
+        tokenizer: 'o200k',
+        includeWhitespace: true,
+        tokenSizeLimit: 500_000,
+        visibleMetrics: ['chars'],
+      });
+
+      const item = { ...mockStatusBarItem };
+      vi.mocked(window.createStatusBarItem).mockReturnValue(item);
+
+      registerTextStatsFeature(ctx);
+      stateListener!(true);
+
+      // textStats SHOULD show — section exists and is enabled
+      expect(item.show).toHaveBeenCalled();
+    });
+
+    it('should NOT activate when config section exists but is disabled', () => {
+      let stateListener: ((globalEnabled: boolean) => void) | undefined;
+      vi.mocked(ctx.stateManager.onDidChangeState).mockImplementation(
+        (listener: (enabled: boolean) => void) => {
+          stateListener = listener;
+          return mockDisposable;
+        }
+      );
+      vi.mocked(ctx.stateManager.getConfigSection).mockReturnValue({
+        enabled: false,
+        delimiter: ' | ',
+        unitSpace: true,
+        wpm: 200,
+        tokenizer: 'o200k',
+        includeWhitespace: true,
+        tokenSizeLimit: 500_000,
+        visibleMetrics: ['chars'],
+      });
+
+      const item = { ...mockStatusBarItem };
+      vi.mocked(window.createStatusBarItem).mockReturnValue(item);
+
+      registerTextStatsFeature(ctx);
+      stateListener!(true);
+
+      expect(item.show).not.toHaveBeenCalled();
+    });
+  });
 });
