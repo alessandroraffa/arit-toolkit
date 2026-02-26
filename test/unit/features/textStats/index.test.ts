@@ -7,13 +7,14 @@ import type { FeatureRegistrationContext } from '../../../../src/features/index'
 vi.mock('js-tiktoken', () => {
   const mockEncode = vi.fn((text: string) => text.split(/\s+/).filter(Boolean));
   return {
+    Tiktoken: vi.fn(() => ({ encode: mockEncode })),
     getEncoding: vi.fn(() => ({ encode: mockEncode })),
   };
 });
 
-// Mock @anthropic-ai/tokenizer
-vi.mock('@anthropic-ai/tokenizer', () => ({
-  countTokens: vi.fn((text: string) => text.split(/\s+/).filter(Boolean).length),
+// Mock claude.json ranks
+vi.mock('@anthropic-ai/tokenizer/dist/cjs/claude.json', () => ({
+  default: { bpe_ranks: 'mock', special_tokens: {}, pat_str: '.' },
 }));
 
 function createMockContext(): FeatureRegistrationContext {

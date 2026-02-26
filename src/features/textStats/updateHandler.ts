@@ -31,6 +31,8 @@ function extractFromEditor(editor: vscode.TextEditor): EditorData {
   const selData: SelectionData[] = sels.map((s) => ({
     text: doc.getText(s),
     isEmpty: s.isEmpty,
+    startOffset: doc.offsetAt(s.start),
+    endOffset: doc.offsetAt(s.end),
   }));
   const text = extractSelectionText(doc.getText(), selData);
   const hasSelection = sels.some((s) => !s.isEmpty);

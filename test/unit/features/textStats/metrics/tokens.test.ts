@@ -1,19 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TokenCounter } from '../../../../../src/features/textStats/metrics/tokens';
 
-// Mock js-tiktoken
-vi.mock('js-tiktoken', () => {
-  const mockEncode = vi.fn((text: string) => text.split(/\s+/).filter(Boolean));
-  return {
-    getEncoding: vi.fn(() => ({
-      encode: mockEncode,
-    })),
-  };
-});
+const mockEncode = vi.fn((text: string) => text.split(/\s+/).filter(Boolean));
 
-// Mock @anthropic-ai/tokenizer
-vi.mock('@anthropic-ai/tokenizer', () => ({
-  countTokens: vi.fn((text: string) => text.split(/\s+/).filter(Boolean).length),
+// Mock js-tiktoken
+vi.mock('js-tiktoken', () => ({
+  Tiktoken: vi.fn(() => ({ encode: mockEncode })),
+  getEncoding: vi.fn(() => ({ encode: mockEncode })),
+}));
+
+// Mock claude.json ranks (used for claude model)
+vi.mock('@anthropic-ai/tokenizer/dist/cjs/claude.json', () => ({
+  default: {
+    bpe_ranks: 'mock',
+    special_tokens: {},
+    pat_str: '.',
+  },
 }));
 
 describe('TokenCounter', () => {
@@ -56,6 +58,13 @@ describe('TokenCounter', () => {
     await counter.countTokens('a', 'o200k');
     await counter.countTokens('b', 'cl100k');
     expect(tiktoken.getEncoding).toHaveBeenCalledTimes(2);
+  });
+
+  it('should use Tiktoken class for claude model', async () => {
+    const tiktoken = await import('js-tiktoken');
+    await counter.countTokens('hello', 'claude');
+    expect(tiktoken.Tiktoken).toHaveBeenCalledTimes(1);
+    expect(tiktoken.getEncoding).not.toHaveBeenCalled();
   });
 
   it('should invalidate cache via invalidate()', async () => {

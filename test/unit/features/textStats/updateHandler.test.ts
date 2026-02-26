@@ -63,13 +63,18 @@ function setActiveEditor(editor: unknown): void {
 
 function createMockEditor(text: string, hasSelection: boolean): unknown {
   const sel = hasSelection
-    ? { isEmpty: false, start: { line: 0 }, end: { line: 0, character: text.length } }
-    : { isEmpty: true, start: { line: 0 }, end: { line: 0, character: 0 } };
+    ? {
+        isEmpty: false,
+        start: { line: 0, character: 0 },
+        end: { line: 0, character: text.length },
+      }
+    : { isEmpty: true, start: { line: 0, character: 0 }, end: { line: 0, character: 0 } };
   return {
     document: {
       getText: vi.fn().mockReturnValue(text),
       lineCount: 1,
       uri: { fsPath: '/test.txt' },
+      offsetAt: vi.fn().mockImplementation((pos: { character: number }) => pos.character),
     },
     selections: [sel],
   };

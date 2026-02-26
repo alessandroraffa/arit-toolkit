@@ -1,8 +1,11 @@
 import { countSelectionLines } from './metrics/lines';
+import { inferGapSeparator } from './gapSeparator';
 
 export interface SelectionData {
   readonly text: string;
   readonly isEmpty: boolean;
+  readonly startOffset: number;
+  readonly endOffset: number;
 }
 
 export interface SelectionLineData {
@@ -14,6 +17,8 @@ export interface SelectionLineData {
 /**
  * Extract the relevant text from selections or full document.
  * Returns full document text if all selections are empty (cursor-only).
+ * For multiple selections, joins them with context-aware separators
+ * that preserve paragraph and word boundaries.
  */
 export function extractSelectionText(
   fullText: string,
@@ -23,7 +28,21 @@ export function extractSelectionText(
   if (nonEmpty.length === 0) {
     return fullText;
   }
-  return nonEmpty.map((s) => s.text).join('');
+  const sorted = [...nonEmpty].sort((a, b) => a.startOffset - b.startOffset);
+  const parts: string[] = [];
+  let prev: SelectionData | undefined;
+  for (const curr of sorted) {
+    if (prev) {
+      const gap =
+        curr.startOffset > prev.endOffset
+          ? fullText.slice(prev.endOffset, curr.startOffset)
+          : '';
+      parts.push(inferGapSeparator(gap));
+    }
+    parts.push(curr.text);
+    prev = curr;
+  }
+  return parts.join('');
 }
 
 /**
