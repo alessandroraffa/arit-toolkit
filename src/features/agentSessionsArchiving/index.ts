@@ -39,6 +39,9 @@ export function registerAgentSessionsArchivingFeature(
   ctx: FeatureRegistrationContext
 ): void {
   const { stateManager, logger } = ctx;
+  if (!stateManager.isSingleRoot) {
+    return;
+  }
   const workspaceRoot = stateManager.workspaceRootUri;
   if (!workspaceRoot) {
     return;
