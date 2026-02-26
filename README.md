@@ -8,7 +8,7 @@
 
 Chat sessions with Claude Code, Cline, Aider, Roo Code, GitHub Copilot Chat, and Continue are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. ARIT Toolkit collects them automatically into your workspace, organized by date, as project artifacts.
 
-In the context of agentic coding, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. ARIT Toolkit automates the production and organization of these artifacts, whether you are archiving a Claude Code session or creating a timestamped notes file.
+In the context of agentic coding, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. ARIT Toolkit automates the production and organization of these artifacts, gives you real-time visibility into token counts and text metrics, and keeps everything under version control.
 
 ## Agent Sessions Archiving
 
@@ -73,6 +73,8 @@ Right-click a folder → "ARIT: Prefix Creation Timestamp to Folder"
 `assets/` → `202602051430-assets/`
 
 ## Text Stats
+
+When you work with AI coding assistants, every file you feed into a conversation has a token cost. Knowing the token count of a prompt, a spec, or a context file before you send it helps you stay within model limits, estimate costs, and write more effective inputs. Text Stats gives you that visibility directly in VS Code.
 
 Real-time text statistics displayed in the status bar. Shows character count, token count, word count, line count, paragraph count, estimated reading time, and file size — updated live as you type or select text.
 
@@ -140,6 +142,7 @@ Command Palette → "ARIT: Toggle Extension (Enable/Disable)" or "ARIT: Checkup"
 
 - Archives sessions from 6 AI coding assistants into one place — no other extension does this
 - Archived files live in your workspace: version them with Git, share them with your team
+- Real-time token counting with OpenAI and Anthropic tokenizers — know the cost of every file before you send it to an AI assistant
 - Timestamps give you a consultable timeline of the work done on a project
 - Minimal configuration: one `.arit-toolkit.jsonc` file, sensible defaults
 - Zero runtime dependencies — VS Code API only
@@ -149,6 +152,7 @@ Command Palette → "ARIT: Toggle Extension (Enable/Disable)" or "ARIT: Checkup"
 - Support for additional assistants (Cursor, Windsurf)
 - Full-text search across archived sessions
 - Dashboard summarizing session activity per project
+- Context window budgeting — track cumulative token usage across multiple files
 
 ## Configuration
 
