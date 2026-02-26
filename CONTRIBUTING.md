@@ -97,8 +97,14 @@ pnpm run test:unit
 # Run unit tests with coverage
 pnpm run test:unit:coverage
 
-# Run integration tests
+# Run VS Code extension host integration tests
 pnpm run test:integration
+
+# Run Vitest integration tests (builds first, then tests bundle + real deps)
+pnpm run test:integration:vitest
+
+# Run Vitest integration tests with coverage
+pnpm run test:integration:vitest:coverage
 ```
 
 ### Testing in VS Code
@@ -208,10 +214,17 @@ arit-toolkit/
 │   │   ├── core/                 # Core module tests
 │   │   ├── features/             # Feature tests (one file per concern)
 │   │   └── utils/                # Utility tests
-│   └── integration/              # Integration tests (VS Code Extension Host)
-│       └── suite/
-│           ├── index.ts
-│           └── extension.test.ts
+│   └── integration/              # Integration tests
+│       ├── suite/                # VS Code Extension Host (Mocha + @vscode/test-electron)
+│       │   ├── index.ts
+│       │   └── extension.test.ts
+│       └── vitest/               # Post-build integration tests (Vitest, no mocks)
+│           ├── setup.ts              # Minimal setup (no vscode mock)
+│           ├── bundle-smoke.test.ts  # Bundle structure verification
+│           ├── bundle-assets.test.ts # Self-contained bundle assertions
+│           ├── tokenizer.test.ts     # Real tokenizer exercising
+│           ├── metrics-pipeline.test.ts  # Full metrics pipeline
+│           └── text-extraction.test.ts   # Selection joining logic
 ├── .editorconfig                 # Cross-editor formatting rules
 ├── .markdownlint.jsonc           # Markdown linting rules
 ├── .markdownlint-cli2.jsonc      # markdownlint-cli2 configuration
@@ -222,7 +235,8 @@ arit-toolkit/
 ├── esbuild.mjs                   # esbuild bundler configuration
 ├── eslint.config.mjs             # ESLint flat config
 ├── tsconfig.json                 # TypeScript configuration
-├── vitest.config.ts              # Vitest test runner configuration
+├── vitest.config.ts              # Vitest test runner configuration (unit tests)
+├── vitest.integration.config.ts  # Vitest integration test configuration
 └── package.json
 ```
 
@@ -238,7 +252,7 @@ arit-toolkit/
 5. Register the feature in `src/features/index.ts`
 6. Add command to `package.json` contributes (commands, menus, keybindings)
 7. Update `README.md` documentation
-8. Run full verification: `pnpm run check-types && pnpm run lint && pnpm run test:unit:coverage && pnpm run compile`
+8. Run full verification: `pnpm run check-types && pnpm run lint && pnpm run test:unit:coverage && pnpm run test:integration:vitest && pnpm run compile`
 
 ## Code Quality
 

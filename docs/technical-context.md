@@ -13,11 +13,11 @@
 | System             | ARIT Toolkit -- VS Code Extension                                                                                                           |
 | Repository         | <https://github.com/alessandroraffa/arit-toolkit>                                                                                           |
 | Identifier         | `alessandroraffa.arit-toolkit`                                                                                                              |
-| Current version    | 1.9.3 (versionCode `1001009003`); 1.10.0 pending release                                                                                    |
+| Current version    | 1.10.2 (versionCode `1001010002`)                                                                                                           |
 | Licence            | MIT                                                                                                                                         |
 | Architecture style | Feature-based modular architecture, dependency injection                                                                                    |
 | Runtime deps       | None at runtime (VS Code API only). `js-tiktoken` and `@anthropic-ai/tokenizer` are dev dependencies bundled into the extension by esbuild. |
-| Last updated       | 2026-02-25                                                                                                                                  |
+| Last updated       | 2026-02-26                                                                                                                                  |
 
 ---
 
@@ -43,13 +43,13 @@ are prompted to opt in to new configuration sections.
 
 ### 1.2 Quality Goals
 
-| Priority | Quality attribute    | Concrete goal                                                                                                                                                       |
-| -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1        | Maintainability      | Strict ESLint complexity limits (max 250 lines/file, 50 lines/fn, cyclomatic complexity <= 10, max nesting 3, max params 3). Feature-per-folder isolation.          |
-| 2        | Reliability          | >= 80 % unit-test coverage (lines, functions, branches, statements). Strict TypeScript (`noImplicitAny`, `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`). |
-| 3        | Extensibility        | New features register through `FeatureRegistrationContext` without touching core modules. Config sections self-register via `ConfigSectionRegistry`.                |
-| 4        | Security             | Zero runtime dependencies. Tokenizer vocabularies bundled at build time — no network calls. No credential handling.                                                 |
-| 5        | Developer experience | One-click enable/disable via status bar. Rich markdown tooltip. Conventional commits + automated semantic-release pipeline.                                         |
+| Priority | Quality attribute    | Concrete goal                                                                                                                                                                                                                                      |
+| -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1        | Maintainability      | Strict ESLint complexity limits (max 250 lines/file, 50 lines/fn, cyclomatic complexity <= 10, max nesting 3, max params 3). Feature-per-folder isolation.                                                                                         |
+| 2        | Reliability          | >= 80 % unit-test coverage (lines, functions, branches, statements). >= 60 % integration-test coverage on textStats (lines, functions, statements). Strict TypeScript (`noImplicitAny`, `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`). |
+| 3        | Extensibility        | New features register through `FeatureRegistrationContext` without touching core modules. Config sections self-register via `ConfigSectionRegistry`.                                                                                               |
+| 4        | Security             | Zero runtime dependencies. Tokenizer vocabularies bundled at build time — no network calls. No credential handling.                                                                                                                                |
+| 5        | Developer experience | One-click enable/disable via status bar. Rich markdown tooltip. Conventional commits + automated semantic-release pipeline.                                                                                                                        |
 
 ### 1.3 Stakeholders
 
@@ -209,6 +209,7 @@ are prompted to opt in to new configuration sections.
 | TypeScript (strict mode)   | Catches errors at compile time; enables IDE tooling; enforced by ESLint rules.                                                                                       |
 | esbuild for bundling       | Sub-second builds; single-file output (`dist/extension.js`); tree-shaking.                                                                                           |
 | Vitest for unit testing    | ESM-native; fast; compatible with VS Code mock pattern; V8 coverage provider.                                                                                        |
+| Vitest for integration     | Same runner as unit tests; separate config (`vitest.integration.config.ts`); no mocks; exercises real bundled deps post-build.                                       |
 | JSONC for workspace config | Human-readable; allows inline comments; familiar to VS Code users.                                                                                                   |
 | semantic-release           | Fully automated: version bump, changelog, `.vsix` package, Marketplace publish, GitHub release.                                                                      |
 | Zero runtime dependencies  | Minimises attack surface and compatibility risk. Tokenizer vocabularies are bundled at build time (increasing bundle from ~72 KB to ~6 MB) to avoid runtime fetches. |
@@ -497,15 +498,37 @@ updates reactively when the setting changes.
 
 ### 8.9 Testing Strategy
 
-| Layer       | Framework             | Scope                                                                    |
-| ----------- | --------------------- | ------------------------------------------------------------------------ |
-| Unit        | Vitest                | All modules in `src/` with mocked VS Code API. Coverage threshold: 80 %. |
-| Integration | @vscode/test-electron | Extension activation and lifecycle in a real VS Code instance.           |
+| Layer        | Framework             | Config                         | Scope                                                                                                              |
+| ------------ | --------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Unit         | Vitest                | `vitest.config.ts`             | All modules in `src/` with mocked VS Code API. Coverage threshold: 80 %.                                           |
+| Integration  | Vitest (no mocks)     | `vitest.integration.config.ts` | Post-build verification: bundle smoke tests, real tokenizer exercising, full metrics pipeline, asset verification. |
+| VS Code Host | @vscode/test-electron | `.vscode-test.mjs`             | Extension activation and lifecycle in a real VS Code instance.                                                     |
 
-The VS Code API mock (`test/unit/mocks/vscode.ts`) provides
-deterministic implementations of `workspace.fs`, `Uri`, `window`,
-`commands`, `EventEmitter`, `FileSystemWatcher`, and enum types
-(`StatusBarAlignment`, `FileType`).
+**Unit tests** (`test/unit/`) mock the VS Code API via
+`test/unit/mocks/vscode.ts`, which provides deterministic implementations
+of `workspace.fs`, `Uri`, `window`, `commands`, `EventEmitter`,
+`FileSystemWatcher`, and enum types (`StatusBarAlignment`, `FileType`).
+
+**Vitest integration tests** (`test/integration/vitest/`) exercise real
+modules with real dependencies — no mocks. They were introduced after a
+production bug where the Claude tokenizer silently failed because
+`@anthropic-ai/tokenizer` required a WASM binary that esbuild didn't
+bundle, but unit test mocks completely hid the failure. These tests cover:
+
+- **Bundle smoke** — verifies `dist/extension.js` structure (no WASM refs,
+  CJS format, vscode externalized, claude BPE ranks inlined)
+- **Bundle assets** — ensures the bundle is self-contained with no missing
+  runtime dependencies (no `.wasm`, no `.node` addons, no `readFileSync`)
+- **Tokenizer** — exercises all 3 tokenizer models (o200k, cl100k, claude)
+  with the real `js-tiktoken` library and real BPE ranks
+- **Metrics pipeline** — full text → metrics → formatter pipeline without
+  mocks, verifying no em-dash fallback appears in formatted output
+- **Text extraction** — selection joining with real gap separator logic
+
+Coverage thresholds for integration tests are independently configured
+at 60 % lines/functions/statements and 50 % branches (targeting
+`src/features/textStats/`). The `pnpm run test:integration:vitest`
+script builds the bundle first, then runs the tests.
 
 ### 8.10 Release Pipeline
 
