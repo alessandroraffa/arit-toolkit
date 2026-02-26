@@ -10,8 +10,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ['test/unit/setup.ts'],
     coverage: {
+      enabled: true,
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: 'coverage/unit',
       include: ['src/**/*.ts'],
       exclude: ['src/extension.ts', 'src/**/*.d.ts', 'src/**/index.ts'],
       thresholds: {
