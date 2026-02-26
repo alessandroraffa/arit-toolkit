@@ -185,6 +185,7 @@ arit-toolkit/
 │   │       ├── statusBarItem.ts     # Status bar item creation and display
 │   │       ├── formatter.ts         # Status bar text and tooltip formatting
 │   │       ├── textExtractor.ts     # Selection-aware text extraction
+│   │       ├── gapSeparator.ts     # Gap inference for multi-selection boundary preservation
 │   │       ├── constants.ts         # Config key, command IDs, defaults
 │   │       └── metrics/             # Individual metric functions
 │   │           ├── index.ts         # Barrel export

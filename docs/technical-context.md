@@ -554,7 +554,8 @@ editor-event-driven updates with debouncing.
 | `command.ts`       | Toggle command (show/hide status bar item), tokenizer quick-pick command.                 |
 | `statusBarItem.ts` | Status bar item creation (left-aligned), display update, show/hide.                       |
 | `formatter.ts`     | Formats `MetricsResult` into status bar text and rich markdown tooltip.                   |
-| `textExtractor.ts` | Selection-aware text extraction: full document or aggregated multi-selection.             |
+| `textExtractor.ts` | Selection-aware text extraction: full document or boundary-preserving multi-selection.    |
+| `gapSeparator.ts`  | Gap inference: determines minimal separator between non-contiguous selections.            |
 | `constants.ts`     | Config key, command IDs, default values, `INTRODUCED_AT_VERSION_CODE`.                    |
 | `metrics/`         | Seven metric functions: characters, words, lines, paragraphs, readingTime, size, tokens.  |
 
@@ -577,7 +578,11 @@ computation during rapid typing.
 **Selection awareness:**
 
 When one or more non-empty selections exist, all metrics are computed
-on the concatenated selection text. Line count uses
+on the joined selection text. Selections are sorted by document offset
+and joined with context-aware separators inferred by `gapSeparator.ts`:
+paragraph breaks (`\n\n`) for gaps containing double newlines, line
+breaks (`\n`) for single newlines, spaces for other whitespace, or no
+separator for adjacent/overlapping selections. Line count uses
 `aggregateSelectionLines()` to avoid double-counting overlapping
 selection ranges. File size switches from `vscode.workspace.fs.stat()`
 to `Buffer.byteLength()` on the selection text.

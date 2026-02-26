@@ -78,7 +78,7 @@ Real-time text statistics displayed in the status bar. Shows character count, to
 
 **Status bar:** A dedicated item on the left side of the status bar shows a configurable summary. Click to change the tokenizer model. Hover for a detailed tooltip with all metrics.
 
-**Selection-aware:** When text is selected, all metrics switch to cover only the selection. Multiple selections are aggregated.
+**Selection-aware:** When text is selected, all metrics switch to cover only the selection. Multiple selections are joined with context-aware separators that preserve paragraph boundaries, line breaks, and word boundaries.
 
 **Tokenizer models:** Choose between OpenAI `cl100k_base`, OpenAI `o200k_base`, or Anthropic `claude` tokenizer for accurate token counting. Token counting is lazy-loaded on first use and cached per model.
 
