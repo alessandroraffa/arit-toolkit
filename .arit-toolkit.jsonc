@@ -7,14 +7,14 @@
     "archivePath": "docs/archive/agent-sessions",
     "intervalMinutes": 5
   },
-  "version": "1.10.1",
-  "versionCode": 1001010001,
+  "version": "1.10.2",
+  "versionCode": 1001010002,
   "textStats": {
     "enabled": true,
     "delimiter": " | ",
     "unitSpace": true,
     "wpm": 200,
-    "tokenizer": "claude",
+    "tokenizer": "o200k",
     "includeWhitespace": true,
     "tokenSizeLimit": 500000,
     "visibleMetrics": [
