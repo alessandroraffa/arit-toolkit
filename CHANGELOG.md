@@ -1,3 +1,9 @@
+## [1.10.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.2...v1.10.3) (2026-02-26)
+
+### Bug Fixes
+
+* prevent features from activating before config migration completes ([419b66b](https://github.com/alessandroraffa/arit-toolkit/commit/419b66bf8af19aba41df3acf6846f4b180bdf4ca))
+
 ## [1.10.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.1...v1.10.2) (2026-02-26)
 
 ### Bug Fixes
