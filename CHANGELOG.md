@@ -1,3 +1,10 @@
+## [1.10.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.1...v1.10.2) (2026-02-26)
+
+### Bug Fixes
+
+* **text-stats:** add gap separator inference for multi-selection joining ([1ce2bb1](https://github.com/alessandroraffa/arit-toolkit/commit/1ce2bb16abf252b361e5b97114945566af33cd02))
+* **text-stats:** preserve boundaries when joining multi-cursor selections ([1ae6362](https://github.com/alessandroraffa/arit-toolkit/commit/1ae6362af124c539653d179e4de1570bb7a7c163))
+
 ## [1.10.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.0...v1.10.1) (2026-02-25)
 
 ### Bug Fixes
