@@ -85,12 +85,13 @@ Unless told otherwise, follow this end-to-end workflow for every task. Do not wa
 Run **all** of the following before every commit:
 
 ```bash
-pnpm run check-types    # TypeScript strict type-check
-pnpm run lint           # ESLint (source + tests)
-pnpm run test:unit      # Vitest unit tests
+pnpm run check-types              # TypeScript strict type-check
+pnpm run lint                     # ESLint (source + tests)
+pnpm run test:unit                # Vitest unit tests
+pnpm run test:integration:vitest  # Vitest integration tests (builds bundle first)
 ```
 
-If coverage is relevant, also run `pnpm run test:unit:coverage` and verify that coverage does not regress.
+If coverage is relevant, also run `pnpm run test:unit:coverage` and `pnpm run test:integration:vitest:coverage` and verify that coverage does not regress.
 
 Fix any failure before proceeding — never commit red code.
 
@@ -111,7 +112,7 @@ Fix any failure before proceeding — never commit red code.
 ### Always
 
 - Follow the Workflow section above for every task — do not skip steps or wait to be told
-- Run the full quality gate (`check-types`, `lint`, `test:unit`) before every commit
+- Run the full quality gate (`check-types`, `lint`, `test:unit`, `test:integration:vitest`) before every commit
 - Verify coverage does not regress when changing or adding code
 - Write tests before or alongside implementation (TDD)
 - Commit early and atomically — do not batch unrelated changes

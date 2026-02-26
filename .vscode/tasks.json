@@ -40,6 +40,12 @@
       "command": "pnpm run test:unit",
       "problemMatcher": [],
       "label": "pnpm: test:unit"
+    },
+    {
+      "type": "shell",
+      "command": "pnpm run test:integration:vitest",
+      "problemMatcher": [],
+      "label": "pnpm: test:integration:vitest"
     }
   ]
 }

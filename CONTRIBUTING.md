@@ -70,8 +70,9 @@ pnpm install
 # Build the extension
 pnpm run compile
 
-# Run tests
+# Run all tests
 pnpm run test:unit
+pnpm run test:integration:vitest
 ```
 
 > **Tip:** A [Dev Container](.devcontainer/devcontainer.json) configuration is provided. Open the project in VS Code and select "Reopen in Container" to get a pre-configured environment with the correct Node.js version, pnpm, and all recommended extensions.
@@ -252,7 +253,7 @@ arit-toolkit/
 5. Register the feature in `src/features/index.ts`
 6. Add command to `package.json` contributes (commands, menus, keybindings)
 7. Update `README.md` documentation
-8. Run full verification: `pnpm run check-types && pnpm run lint && pnpm run test:unit:coverage && pnpm run test:integration:vitest && pnpm run compile`
+8. Run full verification: `pnpm run check-types && pnpm run lint && pnpm run test:unit:coverage && pnpm run test:integration:vitest:coverage && pnpm run compile`
 
 ## Code Quality
 
