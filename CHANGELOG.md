@@ -1,3 +1,9 @@
+## [1.10.4](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.3...v1.10.4) (2026-02-27)
+
+### Bug Fixes
+
+* disable agent sessions archiving in multi-root workspaces ([b167e3f](https://github.com/alessandroraffa/arit-toolkit/commit/b167e3ffb247d9805482382cf1a59453367152b5))
+
 ## [1.10.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.2...v1.10.3) (2026-02-26)
 
 ### Bug Fixes
