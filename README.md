@@ -8,7 +8,7 @@
 
 Chat sessions with Claude Code, Cline, Aider, Roo Code, GitHub Copilot Chat, and Continue are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. ARIT Toolkit collects them automatically into your workspace, organized by date, as project artifacts.
 
-In the context of agentic coding, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. ARIT Toolkit automates the production and organization of these artifacts, gives you real-time visibility into token counts and text metrics, and keeps everything under version control.
+In the context of agentic coding, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. ARIT Toolkit archives AI sessions from 6 assistants, creates timestamped files and folders for chronological project documentation, prefixes existing items with their creation date, and gives you real-time token counts and text metrics in the status bar — all without leaving VS Code.
 
 ## Agent Sessions Archiving
 
