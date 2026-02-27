@@ -1,3 +1,9 @@
+## [1.10.6](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.5...v1.10.6) (2026-02-27)
+
+### Bug Fixes
+
+* **deps:** upgrade minimatch override to 3.1.4 to resolve remaining redos vulnerability ([b09dd2b](https://github.com/alessandroraffa/arit-toolkit/commit/b09dd2b2df5f5f507895c36e7513012a483aeb5b))
+
 ## [1.10.5](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.4...v1.10.5) (2026-02-27)
 
 ### Bug Fixes
