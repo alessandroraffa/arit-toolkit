@@ -1,3 +1,9 @@
+## [1.10.5](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.4...v1.10.5) (2026-02-27)
+
+### Bug Fixes
+
+* **deps:** patch minimatch and rollup security vulnerabilities via pnpm overrides ([c999b0a](https://github.com/alessandroraffa/arit-toolkit/commit/c999b0a89ec4d3bc67decd0f46fbc6a09a7776ad))
+
 ## [1.10.4](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.3...v1.10.4) (2026-02-27)
 
 ### Bug Fixes
