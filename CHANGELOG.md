@@ -1,3 +1,9 @@
+## [1.12.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.11.0...v1.12.0) (2026-02-28)
+
+### Features
+
+* **archiving:** extract tool details from copilot tool-specific data ([d07b176](https://github.com/alessandroraffa/arit-toolkit/commit/d07b176c13f0d48a7c529bc7e6a637e10ab74781))
+
 ## [1.11.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.6...v1.11.0) (2026-02-28)
 
 ### Features
