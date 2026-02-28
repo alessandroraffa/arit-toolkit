@@ -1,3 +1,10 @@
+## [1.11.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.6...v1.11.0) (2026-02-28)
+
+### Features
+
+* **agentSessionsArchiving:** add archive now command ([90270e1](https://github.com/alessandroraffa/arit-toolkit/commit/90270e1c20d05d1bf27dd73a062215f2244323b3))
+* **agentSessionsArchiving:** add file watching for session changes ([3e53465](https://github.com/alessandroraffa/arit-toolkit/commit/3e534654939db2ec4808da30d7e74a5e8fd8f5e9))
+
 ## [1.10.6](https://github.com/alessandroraffa/arit-toolkit/compare/v1.10.5...v1.10.6) (2026-02-27)
 
 ### Bug Fixes
