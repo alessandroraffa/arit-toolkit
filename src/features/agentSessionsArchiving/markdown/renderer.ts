@@ -82,17 +82,34 @@ function renderFileList(title: string, files: readonly string[]): string[] {
   return lines;
 }
 
-function renderToolCall(tool: ToolCall): string[] {
-  const lines: string[] = [];
+function renderCodeBlock(text: string, indent: string): string[] {
+  return [
+    `${indent}\`\`\``,
+    `${indent}${text.split('\n').join(`\n${indent}`)}`,
+    `${indent}\`\`\``,
+  ];
+}
 
-  lines.push(`- **${tool.name}**`);
+function renderOutputDetails(output: string): string[] {
+  return [
+    '',
+    '  <details>',
+    '  <summary>Output</summary>',
+    '',
+    ...renderCodeBlock(output, '  '),
+    '',
+    '  </details>',
+  ];
+}
+
+function renderToolCall(tool: ToolCall): string[] {
+  const lines: string[] = [`- **${tool.name}**`];
   if (tool.input) {
-    lines.push('');
-    lines.push('  ```');
-    lines.push(`  ${tool.input.split('\n').join('\n  ')}`);
-    lines.push('  ```');
+    lines.push('', ...renderCodeBlock(tool.input, '  '));
+  }
+  if (tool.output) {
+    lines.push(...renderOutputDetails(tool.output));
   }
   lines.push('');
-
   return lines;
 }

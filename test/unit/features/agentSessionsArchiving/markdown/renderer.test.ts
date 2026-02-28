@@ -260,6 +260,58 @@ describe('renderSessionToMarkdown', () => {
     expect(md).toContain('Some reasoning...');
   });
 
+  it('should render tool call output in details block', () => {
+    const session: NormalizedSession = {
+      providerName: 'copilot-chat',
+      providerDisplayName: 'GitHub Copilot Chat',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'assistant',
+          content: 'Done.',
+          toolCalls: [
+            { name: 'run_in_terminal', input: 'ls -la', output: 'file1.ts\nfile2.ts' },
+          ],
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    expect(md).toContain('**run_in_terminal**');
+    expect(md).toContain('ls -la');
+    expect(md).toContain('<details>');
+    expect(md).toContain('<summary>Output</summary>');
+    expect(md).toContain('file1.ts');
+    expect(md).toContain('file2.ts');
+    expect(md).toContain('</details>');
+  });
+
+  it('should not render output section when output absent', () => {
+    const session: NormalizedSession = {
+      providerName: 'copilot-chat',
+      providerDisplayName: 'GitHub Copilot Chat',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'assistant',
+          content: 'Done.',
+          toolCalls: [{ name: 'copilot_findFiles', input: 'Searching files' }],
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    expect(md).toContain('**copilot_findFiles**');
+    expect(md).toContain('Searching files');
+    expect(md).not.toContain('<summary>Output</summary>');
+  });
+
   it('should render empty session with just header', () => {
     const session: NormalizedSession = {
       providerName: 'test',

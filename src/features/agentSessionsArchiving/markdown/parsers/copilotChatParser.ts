@@ -1,5 +1,6 @@
 import type { SessionParser, NormalizedTurn, ToolCall, ParseResult } from '../types';
 import { reconstructSessionFromJsonl } from './copilotJsonlReconstructor';
+import { extractFromToolSpecificData } from './toolSpecificDataExtractor';
 
 interface MessagePart {
   text?: string;
@@ -20,6 +21,7 @@ interface ResponseItem {
   toolId?: string;
   invocationMessage?: CopilotMessage;
   pastTenseMessage?: CopilotMessage;
+  toolSpecificData?: unknown;
 }
 
 interface CopilotRequest {
@@ -147,26 +149,20 @@ export class CopilotChatParser implements SessionParser {
     };
   }
 
+  private resolveToolName(item: ResponseItem, pendingName: string | undefined): string {
+    return item.toolName ?? pendingName ?? item.toolId ?? '';
+  }
+
   private buildToolCall(
     item: ResponseItem,
     pendingName: string | undefined
   ): ToolCall | undefined {
-    const name = item.toolName ?? pendingName ?? item.toolId ?? '';
+    const name = this.resolveToolName(item, pendingName);
     if (!name) return undefined;
-    return this.makeToolInvocation(name, item.invocationMessage, item.pastTenseMessage);
-  }
-
-  private makeToolInvocation(
-    name: string,
-    invMsg: CopilotMessage | undefined,
-    pastMsg: CopilotMessage | undefined
-  ): ToolCall {
-    const tc: ToolCall = { name };
-    const input = this.extractMessageText(invMsg);
-    if (input) return { ...tc, input };
-    const output = this.extractMessageText(pastMsg);
-    if (output) return { ...tc, output };
-    return tc;
+    const extra = extractFromToolSpecificData(item.toolSpecificData);
+    const input = this.extractMessageText(item.invocationMessage) || extra?.input;
+    const output = this.extractMessageText(item.pastTenseMessage) || extra?.output;
+    return { name, ...(input ? { input } : {}), ...(output ? { output } : {}) };
   }
 
   private extractMessageText(msg: CopilotMessage | undefined): string {
