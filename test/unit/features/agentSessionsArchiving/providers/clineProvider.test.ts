@@ -132,4 +132,13 @@ describe('ClineProvider', () => {
     expect(readDirCall[0].fsPath).toContain('saoudrizwan.claude-dev');
     expect(readDirCall[0].fsPath).toContain('tasks');
   });
+
+  it('should return watch patterns for tasks directory', () => {
+    const patterns = provider.getWatchPatterns('/workspace');
+
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0]!.baseUri.fsPath).toContain('saoudrizwan.claude-dev');
+    expect(patterns[0]!.baseUri.fsPath).toContain('tasks');
+    expect(patterns[0]!.glob).toBe('**/*.json');
+  });
 });

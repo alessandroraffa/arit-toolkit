@@ -20,6 +20,16 @@ vi.mock('../../../../src/features/agentSessionsArchiving/archiveService', () => 
   AgentSessionArchiveService: vi.fn(() => mockService),
 }));
 
+const mockWatcher = {
+  start: vi.fn(),
+  stop: vi.fn(),
+  dispose: vi.fn(),
+};
+
+vi.mock('../../../../src/features/agentSessionsArchiving/sessionFileWatcher', () => ({
+  SessionFileWatcher: vi.fn(() => mockWatcher),
+}));
+
 function createMockContext(): FeatureRegistrationContext {
   const subscriptions: unknown[] = [];
   return {
@@ -59,6 +69,8 @@ describe('registerAgentSessionsArchivingFeature', () => {
     vi.clearAllMocks();
     mockService.currentConfig = undefined;
     mockService.runArchiveCycle.mockResolvedValue(undefined);
+    mockWatcher.start.mockClear();
+    mockWatcher.stop.mockClear();
     ctx = createMockContext();
   });
 
@@ -139,6 +151,11 @@ describe('registerAgentSessionsArchivingFeature', () => {
       expect(mockService.runArchiveCycle).not.toHaveBeenCalled();
       expect(window.showWarningMessage).toHaveBeenCalled();
     });
+  });
+
+  it('should add watcher to subscriptions', () => {
+    registerAgentSessionsArchivingFeature(ctx);
+    expect(ctx.context.subscriptions).toContain(mockWatcher);
   });
 
   it('should register service with archive now action', () => {

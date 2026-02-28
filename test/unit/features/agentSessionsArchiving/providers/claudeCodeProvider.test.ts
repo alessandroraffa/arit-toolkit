@@ -101,4 +101,12 @@ describe('ClaudeCodeProvider', () => {
 
     expect(sessions[0]!.displayName).toBe('Claude Code abc123.jsonl');
   });
+
+  it('should return watch patterns for project directory', () => {
+    const patterns = provider.getWatchPatterns('/Users/dev/my-project');
+
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0]!.baseUri.fsPath).toContain('-Users-dev-my-project');
+    expect(patterns[0]!.glob).toBe('*.jsonl');
+  });
 });

@@ -34,6 +34,7 @@ Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-
 - Each session maps to exactly one archived file — when the source changes, the old archive is replaced
 - Archive filenames use the session's creation timestamp: `{YYYYMMDDHHmm}-{name}.md`
 - Only sessions belonging to the current workspace are archived
+- Session file changes are detected automatically via file system watchers (with 10-second debounce), in addition to the periodic interval
 
 **Configuration** (in `.arit-toolkit.jsonc`):
 

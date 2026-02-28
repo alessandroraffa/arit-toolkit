@@ -120,4 +120,12 @@ describe('CopilotChatProvider', () => {
     expect(readDirCall[0].fsPath).toBe('/workspace/storage/abc123/chatSessions');
     expect(readDirCall[0].fsPath).not.toContain('github.copilot-chat');
   });
+
+  it('should return watch patterns for chatSessions directory', () => {
+    const patterns = provider.getWatchPatterns('/workspace');
+
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0]!.baseUri.fsPath).toBe('/workspace/storage/abc123/chatSessions');
+    expect(patterns[0]!.glob).toBe('*.json');
+  });
 });

@@ -65,4 +65,12 @@ describe('AiderProvider', () => {
     expect(sessions[0]!.uri.fsPath).toContain('/my/project');
     expect(sessions[0]!.uri.fsPath).toContain('.aider.chat.history.md');
   });
+
+  it('should return watch patterns for workspace root', () => {
+    const patterns = provider.getWatchPatterns('/my/project');
+
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0]!.baseUri.fsPath).toBe('/my/project');
+    expect(patterns[0]!.glob).toBe('.aider.*');
+  });
 });

@@ -1,12 +1,18 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
-import type { SessionFile, SessionProvider } from '../types';
+import type { SessionFile, SessionProvider, WatchPattern } from '../types';
 import { getFileTimes } from './providerUtils';
 
 export class ClaudeCodeProvider implements SessionProvider {
   public readonly name = 'claude-code';
   public readonly displayName = 'Claude Code';
+
+  public getWatchPatterns(workspaceRootPath: string): WatchPattern[] {
+    const projectDirName = workspaceRootPath.replaceAll('/', '-');
+    const baseUri = vscode.Uri.file(`${os.homedir()}/.claude/projects/${projectDirName}`);
+    return [{ baseUri, glob: '*.jsonl' }];
+  }
 
   public async findSessions(workspaceRootPath: string): Promise<SessionFile[]> {
     const projectDirName = workspaceRootPath.replaceAll('/', '-');

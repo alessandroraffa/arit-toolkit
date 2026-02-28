@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { SessionFile, SessionProvider } from '../types';
+import type { SessionFile, SessionProvider, WatchPattern } from '../types';
 import { getFileTimes, belongsToWorkspace } from './providerUtils';
 
 const EXTENSION_ID = 'saoudrizwan.claude-dev';
@@ -10,6 +10,11 @@ export class ClineProvider implements SessionProvider {
   public readonly displayName = 'Cline';
 
   constructor(private readonly globalStorageBase: vscode.Uri) {}
+
+  public getWatchPatterns(): WatchPattern[] {
+    const baseUri = vscode.Uri.joinPath(this.globalStorageBase, EXTENSION_ID, 'tasks');
+    return [{ baseUri, glob: '**/*.json' }];
+  }
 
   public async findSessions(workspaceRootPath: string): Promise<SessionFile[]> {
     const tasksUri = vscode.Uri.joinPath(this.globalStorageBase, EXTENSION_ID, 'tasks');

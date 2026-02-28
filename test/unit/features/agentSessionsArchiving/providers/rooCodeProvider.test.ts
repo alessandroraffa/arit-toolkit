@@ -122,4 +122,13 @@ describe('RooCodeProvider', () => {
     expect(readDirCall[0].fsPath).toContain('rooveterinaryinc.roo-cline');
     expect(readDirCall[0].fsPath).toContain('tasks');
   });
+
+  it('should return watch patterns for tasks directory', () => {
+    const patterns = provider.getWatchPatterns('/workspace');
+
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0]!.baseUri.fsPath).toContain('rooveterinaryinc.roo-cline');
+    expect(patterns[0]!.baseUri.fsPath).toContain('tasks');
+    expect(patterns[0]!.glob).toBe('**/*.json');
+  });
 });

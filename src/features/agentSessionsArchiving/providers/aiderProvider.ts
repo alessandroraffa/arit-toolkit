@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { SessionFile, SessionProvider } from '../types';
+import type { SessionFile, SessionProvider, WatchPattern } from '../types';
 import { getFileTimes } from './providerUtils';
 
 const FILES = [
@@ -10,6 +10,11 @@ const FILES = [
 export class AiderProvider implements SessionProvider {
   public readonly name = 'aider';
   public readonly displayName = 'Aider';
+
+  public getWatchPatterns(workspaceRootPath: string): WatchPattern[] {
+    const baseUri = vscode.Uri.file(workspaceRootPath);
+    return [{ baseUri, glob: '.aider.*' }];
+  }
 
   public async findSessions(workspaceRootPath: string): Promise<SessionFile[]> {
     const results: SessionFile[] = [];

@@ -1,11 +1,16 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
-import type { SessionFile, SessionProvider } from '../types';
+import type { SessionFile, SessionProvider, WatchPattern } from '../types';
 import { getFileTimes, belongsToWorkspace } from './providerUtils';
 
 export class ContinueProvider implements SessionProvider {
   public readonly name = 'continue';
   public readonly displayName = 'Continue';
+
+  public getWatchPatterns(): WatchPattern[] {
+    const baseUri = vscode.Uri.file(`${os.homedir()}/.continue/sessions`);
+    return [{ baseUri, glob: '*.json' }];
+  }
 
   public async findSessions(workspaceRootPath: string): Promise<SessionFile[]> {
     const sessionsUri = vscode.Uri.file(`${os.homedir()}/.continue/sessions`);

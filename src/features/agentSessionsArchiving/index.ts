@@ -3,6 +3,7 @@ import type { AgentSessionsArchivingConfig } from '../../types';
 import type { ConfigSectionRegistry } from '../../core/configMigration';
 import type { ExtensionStateManager } from '../../core';
 import { AgentSessionArchiveService } from './archiveService';
+import { SessionFileWatcher } from './sessionFileWatcher';
 import { getDefaultProviders } from './providers';
 import * as vscode from 'vscode';
 import {
@@ -88,7 +89,10 @@ export function registerAgentSessionsArchivingFeature(
 
   const providers = getDefaultProviders(ctx.context);
   const service = new AgentSessionArchiveService(workspaceRoot, providers, ctx.logger);
-  ctx.context.subscriptions.push(service);
+  const watcher = new SessionFileWatcher(providers, () => {
+    void service.runArchiveCycle();
+  });
+  ctx.context.subscriptions.push(service, watcher);
 
   registerCommands(ctx, service);
 
@@ -98,8 +102,10 @@ export function registerAgentSessionsArchivingFeature(
       | undefined;
     if (globalEnabled && config?.enabled) {
       service.start(config);
+      watcher.start(workspaceRoot.fsPath);
     } else {
       service.stop();
+      watcher.stop();
     }
   });
 

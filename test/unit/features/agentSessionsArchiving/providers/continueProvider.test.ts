@@ -142,4 +142,12 @@ describe('ContinueProvider', () => {
     expect(sessions).toHaveLength(1);
     expect(sessions[0]!.archiveName).toBe('continue-good');
   });
+
+  it('should return watch patterns for sessions directory', () => {
+    const patterns = provider.getWatchPatterns('/workspace');
+
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0]!.baseUri.fsPath).toContain('.continue/sessions');
+    expect(patterns[0]!.glob).toBe('*.json');
+  });
 });

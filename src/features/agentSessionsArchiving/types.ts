@@ -10,8 +10,14 @@ export interface SessionFile {
   readonly extension: string;
 }
 
+export interface WatchPattern {
+  readonly baseUri: vscode.Uri;
+  readonly glob: string;
+}
+
 export interface SessionProvider {
   readonly name: string;
   readonly displayName: string;
   findSessions(workspaceRootPath: string): Promise<SessionFile[]>;
+  getWatchPatterns?(workspaceRootPath: string): WatchPattern[];
 }

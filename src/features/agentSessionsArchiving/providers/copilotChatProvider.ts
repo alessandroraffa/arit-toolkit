@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import type { SessionFile, SessionProvider } from '../types';
+import type { SessionFile, SessionProvider, WatchPattern } from '../types';
 import { getFileTimes } from './providerUtils';
 
 const SESSIONS_DIR = 'chatSessions';
@@ -14,6 +14,11 @@ export class CopilotChatProvider implements SessionProvider {
   public readonly displayName = 'GitHub Copilot Chat';
 
   constructor(private readonly workspaceStorageDir: vscode.Uri) {}
+
+  public getWatchPatterns(): WatchPattern[] {
+    const baseUri = vscode.Uri.joinPath(this.workspaceStorageDir, SESSIONS_DIR);
+    return [{ baseUri, glob: '*.json' }];
+  }
 
   public async findSessions(_workspaceRootPath: string): Promise<SessionFile[]> {
     const sessionsUri = vscode.Uri.joinPath(this.workspaceStorageDir, SESSIONS_DIR);
