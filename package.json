@@ -76,6 +76,11 @@
         "icon": "$(archive)"
       },
       {
+        "command": "arit.archiveAgentSessionsNow",
+        "title": "ARIT: Archive Agent Sessions Now",
+        "icon": "$(sync)"
+      },
+      {
         "command": "arit.textStats.toggle",
         "title": "ARIT: Toggle Text Stats",
         "icon": "$(symbol-number)"

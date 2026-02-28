@@ -15,6 +15,7 @@ describe('statusBarItem', () => {
       label: string;
       icon: string;
       toggleCommandId: string;
+      actions?: { commandId: string; label: string; icon: string }[];
     }[];
     getConfigSection: ReturnType<typeof vi.fn>;
   };
@@ -267,6 +268,48 @@ describe('statusBarItem', () => {
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
       expect(tooltip.value).not.toContain('Features:');
       expect(tooltip.value).not.toContain('Configuration:');
+    });
+  });
+
+  describe('tooltip service actions', () => {
+    it('should render service actions when present', () => {
+      mockStateManager.registeredServices = [
+        {
+          key: 'agentSessionsArchiving',
+          label: 'Agent Sessions Archiving',
+          icon: '$(archive)',
+          toggleCommandId: 'arit.toggleAgentSessionsArchiving',
+          actions: [
+            {
+              commandId: 'arit.archiveAgentSessionsNow',
+              label: 'Archive Now',
+              icon: '$(sync)',
+            },
+          ],
+        },
+      ];
+      mockStateManager.getConfigSection.mockReturnValue({ enabled: true });
+      const item = createStatusBarItem(mockStateManager as any, mockLogger as any);
+
+      const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
+      expect(tooltip.value).toContain('Archive Now');
+      expect(tooltip.value).toContain('command:arit.archiveAgentSessionsNow');
+    });
+
+    it('should not render actions when service has none', () => {
+      mockStateManager.registeredServices = [
+        {
+          key: 'agentSessionsArchiving',
+          label: 'Agent Sessions Archiving',
+          icon: '$(archive)',
+          toggleCommandId: 'arit.toggleAgentSessionsArchiving',
+        },
+      ];
+      mockStateManager.getConfigSection.mockReturnValue({ enabled: true });
+      const item = createStatusBarItem(mockStateManager as any, mockLogger as any);
+
+      const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
+      expect(tooltip.value).not.toContain('Archive Now');
     });
   });
 

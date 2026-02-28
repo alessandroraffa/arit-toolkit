@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Uri, mockDisposable } from '../../mocks/vscode';
+import { Uri, mockDisposable, window } from '../../mocks/vscode';
 import { registerAgentSessionsArchivingFeature } from '../../../../src/features/agentSessionsArchiving/index';
 import type { FeatureRegistrationContext } from '../../../../src/features/index';
 
@@ -7,14 +7,17 @@ vi.mock('../../../../src/features/agentSessionsArchiving/providers', () => ({
   getDefaultProviders: vi.fn(() => []),
 }));
 
+const mockService = {
+  start: vi.fn(),
+  stop: vi.fn(),
+  reconfigure: vi.fn(),
+  runArchiveCycle: vi.fn().mockResolvedValue(undefined),
+  currentConfig: undefined as unknown,
+  dispose: vi.fn(),
+};
+
 vi.mock('../../../../src/features/agentSessionsArchiving/archiveService', () => ({
-  AgentSessionArchiveService: vi.fn(() => ({
-    start: vi.fn(),
-    stop: vi.fn(),
-    reconfigure: vi.fn(),
-    currentConfig: undefined,
-    dispose: vi.fn(),
-  })),
+  AgentSessionArchiveService: vi.fn(() => mockService),
 }));
 
 function createMockContext(): FeatureRegistrationContext {
@@ -54,6 +57,8 @@ describe('registerAgentSessionsArchivingFeature', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockService.currentConfig = undefined;
+    mockService.runArchiveCycle.mockResolvedValue(undefined);
     ctx = createMockContext();
   });
 
@@ -84,6 +89,14 @@ describe('registerAgentSessionsArchivingFeature', () => {
     );
   });
 
+  it('should register archive now command', () => {
+    registerAgentSessionsArchivingFeature(ctx);
+    expect(ctx.registry.register).toHaveBeenCalledWith(
+      'arit.archiveAgentSessionsNow',
+      expect.any(Function)
+    );
+  });
+
   it('should subscribe to state changes', () => {
     registerAgentSessionsArchivingFeature(ctx);
     expect(ctx.stateManager.onDidChangeState).toHaveBeenCalled();
@@ -94,6 +107,51 @@ describe('registerAgentSessionsArchivingFeature', () => {
     expect(ctx.stateManager.onConfigSectionChanged).toHaveBeenCalledWith(
       'agentSessionsArchiving',
       expect.any(Function)
+    );
+  });
+
+  describe('archive now command', () => {
+    it('should run archive cycle when service is running', async () => {
+      mockService.currentConfig = { enabled: true };
+      registerAgentSessionsArchivingFeature(ctx);
+
+      const registerCalls = vi.mocked(ctx.registry.register).mock.calls;
+      const archiveNowCall = registerCalls.find(
+        (c) => c[0] === 'arit.archiveAgentSessionsNow'
+      );
+      const handler = archiveNowCall![1] as () => Promise<void>;
+      await handler();
+
+      expect(mockService.runArchiveCycle).toHaveBeenCalled();
+    });
+
+    it('should show warning when service is not running', async () => {
+      mockService.currentConfig = undefined;
+      registerAgentSessionsArchivingFeature(ctx);
+
+      const registerCalls = vi.mocked(ctx.registry.register).mock.calls;
+      const archiveNowCall = registerCalls.find(
+        (c) => c[0] === 'arit.archiveAgentSessionsNow'
+      );
+      const handler = archiveNowCall![1] as () => Promise<void>;
+      await handler();
+
+      expect(mockService.runArchiveCycle).not.toHaveBeenCalled();
+      expect(window.showWarningMessage).toHaveBeenCalled();
+    });
+  });
+
+  it('should register service with archive now action', () => {
+    registerAgentSessionsArchivingFeature(ctx);
+    expect(ctx.stateManager.registerService).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actions: [
+          expect.objectContaining({
+            commandId: 'arit.archiveAgentSessionsNow',
+            label: 'Archive Now',
+          }),
+        ],
+      })
     );
   });
 });

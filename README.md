@@ -52,6 +52,8 @@ Set `ignoreSessionsBefore` to a `YYYYMMDD` date to skip sessions created before 
 
 **Toggle:** Command Palette → "ARIT: Toggle Agent Sessions Archiving"
 
+**Archive Now:** Command Palette → "ARIT: Archive Agent Sessions Now" (also available in the status bar tooltip). Triggers an immediate archive cycle without waiting for the next interval.
+
 ## Timestamped Files and Folders
 
 Create new files or directories with an automatic UTC timestamp prefix. Useful for meeting notes, decision logs, daily journals, or any artifact that benefits from chronological ordering.

@@ -98,9 +98,15 @@ function buildServicesSection(stateManager: ExtensionStateManager): string {
     const toggleIcon = config.enabled ? '$(debug-stop)' : '$(play)';
     const toggleLabel = config.enabled ? 'Disable' : 'Enable';
 
+    let actions = `[${toggleIcon} ${toggleLabel}](command:${service.toggleCommandId})`;
+    if (config.enabled && service.actions) {
+      for (const action of service.actions) {
+        actions += `\u2002[${action.icon} ${action.label}](command:${action.commandId})`;
+      }
+    }
+
     result +=
-      `${service.icon} ${service.label}\u2002${icon} ${status}\n\n` +
-      `[${toggleIcon} ${toggleLabel}](command:${service.toggleCommandId})\n\n`;
+      `${service.icon} ${service.label}\u2002${icon} ${status}\n\n` + `${actions}\n\n`;
   }
   return result;
 }

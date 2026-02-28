@@ -10,11 +10,18 @@ export interface WorkspaceConfig {
   versionCode?: number;
 }
 
+export interface ServiceAction {
+  commandId: string;
+  label: string;
+  icon: string;
+}
+
 export interface ServiceDescriptor {
   key: string;
   label: string;
   icon: string;
   toggleCommandId: string;
+  actions?: ServiceAction[];
 }
 
 export interface AgentSessionsArchivingConfig {

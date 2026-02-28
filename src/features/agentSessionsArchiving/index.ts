@@ -4,11 +4,13 @@ import type { ConfigSectionRegistry } from '../../core/configMigration';
 import type { ExtensionStateManager } from '../../core';
 import { AgentSessionArchiveService } from './archiveService';
 import { getDefaultProviders } from './providers';
+import * as vscode from 'vscode';
 import {
   CONFIG_KEY,
   DEFAULT_ARCHIVE_PATH,
   DEFAULT_INTERVAL_MINUTES,
   COMMAND_ID_TOGGLE,
+  COMMAND_ID_ARCHIVE_NOW,
   INTRODUCED_AT_VERSION_CODE,
 } from './constants';
 
@@ -32,28 +34,19 @@ function registerWithCore(
     label: 'Agent Sessions Archiving',
     icon: '$(archive)',
     toggleCommandId: COMMAND_ID_TOGGLE,
+    actions: [
+      { commandId: COMMAND_ID_ARCHIVE_NOW, label: 'Archive Now', icon: '$(sync)' },
+    ],
   });
 }
 
-export function registerAgentSessionsArchivingFeature(
-  ctx: FeatureRegistrationContext
+function registerCommands(
+  ctx: FeatureRegistrationContext,
+  service: AgentSessionArchiveService
 ): void {
-  const { stateManager, logger } = ctx;
-  if (!stateManager.isSingleRoot) {
-    return;
-  }
-  const workspaceRoot = stateManager.workspaceRootUri;
-  if (!workspaceRoot) {
-    return;
-  }
+  const { stateManager, registry, logger } = ctx;
 
-  registerWithCore(ctx.migrationRegistry, stateManager);
-
-  const providers = getDefaultProviders(ctx.context);
-  const service = new AgentSessionArchiveService(workspaceRoot, providers, logger);
-  ctx.context.subscriptions.push(service);
-
-  ctx.registry.register(COMMAND_ID_TOGGLE, async () => {
+  registry.register(COMMAND_ID_TOGGLE, async () => {
     const config = stateManager.getConfigSection(CONFIG_KEY) as
       | AgentSessionsArchivingConfig
       | undefined;
@@ -65,7 +58,39 @@ export function registerAgentSessionsArchivingFeature(
       enabled: !config.enabled,
     });
   });
-  logger.debug(`Registered command: ${COMMAND_ID_TOGGLE}`);
+
+  registry.register(COMMAND_ID_ARCHIVE_NOW, async () => {
+    if (!service.currentConfig) {
+      void vscode.window.showWarningMessage(
+        'Agent sessions archiving is not running. Enable it first.'
+      );
+      return;
+    }
+    await service.runArchiveCycle();
+  });
+
+  logger.debug(`Registered commands: ${COMMAND_ID_TOGGLE}, ${COMMAND_ID_ARCHIVE_NOW}`);
+}
+
+export function registerAgentSessionsArchivingFeature(
+  ctx: FeatureRegistrationContext
+): void {
+  const { stateManager } = ctx;
+  if (!stateManager.isSingleRoot) {
+    return;
+  }
+  const workspaceRoot = stateManager.workspaceRootUri;
+  if (!workspaceRoot) {
+    return;
+  }
+
+  registerWithCore(ctx.migrationRegistry, stateManager);
+
+  const providers = getDefaultProviders(ctx.context);
+  const service = new AgentSessionArchiveService(workspaceRoot, providers, ctx.logger);
+  ctx.context.subscriptions.push(service);
+
+  registerCommands(ctx, service);
 
   stateManager.onDidChangeState((globalEnabled) => {
     const config = stateManager.getConfigSection(CONFIG_KEY) as
