@@ -1,3 +1,9 @@
+## [1.13.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.12.0...v1.13.0) (2026-03-01)
+
+### Features
+
+* **agentSessionsArchiving:** add openai codex session support ([17649ce](https://github.com/alessandroraffa/arit-toolkit/commit/17649cee400b02402fd4f5f5abd876617664876f))
+
 ## [1.12.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.11.0...v1.12.0) (2026-02-28)
 
 ### Features
