@@ -6,6 +6,7 @@ import { ClineProvider } from './clineProvider';
 import { RooCodeProvider } from './rooCodeProvider';
 import { CopilotChatProvider } from './copilotChatProvider';
 import { ContinueProvider } from './continueProvider';
+import { CodexProvider } from './codexProvider';
 
 export function getDefaultProviders(context: vscode.ExtensionContext): SessionProvider[] {
   const globalStorageBase = vscode.Uri.joinPath(context.globalStorageUri, '..');
@@ -16,6 +17,7 @@ export function getDefaultProviders(context: vscode.ExtensionContext): SessionPr
   const providers: SessionProvider[] = [
     new AiderProvider(),
     new ClaudeCodeProvider(),
+    new CodexProvider(),
     new ClineProvider(globalStorageBase),
     new RooCodeProvider(globalStorageBase),
     new ContinueProvider(),

@@ -6,9 +6,9 @@
 [![Downloads](https://img.shields.io/visual-studio-marketplace/d/alessandroraffa.arit-toolkit)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.arit-toolkit)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Chat sessions with Claude Code, Cline, Aider, Roo Code, GitHub Copilot Chat, and Continue are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. ARIT Toolkit collects them automatically into your workspace, organized by date, as project artifacts.
+Chat sessions with Claude Code, Cline, Aider, Roo Code, GitHub Copilot Chat, Continue, and OpenAI Codex are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. ARIT Toolkit collects them automatically into your workspace, organized by date, as project artifacts.
 
-In the context of agentic coding, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. ARIT Toolkit archives AI sessions from 6 assistants, creates timestamped files and folders for chronological project documentation, prefixes existing items with their creation date, and gives you real-time token counts and text metrics in the status bar — all without leaving VS Code.
+In the context of agentic coding, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. ARIT Toolkit archives AI sessions from 7 assistants, creates timestamped files and folders for chronological project documentation, prefixes existing items with their creation date, and gives you real-time token counts and text metrics in the status bar — all without leaving VS Code.
 
 ## Agent Sessions Archiving
 
@@ -21,6 +21,7 @@ AI coding assistants store their session files in different locations and format
 | Aider               | `.aider.chat.history.md` and `.aider.input.history` in workspace root | Files in workspace root                      |
 | Claude Code         | `~/.claude/projects/<workspace-path>/`                                | Project path derived from workspace          |
 | Cline               | VS Code global storage                                                | Session content references workspace path    |
+| OpenAI Codex        | `~/.codex/sessions/<YYYY>/<MM>/<DD>/`                                 | `cwd` field in session metadata              |
 | Roo Code            | VS Code global storage                                                | Session content references workspace path    |
 | GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`)                           | Per-workspace storage (`.json` and `.jsonl`) |
 | Continue            | `~/.continue/sessions/`                                               | Session content references workspace path    |
@@ -30,7 +31,7 @@ Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-
 **How it works:**
 
 - Sessions are copied (not moved) to the archive directory
-- Sessions from Claude Code, Cline, Roo Code, GitHub Copilot Chat, and Continue are automatically converted to structured markdown during archiving; Aider sessions are archived as-is
+- Sessions from Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue, and OpenAI Codex are automatically converted to structured markdown during archiving; Aider sessions are archived as-is
 - Each session maps to exactly one archived file — when the source changes, the old archive is replaced
 - Archive filenames use the session's creation timestamp: `{YYYYMMDDHHmm}-{name}.md`
 - Only sessions belonging to the current workspace are archived
