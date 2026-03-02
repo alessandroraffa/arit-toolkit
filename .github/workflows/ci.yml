@@ -113,7 +113,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run package
       - run: pnpm run vsce:package
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: extension-vsix
           path: '*.vsix'
