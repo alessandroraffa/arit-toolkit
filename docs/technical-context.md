@@ -60,8 +60,6 @@ are prompted to opt in to new configuration sections.
 | Contributors         | Fast feedback loop (`vitest`); clear module boundaries; well-documented patterns; conventional commit discipline. |
 | VS Code Marketplace  | Activation performance; no runtime deps; well-scoped permissions.                                                 |
 
----
-
 ## 2 Constraints
 
 ### 2.1 Technical Constraints
@@ -91,8 +89,6 @@ are prompted to opt in to new configuration sections.
 | Config section self-registration | Features that add workspace-config sections register a `ConfigSectionDefinition` so the migration system can detect missing sections and offer them to users on every activation. |
 | UTC timestamps                   | All generated timestamps use UTC (`getUTCFullYear()`, etc.).                                                                                                                      |
 | Disposable pattern               | Every VS Code resource (watchers, event emitters, commands) is tracked via `context.subscriptions` for deterministic cleanup.                                                     |
-
----
 
 ## 3 Context and Scope
 
