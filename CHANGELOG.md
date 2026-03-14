@@ -1,3 +1,11 @@
+## [1.14.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.13.0...v1.14.0) (2026-03-14)
+
+### Features
+
+* **markdownHeadings:** add heading level transform logic ([49cc237](https://github.com/alessandroraffa/arit-toolkit/commit/49cc2372a9d249afb39083a62884c6e492235d76))
+* **markdownHeadings:** add increment/decrement commands ([e61bec6](https://github.com/alessandroraffa/arit-toolkit/commit/e61bec6b0d83b723059a1c18ac40c104d6769b48))
+* **markdownHeadings:** register feature and add context menus ([a9e6191](https://github.com/alessandroraffa/arit-toolkit/commit/a9e61918602d1d49ad2e2a72379fb2de612ce2fb))
+
 ## [1.13.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.12.0...v1.13.0) (2026-03-01)
 
 ### Features
