@@ -184,6 +184,11 @@ arit-toolkit/
 │   │   │       ├── continueProvider.ts
 │   │   │       ├── copilotChatProvider.ts
 │   │   │       └── rooCodeProvider.ts
+│   │   ├── markdownHeadings/         # Increment/decrement markdown heading levels
+│   │   │   ├── command.ts           # Command handlers (editor + explorer context)
+│   │   │   ├── constants.ts         # Command IDs and feature name
+│   │   │   ├── headingTransform.ts  # Pure heading transformation logic
+│   │   │   └── index.ts             # Feature registration
 │   │   └── textStats/               # Real-time text statistics in status bar
 │   │       ├── index.ts             # Feature registration and lifecycle wiring
 │   │       ├── updateHandler.ts     # Editor data extraction and metric update

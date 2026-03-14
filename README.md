@@ -127,6 +127,21 @@ Real-time text statistics displayed in the status bar. Shows character count, to
 **Toggle:** Command Palette → "ARIT: Toggle Text Stats"
 **Change tokenizer:** Click the status bar item or Command Palette → "ARIT: Change Tokenizer"
 
+## Markdown Headings
+
+Increment or decrement all markdown heading levels by one. Works on an entire file or just a selection.
+
+**Increment** adds one `#` to each heading (`## Title` → `### Title`).
+**Decrement** removes one `#` from each heading (`### Title` → `## Title`).
+
+If any heading would exceed the valid range (h1–h6), the entire operation is aborted with a message. Headings inside fenced code blocks are left untouched.
+
+**Access:**
+
+- **Editor context menu** (right-click in a `.md` file): operates on selection if present, otherwise on the entire file.
+- **Explorer context menu** (right-click on a `.md` file): operates on the entire file.
+- **Command Palette:** "ARIT: Increment Markdown Headings" / "ARIT: Decrement Markdown Headings"
+
 ## Extension Toggle
 
 An **ARIT** status bar item (bottom-right) shows the current state and lets you enable or disable advanced features with a click. Hover for a tooltip with active services and their status, with quick toggle buttons. A **Checkup** button in the tooltip runs a health check — it verifies version alignment, applies any pending config migration, preserves your customizations, and optionally commits the updated config file.
