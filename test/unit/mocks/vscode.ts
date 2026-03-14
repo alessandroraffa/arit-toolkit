@@ -142,6 +142,26 @@ export class MarkdownString {
   }
 }
 
+export class Range {
+  public readonly start: { line: number; character: number };
+  public readonly end: { line: number; character: number };
+
+  constructor(
+    startOrStartLine: { line: number; character: number } | number,
+    endOrStartCharacter: { line: number; character: number } | number,
+    endLine?: number,
+    endCharacter?: number
+  ) {
+    if (typeof startOrStartLine === 'number') {
+      this.start = { line: startOrStartLine, character: endOrStartCharacter as number };
+      this.end = { line: endLine ?? 0, character: endCharacter ?? 0 };
+    } else {
+      this.start = startOrStartLine;
+      this.end = endOrStartCharacter as { line: number; character: number };
+    }
+  }
+}
+
 export class ThemeColor {
   constructor(public readonly id: string) {}
 }
