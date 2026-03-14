@@ -9,6 +9,7 @@ import { registerTimestampedDirectoryFeature } from './timestampedDirectory';
 import { registerStatusBarToggleFeature } from './statusBarToggle';
 import { registerAgentSessionsArchivingFeature } from './agentSessionsArchiving';
 import { registerTextStatsFeature } from './textStats';
+import { registerMarkdownHeadingsFeature } from './markdownHeadings';
 
 export interface FeatureRegistrationContext {
   registry: CommandRegistry;
@@ -25,4 +26,5 @@ export function registerAllFeatures(ctx: FeatureRegistrationContext): void {
   registerAgentSessionsArchivingFeature(ctx);
   registerStatusBarToggleFeature(ctx);
   registerTextStatsFeature(ctx);
+  registerMarkdownHeadingsFeature(ctx.registry, ctx.logger);
 }

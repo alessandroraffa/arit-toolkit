@@ -89,6 +89,16 @@
         "command": "arit.textStats.changeTokenizer",
         "title": "ARIT: Change Tokenizer Model",
         "icon": "$(symbol-number)"
+      },
+      {
+        "command": "arit.markdownHeadings.increment",
+        "title": "ARIT: Increment Markdown Headings",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "arit.markdownHeadings.decrement",
+        "title": "ARIT: Decrement Markdown Headings",
+        "icon": "$(arrow-up)"
       }
     ],
     "menus": {
@@ -112,6 +122,28 @@
           "command": "arit.prefixTimestampToDirectory",
           "group": "navigation@4",
           "when": "explorerResourceIsFolder"
+        },
+        {
+          "command": "arit.markdownHeadings.increment",
+          "group": "1_arit@1",
+          "when": "!explorerResourceIsFolder && resourceLangId == markdown"
+        },
+        {
+          "command": "arit.markdownHeadings.decrement",
+          "group": "1_arit@2",
+          "when": "!explorerResourceIsFolder && resourceLangId == markdown"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "arit.markdownHeadings.increment",
+          "group": "1_arit@1",
+          "when": "resourceLangId == markdown"
+        },
+        {
+          "command": "arit.markdownHeadings.decrement",
+          "group": "1_arit@2",
+          "when": "resourceLangId == markdown"
         }
       ],
       "commandPalette": [
@@ -133,6 +165,14 @@
         },
         {
           "command": "arit.toggleEnabled"
+        },
+        {
+          "command": "arit.markdownHeadings.increment",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "arit.markdownHeadings.decrement",
+          "when": "editorLangId == markdown"
         }
       ]
     },
