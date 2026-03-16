@@ -400,24 +400,28 @@ Commit `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts` and
 
 **DIV-003 (Activity 2, Task 2.6):** The workstream's `formatTimestamp` helper used `d.getUTCFullYear()` directly in a template literal, which `@typescript-eslint/restrict-template-expressions` disallows for `number` types. Fix: wrapped the call in `String(...)` — consistent with the pattern already used for `month`, `day`, `hours`, `minutes`, and `seconds`. No behavioral impact.
 
+**DIV-004 (Activity 2, post-completion code review — M4):** `formatTimestamp` in `renderer.ts` did not validate its input defensively. If called with an invalid ISO string, `new Date(iso)` produces `NaN` components, rendering `"NaN-NaN-NaN NaN:NaN:NaN"`. While the parser validates timestamps before storing them, the `NormalizedTurn` interface declares `timestamp` as `string | undefined` — any future parser or test fixture could pass an invalid string. Fix: added `isNaN(d.getTime())` guard returning the raw string as fallback. Added a renderer test for this edge case. Root cause: workstream-prescribed code did not include defensive validation at the renderer boundary.
+
+**DIV-005 (Activity 3, post-completion code review — L2):** `renderer.test.ts` exceeded the 400-line `max-lines` ESLint warning threshold after the 8 new metadata tests were added (476 lines). Fix: split into `renderer.test.ts` (13 core tests, 238 lines) and `renderer.metadata.test.ts` (9 metadata tests, 218 lines). Root cause: workstream did not account for the file length constraint when prescribing all new tests in the same file.
+
 ### Reflection
 
-**Divergence count:** 3 divergences recorded.
+**Divergence count:** 5 divergences recorded (3 during execution, 2 from post-completion code review).
 
 **By cause:**
 
-- Authoring gap (1): DIV-001 — workstream template was authored with an H1 heading that duplicated the frontmatter `title`, triggering the `markdownlint-cli2` MD025 rule. This is an authoring error in the workstream document itself, not in code.
-- Toolchain constraint (1): DIV-002 — commit message subjects prescribed in the workstream used camelCase identifiers (`agentName`, `skillName`, `NormalizedTurn`), which are rejected by commitlint's `subject-case: lower-case` rule. The workstream authoring process did not apply commit message conventions before prescribing exact messages.
-- Specification gap (1): DIV-003 — the `formatTimestamp` code in the workstream used `d.getUTCFullYear()` directly in a template literal without accounting for `@typescript-eslint/restrict-template-expressions`, which disallows `number` types in template expressions. The authoring process did not cross-check prescribed code fragments against the project's ESLint rules.
+- Authoring gap (2): DIV-001 (H1 heading duplicating frontmatter title, triggering MD025), DIV-005 (new tests prescribed in a single file without accounting for max-lines threshold).
+- Toolchain constraint (1): DIV-002 (camelCase identifiers in prescribed commit message subjects, rejected by commitlint `subject-case: lower-case`).
+- Specification gap (2): DIV-003 (`d.getUTCFullYear()` in template literal without `String()` wrapper, rejected by `restrict-template-expressions`), DIV-004 (`formatTimestamp` lacked defensive validation for invalid date input).
 
-**Recurring pattern:** All three divergences originate in the workstream authoring phase, not in execution. The workstream prescribed specific code and commit messages that were not validated against the project's toolchain constraints (markdownlint, commitlint, ESLint) before authoring.
+**Recurring pattern:** All 5 divergences originate in the workstream authoring phase. DIV-001/002/003 were caught during execution by the quality gate. DIV-004/005 were caught by the post-completion code review — the executor followed the prescribed code exactly, and the quality gate passed, but the prescribed code had latent quality issues not detectable by automated checks alone.
 
 **Proposed improvements:**
 
-1. Workstream authoring should validate prescribed commit message subjects against commitlint rules — camelCase identifiers and PascalCase type names must be avoided in subjects.
-2. Workstream authoring should validate prescribed code fragments against the project's active ESLint rules, particularly `restrict-template-expressions` for template literals containing numeric expressions.
-3. Workstream documents should not include a top-level H1 heading when a `title` frontmatter field is present — align with WS-0002's format as the canonical pattern.
+1. Workstream authoring should validate prescribed commit message subjects against commitlint rules.
+2. Workstream authoring should validate prescribed code fragments against the project's active ESLint rules.
+3. Workstream documents should not include a top-level H1 heading when a `title` frontmatter field is present.
+4. Workstream authoring should include defensive validation at module boundaries (renderer receiving data from parsers) — do not rely solely on upstream validation guarantees.
+5. Workstream authoring should check prescribed test additions against file length constraints and plan test file splits when needed.
 
-**Assessment:** Execution was clean once toolchain constraints were applied. All three activities completed in sequence with no logic errors, no test failures on first run, and 100% coverage of the new renderer code after Activity 3. The quality gate (type check, lint, tests) passed with zero errors after each correction. The workstream objective — data contract extension, renderer update, and test coverage — is fully achieved.
-
-**Proposed action:** Merge branch `feat/enriched-turn-metadata` into `main` via PR and proceed to WS-0002 (Claude Code parser enrichment).
+**Assessment:** Execution was clean once toolchain constraints were applied. All three activities completed in sequence with no logic errors, no test failures on first run, and 100% coverage of the new renderer code. Two additional issues (DIV-004, DIV-005) were identified during post-completion code review and resolved before merge.

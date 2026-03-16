@@ -562,14 +562,33 @@ Commit `test/unit/features/agentSessionsArchiving/markdown/parsers/claudeCodePar
 
 **Activity 1 — H1 heading removed from workstream file.** The workstream file as authored contained a `# Claude Code parser enrichment` H1 heading after the frontmatter. This triggered a markdownlint MD025 error (multiple top-level headings, since the frontmatter `title:` field also constitutes a document title). WS-0001 does not have an H1 heading and passed lint. The H1 was removed to match the WS-0001 pattern and satisfy the quality gate. No behavioral impact; the title is preserved in the frontmatter.
 
+**DIV-002 (Activity 2, post-completion code review — M1):** `toKebabCase` did not handle consecutive uppercase characters. The regex `([a-z0-9])([A-Z])` only inserts a hyphen between lowercase and uppercase — `"XMLParser"` produced `"xmlparser"` instead of `"xml-parser"`. Fix: added a second regex pass `([A-Z]+)([A-Z][a-z])` to handle acronym boundaries. Root cause: workstream-prescribed code covered only simple PascalCase inputs.
+
+**DIV-003 (Activity 2, post-completion code review — M2):** `toKebabCase` did not strip leading/trailing hyphens. Input like `"-code-"` passed through unchanged. Fix: added `.replace(/^-+|-+$/g, '')` before the final return. Root cause: workstream-prescribed code did not account for edge cases with hyphen-prefixed/suffixed inputs.
+
+**DIV-004 (Activity 2, post-completion code review — M3):** `processToolUseEvent` did not extract Agent/Skill metadata. Only `processAssistantBlock` performed the extraction — standalone `tool_use` events were silently ignored. Fix: extracted shared `extractToolMetadata` helper and called it from both `processAssistantBlock` and `processToolUseEvent`. PM decision: duplicate extraction logic (option a). Root cause: workstream explicitly scoped extraction to `processAssistantBlock` only, missing the standalone event path.
+
+**DIV-005 (Activity 2, post-completion code review — M5):** `processAssistantBlock` cyclomatic complexity reached 13 (ESLint max 10) after adding Agent/Skill detection. Fix: extracted `extractToolMetadata` helper (same as DIV-004), reducing complexity. Root cause: workstream added conditional branches to an already complex method without prescribing extraction.
+
+**DIV-006 (Activity 1, post-completion code review — L1):** `makeTurn` created up to 4 intermediate spread objects for the omission-based optional field pattern. Fix: refactored to use a single mutable local object with conditional property assignment, then return as `NormalizedTurn`. Root cause: workstream-prescribed code prioritized correctness over efficiency.
+
+**DIV-007 (Activity 3, post-completion code review — L2):** `claudeCodeParser.test.ts` exceeded the 400-line `max-lines` ESLint threshold after 12 new tests (572 lines). Fix: split into `claudeCodeParser.test.ts` (14 core tests, 250 lines) and `claudeCodeParser.metadata.test.ts` (14 metadata tests, 298 lines). Root cause: workstream did not account for file length constraints when prescribing all new tests in the same file.
+
 ### Reflection
 
-**Divergence count by cause:** 1 divergence — document structure (non-code).
+**Divergence count:** 7 divergences recorded (1 during execution, 6 from post-completion code review).
 
-**Divergence: H1 heading in workstream file (Activity 1).** The workstream file as authored contained a `# Claude Code parser enrichment` H1 heading that WS-0001 lacked, triggering markdownlint MD025. Resolution: removed the H1, matching the WS-0001 pattern. Root cause: inconsistent workstream authoring — WS-0002 was drafted with an H1 while WS-0001 was not.
+**DIV-001 (execution):** H1 heading in workstream file triggering MD025. Same root cause as WS-0001 DIV-001.
 
-**Recurring pattern — none.** All implementation changes were clean, type-safe, and passed quality gate on first run after each activity. No code-level divergences.
+**DIV-002–007 (post-completion code review):** Six issues found by the independent reviewer after workstream completion. The executor followed the prescribed code exactly and the quality gate passed, but the prescribed code had latent quality issues: edge case handling (M1, M2), missing extraction path (M3), excessive complexity (M5), unnecessary intermediate objects (L1), and file length violation (L2).
 
-**Proposed improvement.** The workstream template for derived workstreams should explicitly state that the title belongs in frontmatter only and the document body must not open with an H1 heading, to prevent the MD025 error from recurring.
+**Recurring pattern:** All 7 divergences originate in the workstream authoring phase. The pattern is consistent with WS-0001: the authoring process does not validate prescribed code against edge cases, complexity thresholds, or file length constraints. The code review gate is the effective safety net.
 
-**Assessment.** The workstream was executed sequentially and correctly. Three activities, two code commits, one test commit. All 12 new tests pass. `claudeCodeParser.ts` reaches 100% statement coverage with the new tests. The plan's verifiable output criteria are met: sessions with timestamps, Agent tool_use blocks, and Skill tool_use blocks now produce normalized turns with the corresponding metadata fields populated. The quality gate (type check, lint, unit tests) passed at every commit point.
+**Proposed improvements:**
+
+1. Workstream authoring should validate prescribed helper functions against edge case inputs (acronyms, leading/trailing delimiters, empty strings).
+2. Workstream authoring should check whether prescribed code additions will push methods over the cyclomatic complexity threshold and prescribe extraction proactively.
+3. Workstream authoring should anticipate file length impact and prescribe test file splits when adding more than 5 new test cases to an existing file.
+4. Workstream authoring should verify that all relevant entry points for a data flow are covered — not just the primary path.
+
+**Assessment.** Execution was clean — all prescribed tasks completed without code errors and the quality gate passed at every commit point. Six post-completion issues were identified by the code review and resolved before merge. The plan's verifiable output criteria are met.
