@@ -52,9 +52,9 @@ No external documentation changes required — the new fields are self-documente
 
 Commit `src/features/agentSessionsArchiving/markdown/types.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): add timestamp, agentName, skillName to NormalizedTurn`.
 
-### [ ] Activity 2: Update the renderer
+### [x] Activity 2: Update the renderer
 
-#### [ ] Task 2.1: Change the role label from "Assistant" to "Agent" and add agent name support
+#### [x] Task 2.1: Change the role label from "Assistant" to "Agent" and add agent name support
 
 Open `src/features/agentSessionsArchiving/markdown/renderer.ts`. Locate the `renderTurn` function. Replace the line:
 
@@ -72,7 +72,7 @@ const roleLabel = turn.role === 'user' ? 'User' : agentLabel;
 
 This makes `roleLabel` equal to `'User'` for user turns, `'Agent(agent-name)'` for non-user turns with an agent name, and `'Agent'` for non-user turns without an agent name.
 
-#### [ ] Task 2.2: Add timestamp rendering adjacent to the role label
+#### [x] Task 2.2: Add timestamp rendering adjacent to the role label
 
 In `renderer.ts`, in the `renderTurn` function, add a timestamp formatting helper and incorporate the timestamp into the role label line. Insert the following private helper function at module scope, after the existing `renderFileList` function:
 
@@ -113,7 +113,7 @@ lines.push(`**${roleLabel}:**${timestampSuffix}`, '');
 
 The timestamp appears directly after the colon and before any content, separated by `—` (space, em dash, space). When no timestamp is present, `timestampSuffix` is an empty string and the output is identical to the previous format except for the "Agent" label change.
 
-#### [ ] Task 2.3: Add skill name annotation before content sections
+#### [x] Task 2.3: Add skill name annotation before content sections
 
 In `renderer.ts`, add a helper function for skill annotation rendering and invoke it in `renderTurn`. Insert at module scope:
 
@@ -132,7 +132,7 @@ lines.push(...renderSkillAnnotation(turn.skillName));
 
 The annotation renders as a markdown blockquote line `> **Skill:** skill-name` followed by a blank line. When `skillName` is undefined, the helper returns an empty array and no output is produced.
 
-#### [ ] Task 2.4: Update existing renderer tests that assert "Assistant:" label
+#### [x] Task 2.4: Update existing renderer tests that assert "Assistant:" label
 
 Open `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts`. Apply the following replacements throughout the file:
 
@@ -143,11 +143,11 @@ Open `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts`. Appl
 
 The affected test cases (find them by name, not line number): "should render assistant turn with tools", "should render thinking in details block", "should render files modified", "should not render empty sections", "should render multiple turns with role prefixes", "should skip empty assistant turns" (both the regex match and the toContain assertion), "should skip whitespace-only assistant turns", and "should keep turn with only thinking".
 
-#### [ ] Task 2.5: Update impacted documentation
+#### [x] Task 2.5: Update impacted documentation
 
 No documentation changes are required for this activity beyond the workstream file checkbox updates.
 
-#### [ ] Task 2.6: Commit changes
+#### [x] Task 2.6: Commit changes
 
 Commit `src/features/agentSessionsArchiving/markdown/renderer.ts`, `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): update renderer for Agent label, timestamp, and skill annotation`.
 
@@ -395,6 +395,10 @@ Commit `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts` and
 ## Divergences and notes
 
 **DIV-001 (Activity 1, Task 1.4):** The workstream file contained a redundant H1 heading (`# Normalized model extension and role label change`) that duplicated the frontmatter `title` field. The `markdownlint-cli2` pre-commit hook flagged this as MD025 (Multiple top-level headings). Root cause: the heading was authored in the workstream file but markdownlint treats the frontmatter `title` as the document title, making the H1 a second top-level heading. Fix: removed the redundant H1 heading, aligning with WS-0002's format. No behavioral impact on the workstream or codebase.
+
+**DIV-002 (Activity 1, Task 1.4):** The workstream specified commit message `feat(agentSessionsArchiving): add timestamp, agentName, skillName to NormalizedTurn` but commitlint's `subject-case: lower-case` rule rejects camelCase identifiers in the subject (`agentName`, `skillName`, `NormalizedTurn`). Actual commit message: `feat(agentSessionsArchiving): add timestamp, agent name, and skill name fields to normalized turn`. No behavioral impact.
+
+**DIV-003 (Activity 2, Task 2.6):** The workstream's `formatTimestamp` helper used `d.getUTCFullYear()` directly in a template literal, which `@typescript-eslint/restrict-template-expressions` disallows for `number` types. Fix: wrapped the call in `String(...)` — consistent with the pattern already used for `month`, `day`, `hours`, `minutes`, and `seconds`. No behavioral impact.
 
 ### Reflection
 
