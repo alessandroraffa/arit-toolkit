@@ -517,4 +517,26 @@ describe('renderSessionToMarkdown', () => {
     expect(roleLabelPos).toBeGreaterThan(-1);
     expect(skillPos).toBeGreaterThan(roleLabelPos);
   });
+
+  it('should return raw string when formatTimestamp receives an invalid date', () => {
+    const session: NormalizedSession = {
+      providerName: 'claude-code',
+      providerDisplayName: 'Claude Code',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'assistant',
+          content: 'Response.',
+          toolCalls: [],
+          filesRead: [],
+          filesModified: [],
+          timestamp: 'not-a-valid-date',
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    expect(md).toContain('not-a-valid-date');
+  });
 });

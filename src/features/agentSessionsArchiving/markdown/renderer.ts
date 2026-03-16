@@ -88,6 +88,7 @@ function renderFileList(title: string, files: readonly string[]): string[] {
 
 function formatTimestamp(iso: string): string {
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
   const year = String(d.getUTCFullYear());
   const month = String(d.getUTCMonth() + 1).padStart(2, '0');
   const day = String(d.getUTCDate()).padStart(2, '0');
