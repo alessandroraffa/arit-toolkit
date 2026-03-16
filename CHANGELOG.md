@@ -1,3 +1,9 @@
+## [1.15.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.15.0...v1.15.1) (2026-03-16)
+
+### Code Refactoring
+
+* **agentSessionsArchiving:** extract parser helpers to reduce max-lines ([0053fbd](https://github.com/alessandroraffa/arit-toolkit/commit/0053fbd62dd31b0ba99cb9808d2bf48dc0081fc0))
+
 ## [1.15.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.14.0...v1.15.0) (2026-03-16)
 
 ### Features
