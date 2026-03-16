@@ -2,7 +2,7 @@
 title: 'Normalized model extension and role label change'
 plan: 202603151100-enriched-turn-metadata-plan
 workstream: WS-0001
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: []
 created: 2026-03-15
@@ -151,9 +151,9 @@ No documentation changes are required for this activity beyond the workstream fi
 
 Commit `src/features/agentSessionsArchiving/markdown/renderer.ts`, `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): update renderer for Agent label, timestamp, and skill annotation`.
 
-### [ ] Activity 3: Add new renderer tests for enriched metadata fields
+### [x] Activity 3: Add new renderer tests for enriched metadata fields
 
-#### [ ] Task 3.1: Add new renderer tests for timestamp, agent name, skill name, and combinations
+#### [x] Task 3.1: Add new renderer tests for timestamp, agent name, skill name, and combinations
 
 In `renderer.test.ts`, after the last existing `it(...)` block and before the closing `});` of the top-level `describe`, add the following new test cases:
 
@@ -380,15 +380,15 @@ it('should render timestamp, agent name, and skill annotation when all three fie
 });
 ```
 
-#### [ ] Task 3.2: Run the quality gate
+#### [x] Task 3.2: Run the quality gate
 
 Run `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three commands must exit with code 0. If any test fails, fix the test or the implementation before proceeding — do not mark this task complete until all three pass.
 
-#### [ ] Task 3.3: Update impacted documentation
+#### [x] Task 3.3: Update impacted documentation
 
 No additional documentation changes are required. Update workstream file checkboxes.
 
-#### [ ] Task 3.4: Commit changes
+#### [x] Task 3.4: Commit changes
 
 Commit `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts` and this workstream file. Use commit message: `test(agentSessionsArchiving): add renderer tests for enriched turn metadata`.
 
@@ -402,4 +402,22 @@ Commit `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts` and
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergence count:** 3 divergences recorded.
+
+**By cause:**
+
+- Authoring gap (1): DIV-001 — workstream template was authored with an H1 heading that duplicated the frontmatter `title`, triggering the `markdownlint-cli2` MD025 rule. This is an authoring error in the workstream document itself, not in code.
+- Toolchain constraint (1): DIV-002 — commit message subjects prescribed in the workstream used camelCase identifiers (`agentName`, `skillName`, `NormalizedTurn`), which are rejected by commitlint's `subject-case: lower-case` rule. The workstream authoring process did not apply commit message conventions before prescribing exact messages.
+- Specification gap (1): DIV-003 — the `formatTimestamp` code in the workstream used `d.getUTCFullYear()` directly in a template literal without accounting for `@typescript-eslint/restrict-template-expressions`, which disallows `number` types in template expressions. The authoring process did not cross-check prescribed code fragments against the project's ESLint rules.
+
+**Recurring pattern:** All three divergences originate in the workstream authoring phase, not in execution. The workstream prescribed specific code and commit messages that were not validated against the project's toolchain constraints (markdownlint, commitlint, ESLint) before authoring.
+
+**Proposed improvements:**
+
+1. Workstream authoring should validate prescribed commit message subjects against commitlint rules — camelCase identifiers and PascalCase type names must be avoided in subjects.
+2. Workstream authoring should validate prescribed code fragments against the project's active ESLint rules, particularly `restrict-template-expressions` for template literals containing numeric expressions.
+3. Workstream documents should not include a top-level H1 heading when a `title` frontmatter field is present — align with WS-0002's format as the canonical pattern.
+
+**Assessment:** Execution was clean once toolchain constraints were applied. All three activities completed in sequence with no logic errors, no test failures on first run, and 100% coverage of the new renderer code after Activity 3. The quality gate (type check, lint, tests) passed with zero errors after each correction. The workstream objective — data contract extension, renderer update, and test coverage — is fully achieved.
+
+**Proposed action:** Merge branch `feat/enriched-turn-metadata` into `main` via PR and proceed to WS-0002 (Claude Code parser enrichment).
