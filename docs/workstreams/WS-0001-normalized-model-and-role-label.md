@@ -2,7 +2,7 @@
 title: 'Normalized model extension and role label change'
 plan: 202603151100-enriched-turn-metadata-plan
 workstream: WS-0001
-status: 'draft'
+status: 'in-progress'
 workspaces: []
 dependencies: []
 created: 2026-03-15
@@ -26,9 +26,9 @@ Re-read this section at the start of every execution session. Each trigger fires
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Extend the normalized turn interface
+### [x] Activity 1: Extend the normalized turn interface
 
-#### [ ] Task 1.1: Add three optional metadata fields to `NormalizedTurn`
+#### [x] Task 1.1: Add three optional metadata fields to `NormalizedTurn`
 
 Open `src/features/agentSessionsArchiving/markdown/types.ts`. After the existing `readonly thinking?: string;` line on the `NormalizedTurn` interface, add the following three properties in this order:
 
@@ -40,15 +40,15 @@ readonly skillName?: string;
 
 Each property is `readonly` and optional (`?`), matching the `thinking` field pattern. Do not assign `undefined` anywhere — `exactOptionalPropertyTypes: true` requires population by omission. No other changes to this file.
 
-#### [ ] Task 1.2: Verify existing parsers compile without modification
+#### [x] Task 1.2: Verify existing parsers compile without modification
 
 Run `pnpm run check-types`. Confirm the type checker reports zero errors. The new fields are optional; existing parsers that do not reference them require no changes. If the type checker reports errors in any parser file, the interface change introduced a structural incompatibility — stop and escalate to the project manager before proceeding.
 
-#### [ ] Task 1.3: Update impacted documentation
+#### [x] Task 1.3: Update impacted documentation
 
 No external documentation changes required — the new fields are self-documented in the TypeScript interface. Update workstream file checkboxes.
 
-#### [ ] Task 1.4: Commit changes
+#### [x] Task 1.4: Commit changes
 
 Commit `src/features/agentSessionsArchiving/markdown/types.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): add timestamp, agentName, skillName to NormalizedTurn`.
 
@@ -74,7 +74,7 @@ This makes `roleLabel` equal to `'User'` for user turns, `'Agent(agent-name)'` f
 
 #### [ ] Task 2.2: Add timestamp rendering adjacent to the role label
 
-In `renderer.ts`, in the `renderTurn` function, add a timestamp formatting helper and incorporate the timestamp into the role label line. Insert the following private helper function at module scope (after the existing `renderFileList` function or similar position, keeping module-level functions grouped):
+In `renderer.ts`, in the `renderTurn` function, add a timestamp formatting helper and incorporate the timestamp into the role label line. Insert the following private helper function at module scope, after the existing `renderFileList` function:
 
 ```typescript
 function formatTimestamp(iso: string): string {
@@ -132,17 +132,7 @@ lines.push(...renderSkillAnnotation(turn.skillName));
 
 The annotation renders as a markdown blockquote line `> **Skill:** skill-name` followed by a blank line. When `skillName` is undefined, the helper returns an empty array and no output is produced.
 
-#### [ ] Task 2.4: Update impacted documentation
-
-No documentation changes are required for this activity beyond the workstream file checkbox updates.
-
-#### [ ] Task 2.5: Commit changes
-
-Commit `src/features/agentSessionsArchiving/markdown/renderer.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): update renderer for Agent label, timestamp, and skill annotation`.
-
-### [ ] Activity 3: Update the renderer test suite
-
-#### [ ] Task 3.1: Update existing renderer tests that assert "Assistant:" label
+#### [ ] Task 2.4: Update existing renderer tests that assert "Assistant:" label
 
 Open `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts`. Apply the following replacements throughout the file:
 
@@ -153,7 +143,17 @@ Open `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts`. Appl
 
 The affected test cases (find them by name, not line number): "should render assistant turn with tools", "should render thinking in details block", "should render files modified", "should not render empty sections", "should render multiple turns with role prefixes", "should skip empty assistant turns" (both the regex match and the toContain assertion), "should skip whitespace-only assistant turns", and "should keep turn with only thinking".
 
-#### [ ] Task 3.2: Add new renderer tests for timestamp, agent name, skill name, and combinations
+#### [ ] Task 2.5: Update impacted documentation
+
+No documentation changes are required for this activity beyond the workstream file checkbox updates.
+
+#### [ ] Task 2.6: Commit changes
+
+Commit `src/features/agentSessionsArchiving/markdown/renderer.ts`, `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): update renderer for Agent label, timestamp, and skill annotation`.
+
+### [ ] Activity 3: Add new renderer tests for enriched metadata fields
+
+#### [ ] Task 3.1: Add new renderer tests for timestamp, agent name, skill name, and combinations
 
 In `renderer.test.ts`, after the last existing `it(...)` block and before the closing `});` of the top-level `describe`, add the following new test cases:
 
@@ -264,10 +264,10 @@ it('should render plain Agent label when agent name absent', () => {
 });
 ```
 
-**Test: skill annotation renders before content when present**
+**Test: skill annotation renders after role label line when present**
 
 ```typescript
-it('should render skill annotation before content when skill name present', () => {
+it('should render skill annotation after role label line when skill name present', () => {
   const session: NormalizedSession = {
     providerName: 'claude-code',
     providerDisplayName: 'Claude Code',
@@ -286,10 +286,11 @@ it('should render skill annotation before content when skill name present', () =
 
   const md = renderSessionToMarkdown(session);
 
+  expect(md).toContain('> **Skill:** code-review');
+  const roleLabelPos = md.indexOf('**Agent:**');
   const skillPos = md.indexOf('> **Skill:** code-review');
-  const contentPos = md.indexOf('Skill output.');
-  expect(skillPos).toBeGreaterThan(-1);
-  expect(contentPos).toBeGreaterThan(skillPos);
+  expect(roleLabelPos).toBeGreaterThan(-1);
+  expect(skillPos).toBeGreaterThan(roleLabelPos);
 });
 ```
 
@@ -372,28 +373,28 @@ it('should render timestamp, agent name, and skill annotation when all three fie
 
   expect(md).toContain('**Agent(analysis-agent):**');
   expect(md).toContain('2026-03-15');
+  const roleLabelPos = md.indexOf('**Agent(analysis-agent):**');
   const skillPos = md.indexOf('> **Skill:** analysis');
-  const contentPos = md.indexOf('Full metadata response.');
-  expect(skillPos).toBeGreaterThan(-1);
-  expect(contentPos).toBeGreaterThan(skillPos);
+  expect(roleLabelPos).toBeGreaterThan(-1);
+  expect(skillPos).toBeGreaterThan(roleLabelPos);
 });
 ```
 
-#### [ ] Task 3.3: Run the quality gate
+#### [ ] Task 3.2: Run the quality gate
 
 Run `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three commands must exit with code 0. If any test fails, fix the test or the implementation before proceeding — do not mark this task complete until all three pass.
 
-#### [ ] Task 3.4: Update impacted documentation
+#### [ ] Task 3.3: Update impacted documentation
 
 No additional documentation changes are required. Update workstream file checkboxes.
 
-#### [ ] Task 3.5: Commit changes
+#### [ ] Task 3.4: Commit changes
 
-Commit `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts` and this workstream file. Use commit message: `test(agentSessionsArchiving): update and extend renderer tests for enriched turn metadata`.
+Commit `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts` and this workstream file. Use commit message: `test(agentSessionsArchiving): add renderer tests for enriched turn metadata`.
 
 ## Divergences and notes
 
-_None recorded._
+**DIV-001 (Activity 1, Task 1.4):** The workstream file contained a redundant H1 heading (`# Normalized model extension and role label change`) that duplicated the frontmatter `title` field. The `markdownlint-cli2` pre-commit hook flagged this as MD025 (Multiple top-level headings). Root cause: the heading was authored in the workstream file but markdownlint treats the frontmatter `title` as the document title, making the H1 a second top-level heading. Fix: removed the redundant H1 heading, aligning with WS-0002's format. No behavioral impact on the workstream or codebase.
 
 ### Reflection
 
