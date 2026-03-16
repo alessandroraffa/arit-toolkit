@@ -1,3 +1,21 @@
+## [1.15.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.14.0...v1.15.0) (2026-03-16)
+
+### Features
+
+* **agentSessionsArchiving:** add timestamp, agent name, and skill name fields to normalized turn ([91610c3](https://github.com/alessandroraffa/arit-toolkit/commit/91610c397db543330e4ceb5ad5a42c0c124a590a))
+* **agentSessionsArchiving:** extend claude code parser internal types for metadata fields ([944af5c](https://github.com/alessandroraffa/arit-toolkit/commit/944af5cdb48cfa179df59d687de323044a227c6d))
+* **agentSessionsArchiving:** extract timestamp, agent name, and skill name in claude code parser ([2488f34](https://github.com/alessandroraffa/arit-toolkit/commit/2488f346a5abb79b67f695dfac9f5d37121bd933))
+* **agentSessionsArchiving:** update renderer for agent label, timestamp, and skill annotation ([2144ece](https://github.com/alessandroraffa/arit-toolkit/commit/2144ece2c8470b86f55bd5a143574b0e79843dfe))
+
+### Bug Fixes
+
+* **agentSessionsArchiving:** add defensive guard in format-timestamp for invalid dates ([2fea84b](https://github.com/alessandroraffa/arit-toolkit/commit/2fea84b98d4ecdfc7ad89557248df57369d79155))
+* **agentSessionsArchiving:** improve claude code parser correctness and reduce complexity ([e41fb37](https://github.com/alessandroraffa/arit-toolkit/commit/e41fb3765e649c062c9d6d6ac8843a68cf62d21c))
+
+### Code Refactoring
+
+* **agentSessionsArchiving:** split parser and renderer test files by concern ([a68f6e2](https://github.com/alessandroraffa/arit-toolkit/commit/a68f6e2c5da85c11903ec49b23c309e414250328))
+
 ## [1.14.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.13.0...v1.14.0) (2026-03-14)
 
 ### Features
