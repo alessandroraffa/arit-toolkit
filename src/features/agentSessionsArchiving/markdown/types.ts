@@ -9,6 +9,9 @@ export interface NormalizedTurn {
   readonly content: string;
   readonly toolCalls: readonly ToolCall[];
   readonly thinking?: string;
+  readonly timestamp?: string;
+  readonly agentName?: string;
+  readonly skillName?: string;
   readonly filesRead: readonly string[];
   readonly filesModified: readonly string[];
 }

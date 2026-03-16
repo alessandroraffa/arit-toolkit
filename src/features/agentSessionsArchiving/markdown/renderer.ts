@@ -32,15 +32,19 @@ function isEmptyTurn(turn: NormalizedTurn): boolean {
 }
 
 function renderTurn(turn: NormalizedTurn): string[] {
-  const roleLabel = turn.role === 'user' ? 'User' : 'Assistant';
+  const agentLabel =
+    turn.role !== 'user' && turn.agentName ? `Agent(${turn.agentName})` : 'Agent';
+  const roleLabel = turn.role === 'user' ? 'User' : agentLabel;
+  const timestampSuffix = turn.timestamp ? ` — ${formatTimestamp(turn.timestamp)}` : '';
   const lines: string[] = [];
 
   if (turn.content) {
-    lines.push(`**${roleLabel}:** ${turn.content}`, '');
+    lines.push(`**${roleLabel}:**${timestampSuffix} ${turn.content}`, '');
   } else {
-    lines.push(`**${roleLabel}:**`, '');
+    lines.push(`**${roleLabel}:**${timestampSuffix}`, '');
   }
 
+  lines.push(...renderSkillAnnotation(turn.skillName));
   lines.push(...renderToolsSection(turn.toolCalls));
   lines.push(...renderThinkingSection(turn.thinking));
   lines.push(...renderFileList('Files Read', turn.filesRead));
@@ -80,6 +84,23 @@ function renderFileList(title: string, files: readonly string[]): string[] {
   }
   lines.push('');
   return lines;
+}
+
+function formatTimestamp(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const year = String(d.getUTCFullYear());
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const hours = String(d.getUTCHours()).padStart(2, '0');
+  const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(d.getUTCSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+function renderSkillAnnotation(skillName: string | undefined): string[] {
+  if (!skillName) return [];
+  return [`> **Skill:** ${skillName}`, ''];
 }
 
 function renderCodeBlock(text: string, indent: string): string[] {

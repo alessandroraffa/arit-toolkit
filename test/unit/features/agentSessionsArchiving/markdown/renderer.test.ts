@@ -58,7 +58,7 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
-    expect(md).toContain('**Assistant:** Let me read that file.');
+    expect(md).toContain('**Agent:** Let me read that file.');
     expect(md).toContain('### Tools Called');
     expect(md).toContain('**Read**');
     expect(md).toContain('### Files Read');
@@ -85,7 +85,7 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
-    expect(md).toContain('**Assistant:** Done.');
+    expect(md).toContain('**Agent:** Done.');
     expect(md).toContain('<details>');
     expect(md).toContain('<summary>Reasoning</summary>');
     expect(md).toContain('Let me think about this...');
@@ -110,7 +110,7 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
-    expect(md).toContain('**Assistant:** Updated.');
+    expect(md).toContain('**Agent:** Updated.');
     expect(md).toContain('### Files Modified');
     expect(md).toContain('`src/foo.ts`');
     expect(md).toContain('`src/bar.ts`');
@@ -134,7 +134,7 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
-    expect(md).toContain('**Assistant:** Just text.');
+    expect(md).toContain('**Agent:** Just text.');
     expect(md).not.toContain('### Tools Called');
     expect(md).not.toContain('### Files Read');
     expect(md).not.toContain('### Files Modified');
@@ -174,7 +174,7 @@ describe('renderSessionToMarkdown', () => {
     const md = renderSessionToMarkdown(session);
 
     expect(md).toContain('**User:** Question');
-    expect(md).toContain('**Assistant:** Answer');
+    expect(md).toContain('**Agent:** Answer');
     expect(md).toContain('**User:** Follow-up');
     expect(md).not.toContain('## Turn');
   });
@@ -211,9 +211,9 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
-    const assistantMatches = md.match(/\*\*Assistant:\*\*/g) ?? [];
+    const assistantMatches = md.match(/\*\*Agent:\*\*/g) ?? [];
     expect(assistantMatches).toHaveLength(1);
-    expect(md).toContain('**Assistant:** Real response.');
+    expect(md).toContain('**Agent:** Real response.');
   });
 
   it('should skip whitespace-only assistant turns', () => {
@@ -256,7 +256,7 @@ describe('renderSessionToMarkdown', () => {
 
     const md = renderSessionToMarkdown(session);
 
-    expect(md).toContain('**Assistant:**');
+    expect(md).toContain('**Agent:**');
     expect(md).toContain('Some reasoning...');
   });
 
