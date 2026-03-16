@@ -2,7 +2,7 @@
 title: 'Claude Code parser enrichment'
 plan: 202603151100-enriched-turn-metadata-plan
 workstream: WS-0002
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: [WS-0001]
 created: 2026-03-15
@@ -259,9 +259,9 @@ No documentation changes are required for this activity beyond workstream file c
 
 Commit `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): extract timestamp, agent name, and skill name in claude code parser`.
 
-### [ ] Activity 3: Add parser unit tests and run the quality gate
+### [x] Activity 3: Add parser unit tests and run the quality gate
 
-#### [ ] Task 3.1: Add unit tests for timestamp extraction
+#### [x] Task 3.1: Add unit tests for timestamp extraction
 
 Open `test/unit/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.test.ts`. After the last existing `it(...)` block and before the closing `});` of the top-level `describe`, add:
 
@@ -328,7 +328,7 @@ it('should leave timestamp undefined when event has no timestamp field', () => {
 });
 ```
 
-#### [ ] Task 3.2: Add unit tests for agent name extraction
+#### [x] Task 3.2: Add unit tests for agent name extraction
 
 In `claudeCodeParser.test.ts`, add:
 
@@ -429,7 +429,7 @@ it('should not set agentName for non-Agent tool_use blocks', () => {
 });
 ```
 
-#### [ ] Task 3.3: Add unit tests for skill name extraction
+#### [x] Task 3.3: Add unit tests for skill name extraction
 
 In `claudeCodeParser.test.ts`, add:
 
@@ -546,15 +546,15 @@ it('should populate all three metadata fields when all present in one assistant 
 });
 ```
 
-#### [ ] Task 3.4: Run the quality gate
+#### [x] Task 3.4: Run the quality gate
 
 Run `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three commands must exit with code 0. If any test fails, fix the implementation or the test before proceeding — do not mark this task complete until all three pass.
 
-#### [ ] Task 3.5: Update impacted documentation
+#### [x] Task 3.5: Update impacted documentation
 
 Update the workstream file checkboxes. No additional documentation changes are required.
 
-#### [ ] Task 3.6: Commit changes
+#### [x] Task 3.6: Commit changes
 
 Commit `test/unit/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.test.ts` and this workstream file. Use commit message: `test(agentSessionsArchiving): add parser tests for timestamp, agent name, and skill name extraction`.
 
@@ -564,4 +564,12 @@ Commit `test/unit/features/agentSessionsArchiving/markdown/parsers/claudeCodePar
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergence count by cause:** 1 divergence — document structure (non-code).
+
+**Divergence: H1 heading in workstream file (Activity 1).** The workstream file as authored contained a `# Claude Code parser enrichment` H1 heading that WS-0001 lacked, triggering markdownlint MD025. Resolution: removed the H1, matching the WS-0001 pattern. Root cause: inconsistent workstream authoring — WS-0002 was drafted with an H1 while WS-0001 was not.
+
+**Recurring pattern — none.** All implementation changes were clean, type-safe, and passed quality gate on first run after each activity. No code-level divergences.
+
+**Proposed improvement.** The workstream template for derived workstreams should explicitly state that the title belongs in frontmatter only and the document body must not open with an H1 heading, to prevent the MD025 error from recurring.
+
+**Assessment.** The workstream was executed sequentially and correctly. Three activities, two code commits, one test commit. All 12 new tests pass. `claudeCodeParser.ts` reaches 100% statement coverage with the new tests. The plan's verifiable output criteria are met: sessions with timestamps, Agent tool_use blocks, and Skill tool_use blocks now produce normalized turns with the corresponding metadata fields populated. The quality gate (type check, lint, unit tests) passed at every commit point.
