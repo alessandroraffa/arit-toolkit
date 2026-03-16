@@ -1,7 +1,7 @@
 ---
 title: 'Enriched turn metadata in session archives'
 initiative: INIT-001-enriched-turn-metadata
-status: 'draft'
+status: 'accepted'
 workspaces: []
 created: 2026-03-15
 references:
