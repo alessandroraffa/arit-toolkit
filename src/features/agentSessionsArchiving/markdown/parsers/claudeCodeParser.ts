@@ -13,6 +13,7 @@ interface ContentBlock {
 
 interface JsonlEvent {
   type: string;
+  timestamp?: string;
   message?: {
     role?: string;
     content?: ContentBlock[] | string;
@@ -24,6 +25,9 @@ interface PendingState {
   thinking: string;
   filesRead: string[];
   filesModified: string[];
+  timestamp?: string;
+  agentName?: string;
+  skillName?: string;
 }
 
 function makeToolCall(name: string, input?: Record<string, unknown>): ToolCall {
@@ -38,10 +42,30 @@ function makeTurn(params: {
   thinking: string;
   filesRead: readonly string[];
   filesModified: readonly string[];
+  timestamp?: string;
+  agentName?: string;
+  skillName?: string;
 }): NormalizedTurn {
-  const { role, content, toolCalls, filesRead, filesModified, thinking } = params;
-  const base = { role, content, toolCalls, filesRead, filesModified };
-  return thinking ? { ...base, thinking } : base;
+  const {
+    role,
+    content,
+    toolCalls,
+    filesRead,
+    filesModified,
+    thinking,
+    timestamp,
+    agentName,
+    skillName,
+  } = params;
+  const base: NormalizedTurn = { role, content, toolCalls, filesRead, filesModified };
+  const withThinking: NormalizedTurn = thinking ? { ...base, thinking } : base;
+  const withTimestamp: NormalizedTurn = timestamp
+    ? { ...withThinking, timestamp }
+    : withThinking;
+  const withAgentName: NormalizedTurn = agentName
+    ? { ...withTimestamp, agentName }
+    : withTimestamp;
+  return skillName ? { ...withAgentName, skillName } : withAgentName;
 }
 
 function emptyPending(): PendingState {

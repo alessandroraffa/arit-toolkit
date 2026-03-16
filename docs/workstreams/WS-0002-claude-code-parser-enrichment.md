@@ -2,7 +2,7 @@
 title: 'Claude Code parser enrichment'
 plan: 202603151100-enriched-turn-metadata-plan
 workstream: WS-0002
-status: 'draft'
+status: 'in-progress'
 workspaces: []
 dependencies: [WS-0001]
 created: 2026-03-15
@@ -26,9 +26,9 @@ Re-read this section at the start of every execution session. Each trigger fires
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Extend the Claude Code parser's internal types and turn construction
+### [x] Activity 1: Extend the Claude Code parser's internal types and turn construction
 
-#### [ ] Task 1.1: Add `timestamp` field to the `JsonlEvent` interface
+#### [x] Task 1.1: Add `timestamp` field to the `JsonlEvent` interface
 
 Open `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.ts`. Locate the `JsonlEvent` interface. Add `timestamp?: string;` as a direct property of the interface (not inside `message`), after the `type: string;` line:
 
@@ -45,7 +45,7 @@ interface JsonlEvent {
 
 The `timestamp` field on a JSONL event is a top-level property (not nested inside `message`), present on `user` and `assistant` event objects as an ISO 8601 string.
 
-#### [ ] Task 1.2: Extend `PendingState` and `makeTurn` to carry and propagate the new metadata fields
+#### [x] Task 1.2: Extend `PendingState` and `makeTurn` to carry and propagate the new metadata fields
 
 In `claudeCodeParser.ts`, apply the following two changes:
 
@@ -104,13 +104,13 @@ This preserves the omission-based pattern for all optional fields. `exactOptiona
 
 **Change 3 — Update `emptyPending`.** The `emptyPending` function returns a `PendingState`. The new optional fields (`timestamp`, `agentName`, `skillName`) do not need to be initialized in `emptyPending` — they are optional and will be absent by omission when not set. No change required to `emptyPending`.
 
-#### [ ] Task 1.3: Update impacted documentation
+#### [x] Task 1.3: Update impacted documentation
 
 No documentation changes are required for this activity beyond workstream file checkbox updates.
 
-#### [ ] Task 1.4: Commit changes
+#### [x] Task 1.4: Commit changes
 
-Commit `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): extend ClaudeCodeParser internal types for metadata fields`.
+Commit `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): extend claude code parser internal types for metadata fields`.
 
 ### [ ] Activity 2: Implement metadata extraction in the Claude Code parser
 
@@ -257,7 +257,7 @@ No documentation changes are required for this activity beyond workstream file c
 
 #### [ ] Task 2.5: Commit changes
 
-Commit `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): extract timestamp, agentName, skillName in ClaudeCodeParser`.
+Commit `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): extract timestamp, agent name, and skill name in claude code parser`.
 
 ### [ ] Activity 3: Add parser unit tests and run the quality gate
 
@@ -556,11 +556,11 @@ Update the workstream file checkboxes. No additional documentation changes are r
 
 #### [ ] Task 3.6: Commit changes
 
-Commit `test/unit/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.test.ts` and this workstream file. Use commit message: `test(agentSessionsArchiving): add parser tests for timestamp, agentName, and skillName extraction`.
+Commit `test/unit/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.test.ts` and this workstream file. Use commit message: `test(agentSessionsArchiving): add parser tests for timestamp, agent name, and skill name extraction`.
 
 ## Divergences and notes
 
-_None recorded._
+**Activity 1 — H1 heading removed from workstream file.** The workstream file as authored contained a `# Claude Code parser enrichment` H1 heading after the frontmatter. This triggered a markdownlint MD025 error (multiple top-level headings, since the frontmatter `title:` field also constitutes a document title). WS-0001 does not have an H1 heading and passed lint. The H1 was removed to match the WS-0001 pattern and satisfy the quality gate. No behavioral impact; the title is preserved in the frontmatter.
 
 ### Reflection
 
