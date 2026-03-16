@@ -39,9 +39,11 @@ function parseTimestamp(value: string | undefined): string | undefined {
 function toKebabCase(value: string): string {
   return value
     .trim()
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .replace(/[\s_]+/g, '-')
     .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
     .toLowerCase();
 }
 
@@ -78,15 +80,22 @@ function makeTurn(params: {
     agentName,
     skillName,
   } = params;
-  const base: NormalizedTurn = { role, content, toolCalls, filesRead, filesModified };
-  const withThinking: NormalizedTurn = thinking ? { ...base, thinking } : base;
-  const withTimestamp: NormalizedTurn = timestamp
-    ? { ...withThinking, timestamp }
-    : withThinking;
-  const withAgentName: NormalizedTurn = agentName
-    ? { ...withTimestamp, agentName }
-    : withTimestamp;
-  return skillName ? { ...withAgentName, skillName } : withAgentName;
+  const turn: {
+    role: 'user' | 'assistant';
+    content: string;
+    toolCalls: readonly ToolCall[];
+    filesRead: readonly string[];
+    filesModified: readonly string[];
+    thinking?: string;
+    timestamp?: string;
+    agentName?: string;
+    skillName?: string;
+  } = { role, content, toolCalls, filesRead, filesModified };
+  if (thinking) turn.thinking = thinking;
+  if (timestamp) turn.timestamp = timestamp;
+  if (agentName) turn.agentName = agentName;
+  if (skillName) turn.skillName = skillName;
+  return turn;
 }
 
 function emptyPending(): PendingState {
@@ -133,6 +142,17 @@ function processToolResult(block: ContentBlock, pending: PendingState): void {
   if (existing && resultText) {
     const idx = pending.toolCalls.indexOf(existing);
     pending.toolCalls[idx] = { ...existing, output: resultText };
+  }
+}
+
+function extractToolMetadata(block: ContentBlock, pending: PendingState): void {
+  if (block.name === 'Agent') {
+    const agentName = sanitizeName(block.input?.subagent_type);
+    if (agentName) pending.agentName = agentName;
+  }
+  if (block.name === 'Skill') {
+    const skillName = sanitizeName(block.input?.skill);
+    if (skillName) pending.skillName = skillName;
   }
 }
 
@@ -254,20 +274,16 @@ export class ClaudeCodeParser implements SessionParser {
     }
     if (block.type === 'tool_use') {
       processToolUseBlock(block, pending);
-      if (block.name === 'Agent') {
-        const agentName = sanitizeName(block.input?.subagent_type);
-        if (agentName) pending.agentName = agentName;
-      }
-      if (block.name === 'Skill') {
-        const skillName = sanitizeName(block.input?.skill);
-        if (skillName) pending.skillName = skillName;
-      }
+      extractToolMetadata(block, pending);
     }
   }
 
   private processToolUseEvent(event: JsonlEvent, pending: PendingState): void {
     for (const b of getBlocks(event.message?.content)) {
-      if (b.type === 'tool_use') processToolUseBlock(b, pending);
+      if (b.type === 'tool_use') {
+        processToolUseBlock(b, pending);
+        extractToolMetadata(b, pending);
+      }
     }
   }
 

@@ -468,6 +468,62 @@ describe('ClaudeCodeParser', () => {
     expect(session.turns[0]!.skillName).toBe('analysis');
   });
 
+  it('should extract agentName from Agent tool_use in standalone tool_use event', () => {
+    const content = jsonl(
+      {
+        type: 'tool_use',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Agent',
+              id: 'tool-standalone-agent-1',
+              input: { subagent_type: 'CodeReview' },
+            },
+          ],
+        },
+      },
+      {
+        type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'text', text: 'Agent done.' }] },
+      }
+    );
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.agentName).toBe('code-review');
+  });
+
+  it('should extract skillName from Skill tool_use in standalone tool_use event', () => {
+    const content = jsonl(
+      {
+        type: 'tool_use',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Skill',
+              id: 'tool-standalone-skill-1',
+              input: { skill: 'DiagnosticProcess' },
+            },
+          ],
+        },
+      },
+      {
+        type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'text', text: 'Skill done.' }] },
+      }
+    );
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.skillName).toBe('diagnostic-process');
+  });
+
   it('should concatenate multiple thinking blocks', () => {
     const content = jsonl({
       type: 'assistant',
