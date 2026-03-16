@@ -30,6 +30,27 @@ interface PendingState {
   skillName?: string;
 }
 
+function parseTimestamp(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? undefined : value;
+}
+
+function toKebabCase(value: string): string {
+  return value
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .toLowerCase();
+}
+
+function sanitizeName(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const kebab = toKebabCase(value);
+  return kebab.length > 0 ? kebab : undefined;
+}
+
 function makeToolCall(name: string, input?: Record<string, unknown>): ToolCall {
   const inputStr = input ? JSON.stringify(input, null, 2) : '';
   return inputStr ? { name, input: inputStr } : { name };
@@ -188,16 +209,17 @@ export class ClaudeCodeParser implements SessionParser {
   private processUserEvent(event: JsonlEvent, turns: NormalizedTurn[]): void {
     const text = extractText(event.message?.content);
     if (text) {
-      turns.push(
-        makeTurn({
-          role: 'user',
-          content: text,
-          toolCalls: [],
-          thinking: '',
-          filesRead: [],
-          filesModified: [],
-        })
-      );
+      const validTimestamp = parseTimestamp(event.timestamp);
+      const turnParams: Parameters<typeof makeTurn>[0] = {
+        role: 'user',
+        content: text,
+        toolCalls: [],
+        thinking: '',
+        filesRead: [],
+        filesModified: [],
+      };
+      if (validTimestamp) turnParams.timestamp = validTimestamp;
+      turns.push(makeTurn(turnParams));
     }
   }
 
@@ -206,6 +228,9 @@ export class ClaudeCodeParser implements SessionParser {
     turns: NormalizedTurn[],
     pending: PendingState
   ): PendingState {
+    const validTimestamp = parseTimestamp(event.timestamp);
+    if (validTimestamp) pending.timestamp = validTimestamp;
+
     const textParts: string[] = [];
     for (const block of getBlocks(event.message?.content)) {
       this.processAssistantBlock(block, textParts, pending);
@@ -227,7 +252,17 @@ export class ClaudeCodeParser implements SessionParser {
     if (block.type === 'thinking' && block.thinking) {
       pending.thinking += (pending.thinking ? '\n\n' : '') + block.thinking;
     }
-    if (block.type === 'tool_use') processToolUseBlock(block, pending);
+    if (block.type === 'tool_use') {
+      processToolUseBlock(block, pending);
+      if (block.name === 'Agent') {
+        const agentName = sanitizeName(block.input?.subagent_type);
+        if (agentName) pending.agentName = agentName;
+      }
+      if (block.name === 'Skill') {
+        const skillName = sanitizeName(block.input?.skill);
+        if (skillName) pending.skillName = skillName;
+      }
+    }
   }
 
   private processToolUseEvent(event: JsonlEvent, pending: PendingState): void {

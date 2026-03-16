@@ -112,9 +112,9 @@ No documentation changes are required for this activity beyond workstream file c
 
 Commit `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): extend claude code parser internal types for metadata fields`.
 
-### [ ] Activity 2: Implement metadata extraction in the Claude Code parser
+### [x] Activity 2: Implement metadata extraction in the Claude Code parser
 
-#### [ ] Task 2.1: Extract timestamp from `user` and `assistant` events
+#### [x] Task 2.1: Extract timestamp from `user` and `assistant` events
 
 In `claudeCodeParser.ts`, locate the `processUserEvent` method. It currently calls `makeTurn` with a literal object. Change it to extract and validate the timestamp from the event, then pass it to `makeTurn`:
 
@@ -173,7 +173,7 @@ private processAssistantEvent(
 }
 ```
 
-#### [ ] Task 2.2: Extract agent name from `Agent` tool_use blocks
+#### [x] Task 2.2: Extract agent name from `Agent` tool_use blocks
 
 In `claudeCodeParser.ts`, locate the `processAssistantBlock` method. The block processing for `tool_use` blocks calls `processToolUseBlock`. Agent tool_use blocks have `block.name === 'Agent'` and carry `block.input.subagent_type` as the agent name.
 
@@ -224,7 +224,7 @@ The `subagent_type` field on the `Agent` tool_use block's `input` is already typ
 
 **Note:** If a single assistant event contains multiple `Agent` tool_use blocks (rare but possible), the last one wins — `pending.agentName` is overwritten. This is an acceptable simplification: multiple subagent delegations in a single turn are not a realistic scenario in current Claude Code output.
 
-#### [ ] Task 2.3: Extract skill name from `Skill` tool_use blocks
+#### [x] Task 2.3: Extract skill name from `Skill` tool_use blocks
 
 In `claudeCodeParser.ts`, in the `processAssistantBlock` method, add detection of `Skill` tool_use blocks after the `Agent` detection added in Task 2.2:
 
@@ -251,11 +251,11 @@ if (block.type === 'tool_use') {
 }
 ```
 
-#### [ ] Task 2.4: Update impacted documentation
+#### [x] Task 2.4: Update impacted documentation
 
 No documentation changes are required for this activity beyond workstream file checkbox updates.
 
-#### [ ] Task 2.5: Commit changes
+#### [x] Task 2.5: Commit changes
 
 Commit `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.ts` and this workstream file. Use commit message: `feat(agentSessionsArchiving): extract timestamp, agent name, and skill name in claude code parser`.
 
