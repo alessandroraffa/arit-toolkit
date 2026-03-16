@@ -1,3 +1,9 @@
+## [1.15.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.15.1...v1.15.2) (2026-03-16)
+
+### Bug Fixes
+
+* **deps:** override vulnerable transitive dependencies ([1876c10](https://github.com/alessandroraffa/arit-toolkit/commit/1876c100503cacc2415e463eb42ac625a23d9a4a))
+
 ## [1.15.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.15.0...v1.15.1) (2026-03-16)
 
 ### Code Refactoring
