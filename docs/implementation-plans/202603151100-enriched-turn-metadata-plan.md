@@ -120,7 +120,7 @@ Per SPEC-001, the plan must satisfy these requirements:
 
 - Extend the Claude Code parser's internal event type definitions to include the `timestamp` field present on `user` and `assistant` JSONL events.
 - Extract the timestamp from each `user` and `assistant` event and populate the normalized turn's `timestamp` field. Validate the value as ISO 8601 at parse time; treat invalid values as absent per SPEC-001 error handling.
-- Detect `Agent` tool_use blocks (tool_use content blocks where the tool name is "Agent") and extract the subagent name from the block's `input.subagent_type` field. Convert the value to kebab-case and populate the normalized turn's `agentName` field. Treat empty or whitespace-only values as absent.
+- Detect `Agent` tool_use blocks (tool_use content blocks where the tool name is "Agent") and extract the subagent name from the block's `input.subagent_type` field. Normalize the value by trimming whitespace and lowercasing (e.g., `"Explore"` → `"explore"`) and populate the normalized turn's `agentName` field. Treat empty or whitespace-only values as absent.
 - Detect `Skill` tool_use blocks (tool_use content blocks where the tool name is "Skill") and extract the skill name from the block's `input.skill` field. Populate the normalized turn's `skillName` field. Treat empty or whitespace-only values as absent.
 - Add parser unit tests covering: timestamp extraction from user and assistant events, invalid timestamp handling, subagent name extraction from Agent tool_use blocks, skill name extraction from Skill tool_use blocks, empty/whitespace name handling, and events with combinations of the new fields.
 
