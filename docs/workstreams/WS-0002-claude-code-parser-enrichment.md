@@ -180,14 +180,23 @@ In `claudeCodeParser.ts`, locate the `processAssistantBlock` method. The block p
 Add a module-level helper function:
 
 ```typescript
+function toKebabCase(value: string): string {
+  return value
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/[\s_]+/g, '-')
+    .replace(/-+/g, '-')
+    .toLowerCase();
+}
+
 function sanitizeName(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim().toLowerCase();
-  return trimmed.length > 0 ? trimmed : undefined;
+  const kebab = toKebabCase(value);
+  return kebab.length > 0 ? kebab : undefined;
 }
 ```
 
-`sanitizeName` trims whitespace and lowercases the value (e.g., `"Explore"` → `"explore"`), ensuring consistent kebab-case output as required by SPEC-001.
+`toKebabCase` splits PascalCase/camelCase word boundaries with hyphens, replaces spaces and underscores with hyphens, collapses consecutive hyphens, and lowercases the result (e.g., `"Explore"` → `"explore"`, `"CodeReview"` → `"code-review"`, `"code_review"` → `"code-review"`). `sanitizeName` returns `undefined` for non-string, empty, or whitespace-only values after normalization, as required by SPEC-001.
 
 In the `processAssistantBlock` method, add detection of `Agent` tool_use blocks after the existing `tool_use` branch:
 
@@ -212,6 +221,8 @@ private processAssistantBlock(
 ```
 
 The `subagent_type` field on the `Agent` tool_use block's `input` is already typed as `Record<string, unknown>` on `ContentBlock`, so access via `block.input?.subagent_type` is valid. `sanitizeName` returns `undefined` for empty or whitespace-only strings, which keeps the field absent by omission as required.
+
+**Note:** If a single assistant event contains multiple `Agent` tool_use blocks (rare but possible), the last one wins — `pending.agentName` is overwritten. This is an acceptable simplification: multiple subagent delegations in a single turn are not a realistic scenario in current Claude Code output.
 
 #### [ ] Task 2.3: Extract skill name from `Skill` tool_use blocks
 
@@ -371,6 +382,32 @@ it('should treat empty subagent_type as absent agentName', () => {
 });
 ```
 
+**Test: PascalCase subagent_type is normalized to kebab-case**
+
+```typescript
+it('should normalize PascalCase subagent_type to kebab-case', () => {
+  const content = jsonl({
+    type: 'assistant',
+    message: {
+      role: 'assistant',
+      content: [
+        {
+          type: 'tool_use',
+          name: 'Agent',
+          id: 'tool-agent-3',
+          input: { subagent_type: 'CodeReview' },
+        },
+        { type: 'text', text: 'Done.' },
+      ],
+    },
+  });
+
+  const session = expectParsed(parser.parse(content, 'session-1'));
+
+  expect(session.turns[0]!.agentName).toBe('code-review');
+});
+```
+
 **Test: non-Agent tool_use block does not set agentName**
 
 ```typescript
@@ -412,6 +449,32 @@ it('should extract skillName from Skill tool_use block', () => {
           input: { skill: 'code-review' },
         },
         { type: 'text', text: 'Skill complete.' },
+      ],
+    },
+  });
+
+  const session = expectParsed(parser.parse(content, 'session-1'));
+
+  expect(session.turns[0]!.skillName).toBe('code-review');
+});
+```
+
+**Test: PascalCase skill name is normalized to kebab-case**
+
+```typescript
+it('should normalize PascalCase skill name to kebab-case', () => {
+  const content = jsonl({
+    type: 'assistant',
+    message: {
+      role: 'assistant',
+      content: [
+        {
+          type: 'tool_use',
+          name: 'Skill',
+          id: 'tool-skill-3',
+          input: { skill: 'CodeReview' },
+        },
+        { type: 'text', text: 'Done.' },
       ],
     },
   });

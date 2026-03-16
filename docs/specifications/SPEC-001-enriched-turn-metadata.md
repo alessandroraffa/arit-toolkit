@@ -34,7 +34,7 @@ This specification introduces a breaking change: the role label "Assistant" is r
 
 ### Agent name
 
-1. The normalized turn model must support an optional agent name field representing the name of a subagent to which the turn was delegated. The value must be stored in kebab-case.
+1. The normalized turn model must support an optional agent name field representing the name of a subagent to which the turn was delegated. The value must be stored in kebab-case. Parsers must normalize source values to kebab-case: split PascalCase/camelCase word boundaries with hyphens, replace spaces and underscores with hyphens, and lowercase the result (e.g., `"Explore"` → `"explore"`, `"CodeReview"` → `"code-review"`).
 
 2. When a turn has an agent name, it must be rendered as part of the role label (see Role label, requirement 2). No separate annotation section is needed.
 
@@ -42,7 +42,7 @@ This specification introduces a breaking change: the role label "Assistant" is r
 
 ### Skill name
 
-1. The normalized turn model must support an optional skill name field representing the name of a skill that was invoked during the turn.
+1. The normalized turn model must support an optional skill name field representing the name of a skill that was invoked during the turn. The value must be stored in kebab-case, following the same normalization rules as agent name.
 
 2. When a turn has a skill name, the rendered markdown output must display it as a visible annotation within the turn, clearly associating the turn content with the named skill. The annotation must appear before the turn's content sections.
 
@@ -76,7 +76,7 @@ This specification introduces a breaking change: the role label "Assistant" is r
 
 1. When a parser encounters a timestamp value that is not valid ISO 8601, the parser must treat the timestamp as absent for that turn rather than failing the entire session parse.
 
-2. When a parser encounters an agent name or skill name value that is empty or whitespace-only, the parser must treat the field as absent for that turn.
+2. When a parser encounters an agent name or skill name value that is empty or whitespace-only after kebab-case normalization, the parser must treat the field as absent for that turn.
 
 ## Acceptance criteria
 
@@ -102,3 +102,4 @@ None at this time.
 
 2026-03-15 — Initial draft.
 2026-03-15 — Added role label change: "Assistant" → "Agent"/"Agent(agent-name)". Breaking change. Renumbered requirements and acceptance criteria.
+2026-03-16 — Clarified kebab-case normalization rules for agent name. Added kebab-case normalization requirement for skill name.

@@ -148,10 +148,10 @@ Open `test/unit/features/agentSessionsArchiving/markdown/renderer.test.ts`. Appl
 
 1. Replace every occurrence of `expect(md).toContain('**Assistant:** ...)` with `expect(md).toContain('**Agent:** ...)` — preserving the text that follows the colon.
 2. Replace every occurrence of `expect(md).toContain('**Assistant:**')` (no trailing content) with `expect(md).toContain('**Agent:**')`.
-3. Replace every occurrence of `expect(md).not.toContain('**Assistant:**')` with `expect(md).not.toContain('**Assistant:**')` — leave "not.toContain" assertions for "Assistant:" unchanged, as they now verify that the old label does not appear.
+3. Leave `expect(md).not.toContain('**Assistant:**')` assertions unchanged — they now correctly verify that the old label does not appear.
 4. Replace the regex match `md.match(/\*\*Assistant:\*\*/g)` with `md.match(/\*\*Agent:\*\*/g)`.
 
-The affected test cases are: "should render assistant turn with tools" (line 61), "should render thinking in details block" (line 88), "should render files modified" (line 113), "should not render empty sections" (line 137), "should render multiple turns with role prefixes" (line 177), "should skip empty assistant turns" (lines 214, 216), "should skip whitespace-only assistant turns" (line 238), and "should keep turn with only thinking" (line 259).
+The affected test cases (find them by name, not line number): "should render assistant turn with tools", "should render thinking in details block", "should render files modified", "should not render empty sections", "should render multiple turns with role prefixes", "should skip empty assistant turns" (both the regex match and the toContain assertion), "should skip whitespace-only assistant turns", and "should keep turn with only thinking".
 
 #### [ ] Task 3.2: Add new renderer tests for timestamp, agent name, skill name, and combinations
 
@@ -315,6 +315,34 @@ it('should not render skill annotation when skill name absent', () => {
   const md = renderSessionToMarkdown(session);
 
   expect(md).not.toContain('> **Skill:**');
+});
+```
+
+**Test: timestamp renders on user turn when present**
+
+```typescript
+it('should render timestamp on user turn when present', () => {
+  const session: NormalizedSession = {
+    providerName: 'claude-code',
+    providerDisplayName: 'Claude Code',
+    sessionId: 'test',
+    turns: [
+      {
+        role: 'user',
+        content: 'Hello.',
+        toolCalls: [],
+        filesRead: [],
+        filesModified: [],
+        timestamp: '2026-03-15T09:00:00.000Z',
+      },
+    ],
+  };
+
+  const md = renderSessionToMarkdown(session);
+
+  expect(md).toContain('**User:**');
+  expect(md).toContain('2026-03-15');
+  expect(md).toContain('09:00:00');
 });
 ```
 

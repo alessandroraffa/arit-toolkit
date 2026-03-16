@@ -1,6 +1,6 @@
 ---
 title: 'Enriched turn metadata in session archives'
-initiative: INIT-001
+initiative: INIT-001-enriched-turn-metadata
 status: 'draft'
 created: 2026-03-15
 references:
@@ -28,6 +28,7 @@ Included:
 - Extension of the normalized turn model with optional `timestamp`, `agentName`, and `skillName` fields
 - Change of the non-user role label from "Assistant" to "Agent" across all providers (breaking change)
 - Integration of `agentName` into the role label as `Agent(agent-name):`
+- Kebab-case normalization for both agent name and skill name values at parse time
 - Renderer updates to conditionally display timestamp, agent name, and skill name
 - Parser updates for providers that have the data available in their source format
 - Test coverage for the new fields and the role label change

@@ -1,23 +1,23 @@
 ---
 title: 'Enriched turn metadata in session archives'
-initiative: INIT-001-enriched-session-metadata
+initiative: INIT-001-enriched-turn-metadata
 status: 'draft'
 workspaces: []
 created: 2026-03-15
 references:
   - docs/specifications/SPEC-001-enriched-turn-metadata.md
-  - docs/initiatives/INIT-001-enriched-session-metadata.md
+  - docs/initiatives/INIT-001-enriched-turn-metadata.md
 ---
 
 ## Business requirements and constraints
 
 Per SPEC-001, the plan must satisfy these requirements:
 
-- The normalized turn model gains three optional fields: timestamp (ISO 8601 string), agent name (kebab-case string), and skill name (string).
+- The normalized turn model gains three optional fields: timestamp (ISO 8601 string), agent name (kebab-case string), and skill name (kebab-case string).
 - The role label for all non-user turns changes from "Assistant" to "Agent" (unconditional, all providers). When an agent name is present, the label becomes "Agent(agent-name):".
 - The renderer conditionally displays timestamp (human-readable, adjacent to the role label), agent name (in the role label), and skill name (as a visible annotation before content sections). Absent fields produce no placeholder output.
 - Only parsers for providers whose source format contains the data populate the new fields. Other parsers leave them undefined with no code changes required.
-- Invalid timestamps are treated as absent. Empty or whitespace-only agent names and skill names are treated as absent.
+- Invalid timestamps are treated as absent. Empty or whitespace-only agent names and skill names (after kebab-case normalization) are treated as absent.
 - The fields are independent: any combination of present/absent must render correctly.
 
 **Constraints from the project's TypeScript configuration.** The `exactOptionalPropertyTypes: true` compiler option means optional properties on the normalized turn interface must be populated by omission (not by assigning `undefined`). Parsers that do not populate the new fields simply omit them from the object literal, which is the pattern already established by the `thinking` field.
@@ -60,31 +60,32 @@ Per SPEC-001, the plan must satisfy these requirements:
    Motivated by INIT-001 objective 2. The renderer maps the internal `'assistant'` role to the display label "Agent" (or "Agent(agent-name):" when an agent name is present). The internal role union `'user'`/`'assistant'` is unchanged. Trade-off accepted: semantic gap between internal and display values, offset by zero-churn in parsers.
 
 3. **Populate the new fields in the Claude Code parser only.**
-   Motivated by INIT-001 objective scope. Among the supported providers, only Claude Code's JSONL format provides timestamps (on `user` and `assistant` events), subagent identity (in `Agent` tool_use blocks via the input's `subagent_type` field), and skill invocations (in `Skill` tool_use blocks via the input's `skill` field). Other parsers (Cline/Roo Code, Codex, Copilot Chat, Continue) do not have equivalent data in their source formats and require no changes.
+   Motivated by INIT-001 objective scope. Among the supported providers, only Claude Code's JSONL format provides timestamps (on `user` and `assistant` events), subagent identity (in `Agent` tool_use blocks via the input's `subagent_type` field), and skill invocations (in `Skill` tool_use blocks via the input's `skill` field). Other parsers (Cline/Roo Code, Codex, Copilot Chat, Continue) do not have equivalent data in their source formats and require no changes. Representative real JSONL data is available in existing archived sessions under `docs/archive/agent-sessions/` and in other projects under `~/dev/**/docs/archive/agent-sessions/` — these should be consulted during workstream execution to validate extraction logic against actual provider output.
 
 4. **Use built-in date formatting for timestamp display.**
    Motivated by the project's zero-runtime-dependency policy. The renderer formats ISO 8601 timestamps into a human-readable representation using built-in JavaScript date APIs. No external libraries are introduced.
 
 5. **Validate and sanitize metadata during parsing, not rendering.**
-   Motivated by SPEC-001 error handling requirements. Invalid ISO 8601 timestamps are treated as absent at parse time. Empty or whitespace-only agent and skill names are treated as absent at parse time. The renderer receives only valid values or no values, simplifying its conditional logic.
+   Motivated by SPEC-001 error handling requirements. Invalid ISO 8601 timestamps are treated as absent at parse time. Agent names and skill names are normalized to kebab-case at parse time (PascalCase/camelCase word boundaries split by hyphens, spaces and underscores replaced by hyphens, all lowercased); empty or whitespace-only values after normalization are treated as absent. The renderer receives only valid, normalized values or no values, simplifying its conditional logic.
 
 ## Concern assessment
 
-| Concern         | Classification | Addressed by | Notes                                                                                                                                                                                 |
-| --------------- | -------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Security        | IRRELEVANT     |              | No external APIs, no network I/O, no untrusted input beyond local session files already handled by existing parsers. The new fields are metadata extracted from the same local files. |
-| Privacy         | IRRELEVANT     |              | Timestamps, agent names, and skill names are metadata from local session files the user already owns. No new data collection, storage, or sharing is introduced.                      |
-| Compliance      | IRRELEVANT     |              | No regulated data categories affected.                                                                                                                                                |
-| Accessibility   | IRRELEVANT     |              | No user-facing UI changes; output is markdown text.                                                                                                                                   |
-| Observability   | IRRELEVANT     |              | No new services, background processes, or external dependencies.                                                                                                                      |
-| Resilience      | IRRELEVANT     |              | Graceful degradation is inherent: absent fields produce no output. Decision 5 ensures invalid data is filtered at parse time.                                                         |
-| Performance     | IRRELEVANT     |              | Marginal increase in string operations per turn; no measurable impact on archive generation.                                                                                          |
-| AI governance   | IRRELEVANT     |              | No AI/ML components introduced or modified.                                                                                                                                           |
-| i18n            | IRRELEVANT     |              | No user-facing translatable text introduced; timestamp format is locale-independent by design (decision 4).                                                                           |
-| Sustainability  | IRRELEVANT     |              | No compute-intensive workloads introduced.                                                                                                                                            |
-| Supply chain    | IRRELEVANT     |              | No new dependencies introduced (decision 4).                                                                                                                                          |
-| Maintainability | MEDIUM         |              | Monitor during workstreams. The normalized model grows by three optional properties; the established pattern for optional fields (omission-based) keeps the impact contained.         |
-| Quality         | MEDIUM         |              | Monitor during workstreams. Test coverage for the new fields and the role label change must meet the project's >=80% unit test coverage target.                                       |
+| Concern          | Classification | Addressed by | Notes                                                                                                                                                                                                                                                                                              |
+| ---------------- | -------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Security         | IRRELEVANT     |              | No external APIs, no network I/O, no untrusted input beyond local session files already handled by existing parsers. The new fields are metadata extracted from the same local files.                                                                                                              |
+| Privacy          | IRRELEVANT     |              | Timestamps, agent names, and skill names are metadata from local session files the user already owns. No new data collection, storage, or sharing is introduced.                                                                                                                                   |
+| Compliance       | IRRELEVANT     |              | No regulated data categories affected.                                                                                                                                                                                                                                                             |
+| Accessibility    | IRRELEVANT     |              | No user-facing UI changes; output is markdown text.                                                                                                                                                                                                                                                |
+| Observability    | IRRELEVANT     |              | No new services, background processes, or external dependencies.                                                                                                                                                                                                                                   |
+| Resilience       | IRRELEVANT     |              | Graceful degradation is inherent: absent fields produce no output. Decision 5 ensures invalid data is filtered at parse time.                                                                                                                                                                      |
+| Performance      | IRRELEVANT     |              | Marginal increase in string operations per turn; no measurable impact on archive generation.                                                                                                                                                                                                       |
+| AI governance    | IRRELEVANT     |              | No AI/ML components introduced or modified.                                                                                                                                                                                                                                                        |
+| i18n             | IRRELEVANT     |              | No user-facing translatable text introduced; timestamp format is locale-independent by design (decision 4).                                                                                                                                                                                        |
+| Sustainability   | IRRELEVANT     |              | No compute-intensive workloads introduced.                                                                                                                                                                                                                                                         |
+| Supply chain     | IRRELEVANT     |              | No new dependencies introduced (decision 4).                                                                                                                                                                                                                                                       |
+| Backward compat. | MEDIUM         | Decision 2   | The role label change from "Assistant:" to "Agent:" is an intentional breaking change affecting all newly archived sessions. Users with workflows that search for "Assistant:" will need to update. Mitigated by limiting the change to new archives only (existing files on disk are unaffected). |
+| Maintainability  | MEDIUM         |              | Monitor during workstreams. The normalized model grows by three optional properties; the established pattern for optional fields (omission-based) keeps the impact contained.                                                                                                                      |
+| Quality          | MEDIUM         |              | Monitor during workstreams. Test coverage for the new fields and the role label change must meet the project's >=80% unit test coverage target.                                                                                                                                                    |
 
 ## Increments
 
@@ -120,16 +121,16 @@ Per SPEC-001, the plan must satisfy these requirements:
 
 - Extend the Claude Code parser's internal event type definitions to include the `timestamp` field present on `user` and `assistant` JSONL events.
 - Extract the timestamp from each `user` and `assistant` event and populate the normalized turn's `timestamp` field. Validate the value as ISO 8601 at parse time; treat invalid values as absent per SPEC-001 error handling.
-- Detect `Agent` tool_use blocks (tool_use content blocks where the tool name is "Agent") and extract the subagent name from the block's `input.subagent_type` field. Normalize the value by trimming whitespace and lowercasing (e.g., `"Explore"` → `"explore"`) and populate the normalized turn's `agentName` field. Treat empty or whitespace-only values as absent.
-- Detect `Skill` tool_use blocks (tool_use content blocks where the tool name is "Skill") and extract the skill name from the block's `input.skill` field. Populate the normalized turn's `skillName` field. Treat empty or whitespace-only values as absent.
-- Add parser unit tests covering: timestamp extraction from user and assistant events, invalid timestamp handling, subagent name extraction from Agent tool_use blocks, skill name extraction from Skill tool_use blocks, empty/whitespace name handling, and events with combinations of the new fields.
+- Detect `Agent` tool_use blocks (tool_use content blocks where the tool name is "Agent") and extract the subagent name from the block's `input.subagent_type` field. Normalize the value to kebab-case (split PascalCase/camelCase word boundaries with hyphens, replace spaces and underscores with hyphens, lowercase; e.g., `"Explore"` → `"explore"`, `"CodeReview"` → `"code-review"`) and populate the normalized turn's `agentName` field. Treat empty or whitespace-only values after normalization as absent.
+- Detect `Skill` tool_use blocks (tool_use content blocks where the tool name is "Skill") and extract the skill name from the block's `input.skill` field. Normalize the value to kebab-case using the same function and populate the normalized turn's `skillName` field. Treat empty or whitespace-only values after normalization as absent.
+- Add parser unit tests covering: timestamp extraction from user and assistant events, invalid timestamp handling, subagent name extraction from Agent tool_use blocks with kebab-case normalization (including PascalCase input), skill name extraction from Skill tool_use blocks with kebab-case normalization, empty/whitespace name handling, and events with combinations of the new fields.
 
 **Verifiable output.** All unit tests pass, including the new parser tests. Sessions parsed from Claude Code JSONL data with timestamps, Agent tool_use blocks, and Skill tool_use blocks produce normalized turns with the corresponding metadata fields populated. The quality gate (type check, lint, unit tests) passes.
 
 ## Risks and mitigations
 
 - **Risk: Claude Code JSONL format variation.** The JSONL event structure for `Agent` and `Skill` tool_use blocks is based on observed data. If the actual format differs across Claude Code versions, the parser may fail to extract subagent or skill data.
-  **Mitigation.** The extraction logic treats unrecognized structures as absent fields (consistent with SPEC-001 error handling). No parsing failures occur; the data is simply omitted from the archive. The parser tests should use representative JSONL samples.
+  **Mitigation.** The extraction logic treats unrecognized structures as absent fields (consistent with SPEC-001 error handling). No parsing failures occur; the data is simply omitted from the archive. The parser tests should use representative JSONL samples. Real archived sessions are available under `docs/archive/agent-sessions/` and in sibling projects under `~/dev/**/docs/archive/agent-sessions/` — these should be consulted during execution to validate against actual provider output.
 
 - **Risk: Breaking change to existing archives.** The role label change from "Assistant:" to "Agent:" alters the output format for all providers. Users who search or post-process archived markdown files by the "Assistant:" label will need to update their workflows.
   **Mitigation.** This is an intentional breaking change documented in the initiative and specification. It affects only newly archived sessions, not existing files on disk.
