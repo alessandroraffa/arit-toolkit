@@ -1,7 +1,7 @@
 // ARIT Toolkit workspace configuration
 // Managed by the ARIT Toolkit extension
 {
-  "enabled": false,
+  "enabled": true,
   "agentSessionsArchiving": {
     "enabled": true,
     "archivePath": "docs/archive/agent-sessions",
