@@ -1,3 +1,9 @@
+## [1.16.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.15.2...v1.16.0) (2026-03-18)
+
+### Features
+
+* **agentSessionsArchiving:** add spec, initiative, and plan for full session archiving ([ee12754](https://github.com/alessandroraffa/arit-toolkit/commit/ee127548d936cafc12da815307b51776c59bb4a0))
+
 ## [1.15.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.15.1...v1.15.2) (2026-03-16)
 
 ### Bug Fixes
