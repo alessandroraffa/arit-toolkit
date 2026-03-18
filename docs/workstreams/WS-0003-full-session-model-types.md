@@ -2,7 +2,7 @@
 title: 'Full session archiving — normalized model extension and companion data types'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0003
-status: idle
+status: completed
 workspaces: []
 dependencies: []
 created: 2026-03-18
@@ -26,9 +26,9 @@ Re-read this section at the start of every execution session. Each trigger fires
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Extend the normalized session model and introduce companion data types
+### [x] Activity 1: Extend the normalized session model and introduce companion data types
 
-#### [ ] Task 1.1: Add `SubagentSession` and `CompactionSummary` types to `src/features/agentSessionsArchiving/markdown/types.ts`
+#### [x] Task 1.1: Add `SubagentSession` and `CompactionSummary` types to `src/features/agentSessionsArchiving/markdown/types.ts`
 
 Open `src/features/agentSessionsArchiving/markdown/types.ts`. After the `NormalizedTurn` interface and before the `NormalizedSession` interface, insert the following two interfaces in this order:
 
@@ -49,7 +49,7 @@ export interface SubagentSession {
 
 Both interfaces use `readonly` on all fields. `description` and `compactionSummaries` are optional, following the omission-based pattern established in this project (`exactOptionalPropertyTypes: true` — do not assign `undefined` explicitly). Export both interfaces.
 
-#### [ ] Task 1.2: Extend `NormalizedSession` with two optional fields
+#### [x] Task 1.2: Extend `NormalizedSession` with two optional fields
 
 In the same file (`src/features/agentSessionsArchiving/markdown/types.ts`), locate the `NormalizedSession` interface. After the existing `readonly turns: readonly NormalizedTurn[];` line, add:
 
@@ -60,7 +60,7 @@ readonly compactionSummaries?: readonly CompactionSummary[];
 
 Both fields are optional. Existing code constructing `NormalizedSession` objects — in parser implementations, parser tests, and renderer tests — requires no modification because the new fields are absent by omission.
 
-#### [ ] Task 1.3: Create `src/features/agentSessionsArchiving/markdown/companionDataTypes.ts` with the `CompanionDataContext` type
+#### [x] Task 1.3: Create `src/features/agentSessionsArchiving/markdown/companionDataTypes.ts` with the `CompanionDataContext` type
 
 Create a new file at `src/features/agentSessionsArchiving/markdown/companionDataTypes.ts`. The file must define and export the following interfaces:
 
@@ -85,22 +85,28 @@ export interface CompanionDataContext {
 
 `SubagentEntry.content` is the raw JSONL string of a subagent transcript. `SubagentEntry.metaContent` is the raw string content of the `.meta.json` file when present; absent by omission otherwise. `CompactionEntry.mtime` is the file modification time in milliseconds (used for chronological ordering). `toolResultMap` keys are tool-result file identifiers (bare filename without extension); values are file content strings.
 
-#### [ ] Task 1.4: Run the quality gate to verify backward compatibility
+#### [x] Task 1.4: Run the quality gate to verify backward compatibility
 
 Run `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must exit with code 0. If `check-types` reports errors in any existing parser, renderer, or test file, stop and record the error in "Divergences and notes" before taking any corrective action. The new fields are optional; no existing compilation unit should require changes.
 
-#### [ ] Task 1.5: Update impacted documentation
+#### [x] Task 1.5: Update impacted documentation
 
 Update the workstream file checkboxes. No other documentation changes are required for this activity — the new interfaces are self-documenting.
 
-#### [ ] Task 1.6: Commit changes
+#### [x] Task 1.6: Commit changes
 
 Commit `src/features/agentSessionsArchiving/markdown/types.ts`, `src/features/agentSessionsArchiving/markdown/companionDataTypes.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): extend normalized session model and introduce companion data types`.
 
 ## Divergences and notes
 
-_No divergences recorded._
+- **Task 1.4 (quality gate)**: The markdownlint step failed because `.claude/compaction-state/` (a Claude Code system directory gitignored at project root) was not excluded from the markdownlint glob. Added `.claude/**` to both `.markdownlint-cli2.jsonc` ignores and `.markdownlintignore`. This is a pre-existing configuration gap — the `.claude/` directory is already in `.gitignore` but was never excluded from markdownlint. The fix is non-breaking (only adds an exclusion) and does not affect any source logic. **Classification: Codebase drift** — the markdownlint config did not account for Claude Code system artifacts that appear at project root.
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergences by category:**
+
+- Codebase drift: 1 (markdownlint config did not exclude the `.claude/` system directory)
+
+**Proposed improvement:** Add a pre-execution verification step to the workstream authoring checklist: verify that the quality gate passes clean on the current branch before beginning implementation tasks. This would surface config gaps (such as the missing `.claude/**` exclusion) as a separate concern rather than mixing them with implementation divergences.
+
+**Assessment:** No systemic issues. The single divergence was an isolated configuration gap unrelated to the workstream's implementation scope. All type contracts were introduced exactly as specified. All existing unit tests (682) passed without modification, confirming backward compatibility.
