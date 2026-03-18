@@ -2,7 +2,7 @@
 title: 'Full session archiving — provider extension and change detection'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0007
-status: in-progress
+status: completed
 workspaces: []
 dependencies: [WS-0004]
 created: 2026-03-18
@@ -104,9 +104,9 @@ Update the workstream file checkboxes.
 
 Commit `src/features/agentSessionsArchiving/types.ts`, `src/features/agentSessionsArchiving/providers/claudeCodeProvider.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): extend session file type and claude code provider with composite mtime and companion watch patterns`.
 
-### [ ] Activity 2: Update archive service change detection and add unit tests
+### [x] Activity 2: Update archive service change detection and add unit tests
 
-#### [ ] Task 2.1: Update change detection in `archiveService.ts` to use `compositeMtime`
+#### [x] Task 2.1: Update change detection in `archiveService.ts` to use `compositeMtime`
 
 Open `src/features/agentSessionsArchiving/archiveService.ts`. Read it in full before editing.
 
@@ -138,7 +138,7 @@ this.lastArchivedMap.set(session.archiveName, {
 
 This ensures that when a companion file changes (increasing `compositeMtime` above the stored value), the session is re-archived. When `compositeMtime` is absent (non-Claude-Code providers), `session.mtime` is used — existing behavior preserved.
 
-#### [ ] Task 2.2: Add unit tests for provider companion mtime and watch patterns
+#### [x] Task 2.2: Add unit tests for provider companion mtime and watch patterns
 
 Open `test/unit/features/agentSessionsArchiving/providers/claudeCodeProvider.test.ts` (currently 112 lines). Read it before modifying.
 
@@ -154,7 +154,7 @@ Add the following four tests to the existing `describe('ClaudeCodeProvider', () 
 
 Note: `workspace.fs.readDirectory` is called multiple times per session in these tests — once for the project directory, once for the companion directory, and once each for the `subagents/` and `tool-results/` subdirectories. Use `vi.fn().mockResolvedValueOnce(...)` (four times) to sequence responses. Verify the call order by reading `claudeCodeProvider.ts` after Task 1.3 is implemented.
 
-#### [ ] Task 2.3: Add unit tests for archive service composite mtime change detection
+#### [x] Task 2.3: Add unit tests for archive service composite mtime change detection
 
 Open `test/unit/features/agentSessionsArchiving/archiveService.test.ts`. Read it before modifying. Add the following two tests inside the existing `describe('AgentSessionArchiveService', () => { ... })` block in a new nested `describe('composite mtime change detection', () => { ... })`:
 
@@ -164,15 +164,15 @@ Open `test/unit/features/agentSessionsArchiving/archiveService.test.ts`. Read it
 
 Use `createMockSession({ mtime: 1000, compositeMtime: 2000 })` — `createMockSession` uses `Partial<SessionFile>` overrides so the new field can be added without modifying the helper.
 
-#### [ ] Task 2.4: Run the quality gate
+#### [x] Task 2.4: Run the quality gate
 
 Run `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must exit with code 0. If the archiveService tests fail because `createMockSession` does not forward the `compositeMtime` field, verify that the `SessionFile` type now includes the field and that `createMockSession`'s spread pattern (`...overrides`) already covers it.
 
-#### [ ] Task 2.5: Update impacted documentation
+#### [x] Task 2.5: Update impacted documentation
 
 Update the workstream file checkboxes. Update `docs/technical-context.md` if the session file model section describes `SessionFile` fields — add `compositeMtime` to the description. If the technical context does not describe individual fields at this level of detail, no update is needed.
 
-#### [ ] Task 2.6: Commit changes
+#### [x] Task 2.6: Commit changes
 
 Commit `src/features/agentSessionsArchiving/archiveService.ts`, `test/unit/features/agentSessionsArchiving/providers/claudeCodeProvider.test.ts`, `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): update change detection to use composite mtime for companion file awareness`.
 
@@ -184,4 +184,19 @@ Commit `src/features/agentSessionsArchiving/archiveService.ts`, `test/unit/featu
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergence count by cause:**
+
+- ESLint compliance (1): `computeCompositeMtime` exceeded `max-statements` limit (22 vs 15). Resolved by extracting `maxMtimeInSubdir` helper method. Structural refactoring, no behavior change.
+- Test completeness (1): existing `getWatchPatterns` test asserted length 1 and would have broken after Task 1.4. Updated proactively before the quality gate, not after failure. The workstream did not mention this test explicitly — it was an implied consequence of Task 1.4.
+
+**Recurring patterns across this plan (WS-0003 to WS-0007):**
+
+- ESLint `max-statements` enforcement consistently required extracting helper functions. This happened in WS-0005 (parser), WS-0006 (renderer), and now WS-0007 (provider). The pattern is predictable: any method processing a data structure with multiple conditional branches tends to exceed 15 statements. Future workstream authors should account for this when describing implementation methods and suggest the extraction point upfront.
+- The `mockResolvedValueOnce` call sequencing for multi-call mocks required careful analysis of the exact `readDirectory`/`stat` call order introduced by the new implementation. This is invisible to the workstream description, which naturally focuses on behavior. Debugging call order is a recurring friction point for this codebase.
+
+**Proposed improvements:**
+
+- Workstream templates could include a "call sequence analysis" subsection in tasks that introduce new mock-dependent behavior. A brief ordered list (e.g., `readDirectory(projectDir)` → `stat(jsonl)` → `readDirectory(companionDir)` → ...) would eliminate the need for the executor to reconstruct it from source during test authoring.
+- When tasks modify existing tests as a natural consequence of code changes (e.g., extending a return value from 1 to N items), the workstream should list those tests explicitly under "tests to update" rather than only listing "tests to add."
+
+**Assessment:** WS-0007 executed cleanly in two activities. Both quality gates passed on the first attempt after the ESLint refactoring. Test coverage on `claudeCodeProvider.ts` improved from 73.63% to 96.36% statements. The archive service change detection is now companion-aware with full backward compatibility. No rework required. No additional workstreams are needed — all plan increments are implemented.

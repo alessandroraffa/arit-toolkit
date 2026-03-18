@@ -124,7 +124,8 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     archiveUri: vscode.Uri
   ): Promise<void> {
     const entry = this.lastArchivedMap.get(session.archiveName);
-    if (entry?.mtime === session.mtime) {
+    const effectiveMtime = session.compositeMtime ?? session.mtime;
+    if (entry?.mtime === effectiveMtime) {
       return;
     }
 
@@ -141,7 +142,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     const archiveFileName = await this.writeArchiveFile(session, archiveUri, timestamp);
     if (archiveFileName) {
       this.lastArchivedMap.set(session.archiveName, {
-        mtime: session.mtime,
+        mtime: effectiveMtime,
         archiveFileName,
       });
       this.logger.debug(`Archived ${session.displayName} → ${archiveFileName}`);
