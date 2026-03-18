@@ -2,6 +2,7 @@ export interface SubagentEntry {
   readonly agentId: string;
   readonly content: string;
   readonly metaContent?: string;
+  readonly unreadable?: true;
 }
 
 export interface CompactionEntry {

@@ -2,7 +2,7 @@
 title: 'Full session archiving — companion data resolution layer'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0004
-status: idle
+status: in-progress
 workspaces: []
 dependencies: [WS-0003]
 created: 2026-03-18
@@ -26,9 +26,9 @@ Re-read this section at the start of every execution session. Each trigger fires
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Implement the companion data resolver module
+### [x] Activity 1: Implement the companion data resolver module
 
-#### [ ] Task 1.1: Create `src/features/agentSessionsArchiving/companionDataResolver.ts`
+#### [x] Task 1.1: Create `src/features/agentSessionsArchiving/companionDataResolver.ts`
 
 Create a new file at `src/features/agentSessionsArchiving/companionDataResolver.ts`. The file must export a single async function `resolveCompanionData` with this signature:
 
@@ -51,7 +51,7 @@ If the companion directory does not exist (the `readDirectory` call throws), ret
 return { subagentEntries: [], toolResultMap: new Map(), compactionEntries: [] };
 ```
 
-#### [ ] Task 1.2: Extend `SubagentEntry` and implement companion directory enumeration helpers
+#### [x] Task 1.2: Extend `SubagentEntry` and implement companion directory enumeration helpers
 
 Before implementing the three helpers, extend the `SubagentEntry` interface in `src/features/agentSessionsArchiving/markdown/companionDataTypes.ts`: open the file, locate the `SubagentEntry` interface, and add `readonly unreadable?: true;` after `readonly metaContent?: string;`.
 
@@ -65,7 +65,7 @@ Within `companionDataResolver.ts`, implement three private (non-exported) async 
 
 **New pattern note:** The `readDirectory` + sequential `readFile` pattern is new in this module. Each `readFile` call returns `Uint8Array`; decode with `new TextDecoder().decode(bytes)`. Each `stat` call returns a `vscode.FileStat` with an `mtime` number field in milliseconds.
 
-#### [ ] Task 1.3: Wire the three helpers into `resolveCompanionData`
+#### [x] Task 1.3: Wire the three helpers into `resolveCompanionData`
 
 In `resolveCompanionData`, after confirming the companion directory exists, call the three helpers sequentially:
 
@@ -78,11 +78,11 @@ return { subagentEntries, toolResultMap, compactionEntries };
 
 If the companion directory `readDirectory` call succeeds but all three helpers return empty results (no matching files found), return a context with the three empty collections. Log a debug-level message via `logger.debug` reporting the counts: number of subagent entries, tool-result entries, and compaction entries found.
 
-#### [ ] Task 1.4: Update impacted documentation
+#### [x] Task 1.4: Update impacted documentation
 
 Update the workstream file checkboxes. No other documentation changes are required for this activity.
 
-#### [ ] Task 1.5: Commit changes
+#### [x] Task 1.5: Commit changes
 
 Commit `src/features/agentSessionsArchiving/companionDataResolver.ts`, `src/features/agentSessionsArchiving/markdown/companionDataTypes.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): introduce companion data resolver module`.
 
