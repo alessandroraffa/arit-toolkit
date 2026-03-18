@@ -2,7 +2,7 @@
 title: 'Full session archiving — provider extension and change detection'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0007
-status: idle
+status: in-progress
 workspaces: []
 dependencies: [WS-0004]
 created: 2026-03-18
@@ -26,9 +26,9 @@ Re-read this section at the start of every execution session. Each trigger fires
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Extend `SessionFile` type and update `ClaudeCodeProvider`
+### [x] Activity 1: Extend `SessionFile` type and update `ClaudeCodeProvider`
 
-#### [ ] Task 1.1: Add `compositeMtime` to `SessionFile` in `src/features/agentSessionsArchiving/types.ts`
+#### [x] Task 1.1: Add `compositeMtime` to `SessionFile` in `src/features/agentSessionsArchiving/types.ts`
 
 Open `src/features/agentSessionsArchiving/types.ts`. Read it in full before editing. Add one optional field to the `SessionFile` interface after `readonly mtime: number;`:
 
@@ -38,7 +38,7 @@ readonly compositeMtime?: number;
 
 `compositeMtime` is the maximum `mtime` across the main JSONL file and all companion files. When absent, the archive service uses `mtime` for change detection. No other fields or interfaces in this file require modification. Existing provider implementations that do not set `compositeMtime` remain valid because the field is optional.
 
-#### [ ] Task 1.2: Implement companion directory mtime computation in `ClaudeCodeProvider`
+#### [x] Task 1.2: Implement companion directory mtime computation in `ClaudeCodeProvider`
 
 Open `src/features/agentSessionsArchiving/providers/claudeCodeProvider.ts` (currently 62 lines). Read it in full before editing.
 
@@ -63,7 +63,7 @@ The method:
 
 The companion directory URI is derived the same way as in `companionDataResolver.ts`: same parent as the session JSONL, named with the session ID (filename without extension). Derive it using `vscode.Uri.file(path.join(path.dirname(sessionUri.fsPath), sessionId))`.
 
-#### [ ] Task 1.3: Extend `toSessionFile` to include `compositeMtime`
+#### [x] Task 1.3: Extend `toSessionFile` to include `compositeMtime`
 
 In `claudeCodeProvider.ts`, modify the `toSessionFile` private method. After obtaining `times` from `getFileTimes(uri)`, derive the session ID from `name` using `path.parse(name).name`. Construct the companion directory URI as described in Task 1.2. Call `await this.computeCompositeMtime(times.mtime, companionDirUri)` to get `compositeMtime`. Include it in the returned `SessionFile` object:
 
@@ -82,7 +82,7 @@ return {
 
 `exactOptionalPropertyTypes: true` permits assigning a `number` to the `compositeMtime` field unconditionally — `computeCompositeMtime` always returns a number (at minimum `mainMtime`), so the field is always present on `ClaudeCodeProvider` sessions.
 
-#### [ ] Task 1.4: Extend `getWatchPatterns` in `ClaudeCodeProvider` to cover companion directories
+#### [x] Task 1.4: Extend `getWatchPatterns` in `ClaudeCodeProvider` to cover companion directories
 
 In `claudeCodeProvider.ts`, locate `getWatchPatterns`. Currently it returns one pattern: `{ baseUri, glob: '*.jsonl' }`. Extend it to return two additional patterns:
 
@@ -96,11 +96,11 @@ return [
 
 `baseUri` is the project directory URI. The glob `*/subagents/*.jsonl` matches subagent transcript files in any session's companion directory. The glob `*/tool-results/*` matches any tool-result file in any session's companion directory. The `SessionFileWatcher` already supports multiple patterns per provider — no changes to `sessionFileWatcher.ts` are required.
 
-#### [ ] Task 1.5: Update impacted documentation
+#### [x] Task 1.5: Update impacted documentation
 
 Update the workstream file checkboxes.
 
-#### [ ] Task 1.6: Commit changes
+#### [x] Task 1.6: Commit changes
 
 Commit `src/features/agentSessionsArchiving/types.ts`, `src/features/agentSessionsArchiving/providers/claudeCodeProvider.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): extend session file type and claude code provider with composite mtime and companion watch patterns`.
 
@@ -178,7 +178,9 @@ Commit `src/features/agentSessionsArchiving/archiveService.ts`, `test/unit/featu
 
 ## Divergences and notes
 
-_No divergences recorded._
+**Divergence D1 (Activity 1, Task 1.2) — helper method extracted for ESLint compliance.** The workstream prescribed a single `computeCompositeMtime` method. ESLint `max-statements` (limit: 15) flagged the implementation as having 22 statements. To resolve the warning without suppressing it, the subdirectory scanning logic was extracted into a private `maxMtimeInSubdir` helper method. Behavior is identical; the refactoring is purely structural. No user-facing change. Resolved autonomously.
+
+**Divergence D2 (Activity 1, Task 1.4) — existing watch-pattern test updated.** The workstream did not explicitly mention that the existing `'should return watch patterns for project directory'` test in `claudeCodeProvider.test.ts` asserts `patterns.toHaveLength(1)` and would break after extending `getWatchPatterns` to return 3 patterns. The test was updated to assert length 3 and verify the two new globs. This is a necessary consequence of Task 1.4 and is consistent with the new Task 2.4 test described in Activity 2. Resolved autonomously.
 
 ### Reflection
 
