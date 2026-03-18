@@ -13,6 +13,7 @@
     ".cache/**",
     "logs/**",
     ".vscode-test/**",
+    ".claude/**",
     "docs/archive/**",
     "private/**",
     "CHANGELOG.md",

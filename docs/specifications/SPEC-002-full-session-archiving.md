@@ -1,7 +1,7 @@
 ---
 title: 'Claude Code provider — full session archiving (subagents and tool results)'
 spec: SPEC-002
-status: draft
+status: approved
 workspaces: []
 created: 2026-03-18
 references:

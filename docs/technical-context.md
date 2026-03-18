@@ -440,13 +440,50 @@ content and check if it references the workspace root path.
 or `{ status: 'unrecognized', reason: string }`. When a parser cannot
 interpret a file (unexpected format or schema), `ArchiveService` logs a
 warning and falls back to copying the raw file instead of generating
-markdown.
+markdown. Parsers accept an optional `CompanionDataContext` second
+parameter; parsers that do not use it ignore the parameter.
 
 **JSONL delta reconstruction (`copilotJsonlReconstructor.ts`):** GitHub
 Copilot Chat stores newer sessions as append-only JSONL delta files. The
 reconstructor processes three event kinds — `0` (init), `1` (set field),
 `2` (append to field) — to produce a complete in-memory session object
 before it is passed to the standard `copilotChatParser`.
+
+**Companion data resolution (`companionDataResolver.ts`):** Before
+invoking the parser for a Claude Code session, the archive service calls
+the companion data resolver. The resolver derives the companion directory
+URI (same parent as the main JSONL, session ID as directory name),
+enumerates subagent transcript files, subagent metadata files,
+tool-result files, and compaction files within it, reads their contents
+sequentially, and assembles a `CompanionDataContext` object. The
+assembled context is passed to the parser as its second argument. When
+the companion directory is absent or empty, an empty context is produced
+and the parser behaves identically to the current implementation.
+
+**Companion data types:**
+
+- `CompanionDataContext` — structured object passed from the resolution
+  layer to the parser: list of subagent entries (each with transcript
+  content string and optional metadata content), tool-result content map
+  keyed by reference identifier, and list of compaction entries (content
+  string plus modification time for ordering).
+- `SubagentSession` — field on `NormalizedSession`: agent ID, agent type,
+  optional description, normalized turns (same type as the main
+  session's turns), and optional compaction summaries.
+- `CompactionSummary` — summary text string and timestamp string; used
+  both on the main session and on each `SubagentSession`.
+
+**New modules introduced for companion data support:**
+
+- `companionDataResolver.ts` — companion directory discovery and
+  sequential file reading; produces `CompanionDataContext`.
+- `archiveServiceHelpers.ts` — helper functions extracted from
+  `archiveService.ts` to keep the service within the 250-line limit.
+- `claudeCodeParserCompanion.ts` — companion-aware processing logic
+  for the Claude Code parser (subagent transcript parsing, tool-result
+  substitution, compaction summary extraction, metadata fallback chain).
+- `rendererSubagent.ts` — subagent section and compaction summary
+  rendering helpers extracted from the main renderer.
 
 **Replacement semantics (not accumulation):** Each source session has
 exactly one archived file at any time. When the source's `mtime`
@@ -457,9 +494,13 @@ timestamp prefix is created.
 where the timestamp is derived from the session file's creation time
 (`ctime`), not the modification time or the current time.
 
-**Change detection:** When a session file's `mtime` changes, the old
-archive file is deleted and a new one (with the same ctime-based prefix)
-is created with updated content.
+**Change detection:** When a session file's `mtime` (or, for Claude Code
+sessions, `compositeMtime`) changes, the old archive file is deleted and
+a new one (with the same ctime-based prefix) is created with updated
+content. The `compositeMtime` field on `SessionFile` carries the maximum
+mtime across the main JSONL and all companion files; the archive service
+uses `compositeMtime ?? mtime` for the comparison, ensuring providers
+that do not report companion data are unaffected.
 
 **Date cutoff filtering:** The optional `ignoreSessionsBefore` field
 (format `YYYYMMDD`) sets a UTC date cutoff. Sessions whose creation time

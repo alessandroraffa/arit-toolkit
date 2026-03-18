@@ -1,3 +1,5 @@
+import type { CompanionDataContext } from './companionDataTypes';
+
 export interface ToolCall {
   readonly name: string;
   readonly input?: string;
@@ -16,11 +18,27 @@ export interface NormalizedTurn {
   readonly filesModified: readonly string[];
 }
 
+export interface CompactionSummary {
+  readonly summaryText: string;
+  readonly timestamp: string;
+}
+
+export interface SubagentSession {
+  readonly agentId: string;
+  readonly agentType: string;
+  readonly description?: string;
+  readonly turns: readonly NormalizedTurn[];
+  readonly unreadable?: true;
+  readonly compactionSummaries?: readonly CompactionSummary[];
+}
+
 export interface NormalizedSession {
   readonly providerName: string;
   readonly providerDisplayName: string;
   readonly sessionId: string;
   readonly turns: readonly NormalizedTurn[];
+  readonly subagentSessions?: readonly SubagentSession[];
+  readonly compactionSummaries?: readonly CompactionSummary[];
 }
 
 /**
@@ -36,5 +54,9 @@ export type ParseResult =
 
 export interface SessionParser {
   readonly providerName: string;
-  parse(content: string, sessionId: string): ParseResult;
+  parse(
+    content: string,
+    sessionId: string,
+    companionContext?: CompanionDataContext
+  ): ParseResult;
 }

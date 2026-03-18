@@ -5,11 +5,14 @@ import type { Logger } from '../../core/logger';
 import { generateTimestamp, parseYYYYMMDD } from '../../utils';
 import type { SessionParser, ParseResult } from './markdown';
 import { getParserForProvider, renderSessionToMarkdown } from './markdown';
-
-interface ArchivedEntry {
-  mtime: number;
-  archiveFileName: string;
-}
+import {
+  type ArchivedEntry,
+  moveArchive,
+  deduplicateAndHydrate,
+  ensureDirectory,
+  deleteFile,
+} from './archiveServiceHelpers';
+import { resolveCompanionData } from './companionDataResolver';
 
 export class AgentSessionArchiveService implements vscode.Disposable {
   private intervalHandle: ReturnType<typeof setInterval> | undefined;
@@ -65,7 +68,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       return;
     }
     if (oldConfig.archivePath !== newConfig.archivePath) {
-      await this.moveArchive(oldConfig.archivePath, newConfig.archivePath);
+      const oldUri = vscode.Uri.joinPath(this.workspaceRootUri, oldConfig.archivePath);
+      const newUri = vscode.Uri.joinPath(this.workspaceRootUri, newConfig.archivePath);
+      await moveArchive(oldUri, newUri, this.logger);
     }
     this.start(newConfig);
   }
@@ -79,7 +84,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this._currentConfig.archivePath
     );
     if (this._needsDedup) {
-      await this.deduplicateAndHydrate(archiveUri);
+      await deduplicateAndHydrate(archiveUri, this.lastArchivedMap, this.logger);
       this._needsDedup = false;
     }
     await this.archiveFromProviders(archiveUri);
@@ -119,21 +124,25 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     archiveUri: vscode.Uri
   ): Promise<void> {
     const entry = this.lastArchivedMap.get(session.archiveName);
-    if (entry?.mtime === session.mtime) {
+    const effectiveMtime = session.compositeMtime ?? session.mtime;
+    if (entry?.mtime === effectiveMtime) {
       return;
     }
 
-    await this.ensureDirectory(archiveUri);
+    await ensureDirectory(archiveUri, this.logger);
     const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.ctime));
 
     if (entry) {
-      await this.deleteFile(vscode.Uri.joinPath(archiveUri, entry.archiveFileName));
+      await deleteFile(
+        vscode.Uri.joinPath(archiveUri, entry.archiveFileName),
+        this.logger
+      );
     }
 
     const archiveFileName = await this.writeArchiveFile(session, archiveUri, timestamp);
     if (archiveFileName) {
       this.lastArchivedMap.set(session.archiveName, {
-        mtime: session.mtime,
+        mtime: effectiveMtime,
         archiveFileName,
       });
       this.logger.debug(`Archived ${session.displayName} → ${archiveFileName}`);
@@ -178,7 +187,8 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   ): Promise<ParseResult> {
     const rawBytes = await vscode.workspace.fs.readFile(session.uri);
     const rawContent = new TextDecoder().decode(rawBytes);
-    return parser.parse(rawContent, session.archiveName);
+    const companionContext = await resolveCompanionData(session.uri, this.logger);
+    return parser.parse(rawContent, session.archiveName, companionContext);
   }
 
   private async copyRawArchive(
@@ -195,101 +205,6 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     } catch (err) {
       this.logger.error(`Failed to archive ${session.displayName}: ${String(err)}`);
       return undefined;
-    }
-  }
-
-  private async moveArchive(oldPath: string, newPath: string): Promise<void> {
-    const oldUri = vscode.Uri.joinPath(this.workspaceRootUri, oldPath);
-    const newUri = vscode.Uri.joinPath(this.workspaceRootUri, newPath);
-
-    let entries: [string, vscode.FileType][];
-    try {
-      entries = await vscode.workspace.fs.readDirectory(oldUri);
-    } catch {
-      this.logger.debug(`Old archive directory not found, skipping move: ${oldPath}`);
-      return;
-    }
-
-    await this.ensureDirectory(newUri);
-    for (const [name, type] of entries) {
-      if (type !== vscode.FileType.File) {
-        continue;
-      }
-      await vscode.workspace.fs.copy(
-        vscode.Uri.joinPath(oldUri, name),
-        vscode.Uri.joinPath(newUri, name)
-      );
-    }
-    await vscode.workspace.fs.delete(oldUri, { recursive: true });
-    this.logger.info(`Moved archive from ${oldPath} to ${newPath}`);
-  }
-
-  private async deduplicateAndHydrate(archiveUri: vscode.Uri): Promise<void> {
-    let entries: [string, vscode.FileType][];
-    try {
-      entries = await vscode.workspace.fs.readDirectory(archiveUri);
-    } catch {
-      return;
-    }
-    const grouped = this.groupArchiveFiles(entries);
-    for (const [archiveName, files] of grouped) {
-      if (files.length > 1) {
-        await this.removeDuplicates(archiveUri, files);
-      }
-      const best = files[0];
-      if (best && !this.lastArchivedMap.has(archiveName)) {
-        this.lastArchivedMap.set(archiveName, { mtime: 0, archiveFileName: best.name });
-      }
-    }
-  }
-
-  private groupArchiveFiles(
-    entries: [string, vscode.FileType][]
-  ): Map<string, { ts: string; name: string }[]> {
-    const PATTERN = /^(\d{12})-(.+)\.\w+$/;
-    const groups = new Map<string, { ts: string; name: string }[]>();
-    for (const [name, type] of entries) {
-      if (type !== vscode.FileType.File) {
-        continue;
-      }
-      const m = PATTERN.exec(name);
-      if (!m?.[1] || !m[2]) {
-        continue;
-      }
-      const list = groups.get(m[2]) ?? [];
-      list.push({ ts: m[1], name });
-      groups.set(m[2], list);
-    }
-    return groups;
-  }
-
-  private async removeDuplicates(
-    archiveUri: vscode.Uri,
-    files: { ts: string; name: string }[]
-  ): Promise<void> {
-    files.sort((a, b) => b.ts.localeCompare(a.ts));
-    for (let i = 1; i < files.length; i++) {
-      const dup = files[i];
-      if (dup) {
-        await this.deleteFile(vscode.Uri.joinPath(archiveUri, dup.name));
-        this.logger.info(`Removed duplicate archive: ${dup.name}`);
-      }
-    }
-  }
-
-  private async ensureDirectory(uri: vscode.Uri): Promise<void> {
-    try {
-      await vscode.workspace.fs.createDirectory(uri);
-    } catch (err) {
-      this.logger.debug(`ensureDirectory: ${String(err)}`);
-    }
-  }
-
-  private async deleteFile(uri: vscode.Uri): Promise<void> {
-    try {
-      await vscode.workspace.fs.delete(uri);
-    } catch (err) {
-      this.logger.debug(`deleteFile: ${String(err)}`);
     }
   }
 }

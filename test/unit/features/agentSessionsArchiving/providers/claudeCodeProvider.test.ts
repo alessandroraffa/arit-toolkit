@@ -105,8 +105,76 @@ describe('ClaudeCodeProvider', () => {
   it('should return watch patterns for project directory', () => {
     const patterns = provider.getWatchPatterns('/Users/dev/my-project');
 
-    expect(patterns).toHaveLength(1);
+    expect(patterns).toHaveLength(3);
     expect(patterns[0]!.baseUri.fsPath).toContain('-Users-dev-my-project');
     expect(patterns[0]!.glob).toBe('*.jsonl');
+    expect(patterns[1]!.glob).toBe('*/subagents/*.jsonl');
+    expect(patterns[2]!.glob).toBe('*/tool-results/*');
+  });
+
+  it('should set compositeMtime equal to mtime when companion directory does not exist', async () => {
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([['session1.jsonl', FileType.File]])
+      .mockRejectedValueOnce(new Error('not found'));
+    workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
+
+    const sessions = await provider.findSessions('/my/project');
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]!.compositeMtime).toBe(1000);
+    expect(sessions[0]!.mtime).toBe(1000);
+  });
+
+  it('should set compositeMtime to max across main and companion files', async () => {
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([['session1.jsonl', FileType.File]])
+      .mockResolvedValueOnce([
+        ['subagents', FileType.Directory],
+        ['tool-results', FileType.Directory],
+      ])
+      .mockResolvedValueOnce([['agent-abc.jsonl', FileType.File]])
+      .mockResolvedValueOnce([['toolu_xyz.txt', FileType.File]]);
+    workspace.fs.stat = vi
+      .fn()
+      .mockResolvedValueOnce({ mtime: 1000, ctime: 900 })
+      .mockResolvedValueOnce({ mtime: 2000 })
+      .mockResolvedValueOnce({ mtime: 1500 });
+
+    const sessions = await provider.findSessions('/my/project');
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]!.compositeMtime).toBe(2000);
+  });
+
+  it('should fall back gracefully when stat fails for a companion file', async () => {
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([['session1.jsonl', FileType.File]])
+      .mockResolvedValueOnce([
+        ['subagents', FileType.Directory],
+        ['tool-results', FileType.Directory],
+      ])
+      .mockResolvedValueOnce([['agent-abc.jsonl', FileType.File]])
+      .mockResolvedValueOnce([['toolu_xyz.txt', FileType.File]]);
+    workspace.fs.stat = vi
+      .fn()
+      .mockResolvedValueOnce({ mtime: 1000, ctime: 900 })
+      .mockRejectedValueOnce(new Error('permission denied'))
+      .mockResolvedValueOnce({ mtime: 1500 });
+
+    const sessions = await provider.findSessions('/my/project');
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]!.compositeMtime).toBe(1500);
+  });
+
+  it('should return watch patterns including companion directory globs', () => {
+    const patterns = provider.getWatchPatterns('/my/project');
+
+    expect(patterns).toHaveLength(3);
+    expect(patterns.some((p) => p.glob === '*/subagents/*.jsonl')).toBe(true);
+    expect(patterns.some((p) => p.glob === '*/tool-results/*')).toBe(true);
   });
 });

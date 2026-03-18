@@ -1,7 +1,7 @@
 ---
 title: 'Full session archiving for Claude Code provider'
 initiative: INIT-002-full-session-archiving
-status: draft
+status: completed
 workspaces: []
 created: 2026-03-18
 references:

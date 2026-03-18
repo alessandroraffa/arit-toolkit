@@ -11,6 +11,7 @@ out/
 .cache/
 logs/
 .vscode-test/
+.claude/
 
 # Generated docs (agent session archives)
 

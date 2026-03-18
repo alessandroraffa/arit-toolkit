@@ -1,7 +1,7 @@
 ---
 title: 'Full session archiving for Claude Code provider'
 initiative: INIT-002-full-session-archiving
-status: draft
+status: active
 created: 2026-03-18
 references:
   - docs/specifications/SPEC-002-full-session-archiving.md
@@ -48,10 +48,10 @@ Excluded:
 
 ## Success criteria
 
-- [ ] Archived sessions that spawned subagents contain the full conversation transcript of each subagent, not just the compressed return value from the main session
-- [ ] Externalized tool results appear in the archive with their full content, replacing reference markers
-- [ ] Sessions without companion directories produce archives identical to the current implementation
-- [ ] Modification of a subagent or tool-result file triggers re-archiving of the parent session
-- [ ] Each subagent's turns are clearly distinguished from the main session's turns, with the subagent type and identifier visible in the section heading
-- [ ] Compaction summaries appear as distinct labeled sections in the archive, providing context across compaction boundaries
-- [ ] All subagent types are handled uniformly without special-casing
+- [x] Archived sessions that spawned subagents contain the full conversation transcript of each subagent, not just the compressed return value from the main session
+- [x] Externalized tool results appear in the archive with their full content, replacing reference markers
+- [x] Sessions without companion directories produce archives identical to the current implementation
+- [x] Modification of a subagent or tool-result file triggers re-archiving of the parent session
+- [x] Each subagent's turns are clearly distinguished from the main session's turns, with the subagent type and identifier visible in the section heading
+- [x] Compaction summaries appear as distinct labeled sections in the archive, providing context across compaction boundaries
+- [x] All subagent types are handled uniformly without special-casing

@@ -403,6 +403,49 @@ describe('AgentSessionArchiveService', () => {
     });
   });
 
+  describe('composite mtime change detection', () => {
+    it('should skip re-archive when compositeMtime is unchanged', async () => {
+      const session = createMockSession({ mtime: 1000, compositeMtime: 2000 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+      await service.runArchiveCycle();
+      vi.mocked(workspace.fs.copy).mockClear();
+
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.copy).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should trigger re-archive when compositeMtime increases', async () => {
+      const session = createMockSession({ mtime: 1000, compositeMtime: 2000 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+      await service.runArchiveCycle();
+
+      const updatedSession = createMockSession({ mtime: 1000, compositeMtime: 3000 });
+      vi.mocked(provider.findSessions).mockResolvedValue([updatedSession]);
+      vi.mocked(workspace.fs.copy).mockClear();
+
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.copy).toHaveBeenCalled();
+
+      service.dispose();
+    });
+  });
+
   describe('dispose', () => {
     it('should stop interval on dispose', () => {
       const provider = createMockProvider();
