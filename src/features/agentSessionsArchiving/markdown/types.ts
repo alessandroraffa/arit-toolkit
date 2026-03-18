@@ -28,6 +28,7 @@ export interface SubagentSession {
   readonly agentType: string;
   readonly description?: string;
   readonly turns: readonly NormalizedTurn[];
+  readonly unreadable?: true;
   readonly compactionSummaries?: readonly CompactionSummary[];
 }
 
