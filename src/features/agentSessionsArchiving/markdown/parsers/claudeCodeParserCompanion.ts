@@ -27,8 +27,8 @@ export function extractSubagentMeta(metaContent: string | undefined): {
   }
   const record = parsed as Record<string, unknown>;
   const rawType = record.agentType;
-  const agentType =
-    typeof rawType === 'string' && rawType.length > 0 ? rawType : 'unknown';
+  const sanitized = sanitizeName(rawType);
+  const agentType = sanitized ?? 'unknown';
   const rawDesc = record.description;
   const description =
     typeof rawDesc === 'string' && rawDesc.length > 0 ? rawDesc : undefined;

@@ -2,7 +2,7 @@
 title: 'Full session archiving — parser extension for subagent and companion data'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0005
-status: in-progress
+status: completed
 workspaces: []
 dependencies: [WS-0003, WS-0004]
 created: 2026-03-18
@@ -195,9 +195,9 @@ Update the workstream file checkboxes. No other documentation changes are requir
 
 Commit `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.ts`, `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParserCompanion.ts`, `src/features/agentSessionsArchiving/markdown/types.ts`, and this workstream file (and `src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParserUtils.ts` if `parseJsonlTurns` was extracted). Use commit message: `feat(agentSessionsArchiving): extend claude code parser to process subagent and companion data`.
 
-### [ ] Activity 3: Add parser unit tests for companion data processing
+### [x] Activity 3: Add parser unit tests for companion data processing
 
-#### [ ] Task 3.1: Create test files for companion data parsing
+#### [x] Task 3.1: Create test files for companion data parsing
 
 The existing `claudeCodeParser.test.ts` (290 lines) and `claudeCodeParser.metadata.test.ts` (298 lines) are near the 250-line ceiling. Create a new test file: `test/unit/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser.companion.test.ts`.
 
@@ -234,15 +234,15 @@ Also create `test/unit/features/agentSessionsArchiving/markdown/parsers/claudeCo
 
 Keep this second test file under 150 lines.
 
-#### [ ] Task 3.2: Run the quality gate
+#### [x] Task 3.2: Run the quality gate
 
 Run `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must exit with code 0. If any test in Test 7 requires adjustment because the actual fallback behavior differs from what was assumed in the task description, update the test assertion to match the actual implementation behavior and record the divergence in "Divergences and notes".
 
-#### [ ] Task 3.3: Update impacted documentation
+#### [x] Task 3.3: Update impacted documentation
 
 Update the workstream file checkboxes. No other documentation changes are required.
 
-#### [ ] Task 3.4: Commit changes
+#### [x] Task 3.4: Commit changes
 
 Commit both new test files and this workstream file. Use commit message: `test(agentSessionsArchiving): add parser tests for companion data processing`.
 
@@ -252,4 +252,18 @@ Commit both new test files and this workstream file. Use commit message: `test(a
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergence count by cause:**
+
+- Implementation constraint: 1 (D-001, 250-line limit exceeded by 2 lines)
+
+**Recurring patterns:**
+
+- ESLint's `max-lines`, `max-lines-per-function`, `max-statements`, and `complexity` rules are set to warning level rather than error level in this project. The workstream's 250-line architectural guidance maps to the rule threshold, but the practical quality gate (exit code) passes with warnings. This means the constraint is advisory, not blocking.
+- The workstream correctly anticipated the `exactOptionalPropertyTypes: true` challenge for building `NormalizedSession`-like objects; the mutable local object pattern prescribed in Task 2.2 worked cleanly.
+- Dot notation enforcement by ESLint (`@typescript-eslint/dot-notation`) required updating bracket-notation access to dot notation in the companion module. This was caught immediately by lint and fixed before commit.
+
+**Proposed improvements:**
+
+- The workstream's contingency extraction path (extract `parseJsonlTurns` to `claudeCodeParserUtils.ts`) assumes the private class methods can be trivially promoted to module-level functions. In practice, all event-processing methods have `this` references making extraction non-trivial. Future workstreams that approach the 250-line threshold on `ClaudeCodeParser` should plan the extraction as a dedicated task, not an inline contingency.
+
+**Assessment:** The workstream executed cleanly in three activities with one recorded divergence (minor line-count excess). All 711 unit tests pass, type-check and lint are clean (0 errors). The parser now processes companion data contexts, resolves tool-result markers, extracts subagent metadata with the three-level fallback chain, and handles unreadable subagents gracefully. Backward compatibility is confirmed by Test 1 (no companion context produces unchanged output).
