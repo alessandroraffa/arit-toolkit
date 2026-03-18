@@ -2,7 +2,7 @@
 title: 'Full session archiving — renderer extension for subagent sections and compaction summaries'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0006
-status: idle
+status: in-progress
 workspaces: []
 dependencies: [WS-0003, WS-0005]
 created: 2026-03-18
@@ -26,9 +26,9 @@ Re-read this section at the start of every execution session. Each trigger fires
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Implement subagent and compaction rendering helpers
+### [x] Activity 1: Implement subagent and compaction rendering helpers
 
-#### [ ] Task 1.1: Export `renderTurnLines` and `formatTimestamp` from `renderer.ts`
+#### [x] Task 1.1: Export `renderTurnLines` and `formatTimestamp` from `renderer.ts`
 
 Open `src/features/agentSessionsArchiving/markdown/renderer.ts`. Read it in full before editing.
 
@@ -40,7 +40,7 @@ Apply two changes:
 
 No other changes to `renderer.ts` in this task.
 
-#### [ ] Task 1.2: Create `src/features/agentSessionsArchiving/markdown/rendererSubagent.ts`
+#### [x] Task 1.2: Create `src/features/agentSessionsArchiving/markdown/rendererSubagent.ts`
 
 Create a new file at `src/features/agentSessionsArchiving/markdown/rendererSubagent.ts`. This file exports functions that `renderer.ts` calls. Import `SubagentSession`, `CompactionSummary`, `NormalizedTurn` from `'./types'` and import `renderTurnLines`, `formatTimestamp` from `'./renderer'`.
 
@@ -75,7 +75,7 @@ Where `formattedTimestamp` is `formatTimestamp(summary.timestamp)`. Returns `lin
 
 Do not import `vscode` — this file has no I/O.
 
-#### [ ] Task 1.3: Integrate subagent rendering and Agent tool call substitution into `renderer.ts`
+#### [x] Task 1.3: Integrate subagent rendering and Agent tool call substitution into `renderer.ts`
 
 Open `src/features/agentSessionsArchiving/markdown/renderer.ts`. Read it in full before editing.
 
@@ -141,11 +141,11 @@ if (session.compactionSummaries && session.compactionSummaries.length > 0) {
 
 After this task, `renderer.ts` must not exceed 250 lines. Count the lines after editing. If it does exceed 250 lines, move the `hasSubagents` block and the sort+push block into a new helper function `appendSubagentContent(lines: string[], session: NormalizedSession): void` defined in `rendererSubagent.ts` and call it from `renderSessionToMarkdown`.
 
-#### [ ] Task 1.4: Update impacted documentation
+#### [x] Task 1.4: Update impacted documentation
 
 Update the workstream file checkboxes.
 
-#### [ ] Task 1.5: Commit changes
+#### [x] Task 1.5: Commit changes
 
 Commit `src/features/agentSessionsArchiving/markdown/renderer.ts`, `src/features/agentSessionsArchiving/markdown/rendererSubagent.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): extend renderer with subagent sections and compaction summaries`.
 
@@ -191,7 +191,7 @@ Commit `test/unit/features/agentSessionsArchiving/markdown/renderer.companion.te
 
 ## Divergences and notes
 
-_No divergences recorded._
+**D-001 (Task 1.3):** The `exactOptionalPropertyTypes: true` TypeScript constraint caused a type error when constructing the replacement `ToolCall` object in `renderTurnLines`. The workstream anticipated this at Task 2.2, but the error arose during Task 1.3. Resolution: instead of spreading `{ name: tc.name, input: tc.input, output: '...' }` (which sets `input` to `string | undefined`), the implementation uses a conditional to include `input` only when defined, producing a valid `ToolCall` object under `exactOptionalPropertyTypes`. No user-facing behavior change.
 
 ### Reflection
 

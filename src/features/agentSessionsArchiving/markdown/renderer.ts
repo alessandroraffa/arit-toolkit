@@ -1,4 +1,5 @@
 import type { NormalizedSession, NormalizedTurn, ToolCall } from './types';
+import { renderCompactionSummaries, renderSubagentSections } from './rendererSubagent';
 
 export function renderSessionToMarkdown(session: NormalizedSession): string {
   const lines: string[] = [];
@@ -11,11 +12,26 @@ export function renderSessionToMarkdown(session: NormalizedSession): string {
   lines.push('---');
   lines.push('');
 
+  const hasSubagents =
+    session.subagentSessions !== undefined && session.subagentSessions.length > 0;
+
   for (const turn of session.turns) {
     if (isEmptyTurn(turn)) {
       continue;
     }
-    lines.push(...renderTurn(turn));
+    lines.push(...renderTurnLines(turn, hasSubagents));
+  }
+
+  if (session.subagentSessions && session.subagentSessions.length > 0) {
+    const sorted = [...session.subagentSessions].sort((a, b) => {
+      const aTs = a.turns[0]?.timestamp ?? '';
+      const bTs = b.turns[0]?.timestamp ?? '';
+      return aTs.localeCompare(bTs);
+    });
+    lines.push(...renderSubagentSections(sorted));
+  }
+  if (session.compactionSummaries && session.compactionSummaries.length > 0) {
+    lines.push(...renderCompactionSummaries(session.compactionSummaries));
   }
 
   return lines.join('\n');
@@ -31,7 +47,10 @@ function isEmptyTurn(turn: NormalizedTurn): boolean {
   );
 }
 
-function renderTurn(turn: NormalizedTurn): string[] {
+export function renderTurnLines(
+  turn: NormalizedTurn,
+  suppressAgentOutput = false
+): string[] {
   const agentLabel =
     turn.role !== 'user' && turn.agentName ? `Agent(${turn.agentName})` : 'Agent';
   const roleLabel = turn.role === 'user' ? 'User' : agentLabel;
@@ -44,8 +63,19 @@ function renderTurn(turn: NormalizedTurn): string[] {
     lines.push(`**${roleLabel}:**${timestampSuffix}`, '');
   }
 
+  const toolCallsToRender: readonly ToolCall[] = suppressAgentOutput
+    ? turn.toolCalls.map((tc): ToolCall => {
+        if (tc.name === 'Agent' && tc.output) {
+          return tc.input !== undefined
+            ? { name: tc.name, input: tc.input, output: 'See Subagent section below.' }
+            : { name: tc.name, output: 'See Subagent section below.' };
+        }
+        return tc;
+      })
+    : turn.toolCalls;
+
   lines.push(...renderSkillAnnotation(turn.skillName));
-  lines.push(...renderToolsSection(turn.toolCalls));
+  lines.push(...renderToolsSection(toolCallsToRender));
   lines.push(...renderThinkingSection(turn.thinking));
   lines.push(...renderFileList('Files Read', turn.filesRead));
   lines.push(...renderFileList('Files Modified', turn.filesModified));
@@ -86,7 +116,7 @@ function renderFileList(title: string, files: readonly string[]): string[] {
   return lines;
 }
 
-function formatTimestamp(iso: string): string {
+export function formatTimestamp(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   const year = String(d.getUTCFullYear());
