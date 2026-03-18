@@ -186,9 +186,8 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   ): Promise<ParseResult> {
     const rawBytes = await vscode.workspace.fs.readFile(session.uri);
     const rawContent = new TextDecoder().decode(rawBytes);
-    await resolveCompanionData(session.uri, this.logger);
-    // TODO WS-0005: pass companionContext to parser.parse
-    return parser.parse(rawContent, session.archiveName);
+    const companionContext = await resolveCompanionData(session.uri, this.logger);
+    return parser.parse(rawContent, session.archiveName, companionContext);
   }
 
   private async copyRawArchive(

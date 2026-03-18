@@ -1,3 +1,5 @@
+import type { CompanionDataContext } from './companionDataTypes';
+
 export interface ToolCall {
   readonly name: string;
   readonly input?: string;
@@ -51,5 +53,9 @@ export type ParseResult =
 
 export interface SessionParser {
   readonly providerName: string;
-  parse(content: string, sessionId: string): ParseResult;
+  parse(
+    content: string,
+    sessionId: string,
+    companionContext?: CompanionDataContext
+  ): ParseResult;
 }

@@ -2,7 +2,7 @@
 title: 'Full session archiving — parser extension for subagent and companion data'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0005
-status: idle
+status: in-progress
 workspaces: []
 dependencies: [WS-0003, WS-0004]
 created: 2026-03-18
@@ -26,9 +26,9 @@ Re-read this section at the start of every execution session. Each trigger fires
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Extend the parser interface and resolve the archive service TODO
+### [x] Activity 1: Extend the parser interface and resolve the archive service TODO
 
-#### [ ] Task 1.1: Extend the `SessionParser` interface in `src/features/agentSessionsArchiving/markdown/types.ts`
+#### [x] Task 1.1: Extend the `SessionParser` interface in `src/features/agentSessionsArchiving/markdown/types.ts`
 
 Open `src/features/agentSessionsArchiving/markdown/types.ts`. Add an import of `CompanionDataContext` at the top of the file:
 
@@ -50,7 +50,7 @@ parse(content: string, sessionId: string, companionContext?: CompanionDataContex
 
 The parameter is optional (`?`). All existing parser implementations (`ClaudeCodeParser`, `ClineRooCodeParser`, `CopilotChatParser`, `ContinueParser`, `CodexParser`) conform to this interface automatically because TypeScript allows implementations with fewer parameters than the interface declares. Do not modify any existing parser implementation in this task.
 
-#### [ ] Task 1.2: Resolve the TODO in `archiveService.ts` to pass `companionContext` to `parser.parse`
+#### [x] Task 1.2: Resolve the TODO in `archiveService.ts` to pass `companionContext` to `parser.parse`
 
 Open `src/features/agentSessionsArchiving/archiveService.ts`. Locate the `readAndParse` method and the line with the `// TODO WS-0005: pass companionContext to parser.parse` comment added in WS-0004.
 
@@ -62,15 +62,15 @@ return parser.parse(rawContent, session.archiveName, companionContext);
 
 Remove the TODO comment entirely. The `companionContext` variable was already declared in the same method in WS-0004.
 
-#### [ ] Task 1.3: Run type-check to confirm all existing parsers still compile
+#### [x] Task 1.3: Run type-check to confirm all existing parsers still compile
 
 Run `pnpm run check-types`. Confirm zero errors. If any existing parser class shows a type error because of the interface change, the error indicates the class explicitly typed the `parse` method with an incompatible signature — read the specific parser file and add the optional third parameter to its method signature (without implementing it). Do not add any logic to existing parsers.
 
-#### [ ] Task 1.4: Update impacted documentation
+#### [x] Task 1.4: Update impacted documentation
 
 Update the workstream file checkboxes. No other documentation changes are required.
 
-#### [ ] Task 1.5: Commit changes
+#### [x] Task 1.5: Commit changes
 
 Commit `src/features/agentSessionsArchiving/markdown/types.ts`, `src/features/agentSessionsArchiving/archiveService.ts`, and this workstream file. Use commit message: `feat(agentSessionsArchiving): extend parser interface with optional companion data context`.
 
