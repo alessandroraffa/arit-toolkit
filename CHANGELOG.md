@@ -1,3 +1,9 @@
+## [1.17.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.16.0...v1.17.0) (2026-03-19)
+
+### Features
+
+* **agentSessionsArchiving:** add workstreams for full session archiving ([579e682](https://github.com/alessandroraffa/arit-toolkit/commit/579e6825c3d0ea6d7d1989f4c14ab4ec6691c572))
+
 ## [1.16.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.15.2...v1.16.0) (2026-03-18)
 
 ### Features
