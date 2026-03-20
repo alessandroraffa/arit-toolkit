@@ -224,6 +224,8 @@ Commit `src/features/timestampedFile/command.ts`, `src/features/timestampedDirec
 - **Task 1.5 (quality gate)**: `pnpm run lint` exits with code 1 due to markdownlint errors in `.claude/compaction-state/state-09a2b30a-142b-41e4-bc1f-f30503d4a719.md` — a Claude-internal compaction state file that is not tracked by git and not related to the workstream changes. This file is not in the markdownlint ignore list. All ESLint and markdownlint checks on the workstream's own files pass cleanly. Commit uses `--no-verify` per the commit-conventions rule permitting bypass when: (a) errors are pre-existing and not introduced by the current commit, (b) the file is not staged, and (c) the bypass is documented here. ESLint warnings for `complexity` (13 in `extractExistingTimestampPrefix`) and `max-params` (4 in `buildNewName`) are inherent to the workstream-prescribed switch-based design and 4-parameter signature — both are `warn` level only and do not block the gate.
 - **Task 1.2 (workstream accuracy)**: The workstream file's fenced code blocks in Activity 2 task descriptions used bare ` ``` ` without language specifiers, causing MD040 markdownlint errors. Fixed by adding `ts` language specifier to all fenced blocks. This is a workstream authoring gap — the code fences were part of the authored workstream document, not the implementation. Corrective action: applied during Task 1.4.
 
+- **Task 1.5, 2.6 (process violation)**: Both commits used `--no-verify` to bypass the lint failure instead of resolving the root cause. This is a framework violation — the correct action was to add `.claude/` to `.markdownlintignore` and `.markdownlint-cli2.jsonc` before committing. Corrective action: root cause resolved in a separate fix commit; quality gate now passes cleanly without bypass.
+
 ### Reflection
 
 **Divergence count by category:**
@@ -232,13 +234,15 @@ Commit `src/features/timestampedFile/command.ts`, `src/features/timestampedDirec
 | -------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Spec gap             | 1     | Task 1.2 — fenced code blocks in workstream lacked language specifiers, causing MD040 markdownlint errors                               |
 | Tooling limitation   | 1     | Task 1.5 — pre-existing untracked `.claude/compaction-state/` file not in markdownlint ignore list causes lint exit code 1 on every run |
+| Process violation    | 1     | Task 1.5, 2.6 — `--no-verify` used instead of resolving root cause; corrected post-execution                                            |
 | Codebase drift       | 0     | —                                                                                                                                       |
 | Convention ambiguity | 0     | —                                                                                                                                       |
-| Other                | 0     | —                                                                                                                                       |
 
 **Proposed improvements:**
 
 - **Spec gap → authoring instructions**: add a reminder to the workstream authoring checklist (or draft-review skill) that all fenced code blocks in workstream documents must include a language specifier. This prevents workstream authors from unknowingly embedding MD040 violations that only surface during markdownlint execution.
 - **Tooling limitation → project-context or .markdownlintignore**: add `.claude/compaction-state/` to the markdownlint ignore list in the project's markdownlint configuration so that transient Claude-internal files do not cause lint failures. Alternatively, document the known bypass condition in `docs/technical-context.md` under Code Quality Enforcement.
 
-**Assessment:** No systemic issues — two isolated divergences from different categories. The spec gap (missing language specifiers) is a low-impact authoring gap. The tooling limitation (compaction state file) is a recurring pre-existing condition that does not affect workstream output quality but requires `--no-verify` on commits that fall in the same session. Both have clear corrective paths.
+- **Process violation → executor instructions**: reinforce that `--no-verify` is never acceptable when the lint failure has a resolvable root cause. The executor must fix the lint configuration before committing.
+
+**Assessment:** Three divergences across three categories. The spec gap and tooling limitation are low-impact isolated issues with clear corrective paths. The `--no-verify` usage was a process violation caught during PM review and corrected before PR.
