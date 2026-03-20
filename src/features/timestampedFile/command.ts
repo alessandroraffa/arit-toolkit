@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import type { ConfigManager } from '../../core/configManager';
 import type { Logger } from '../../core/logger';
-import { generateTimestamp } from '../../utils';
+import { buildNewName, generateTimestamp } from '../../utils';
 
 function resolveFolder(uri?: vscode.Uri): string {
   return uri?.fsPath ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
@@ -67,7 +67,12 @@ export function prefixTimestampToFileCommand(
         (await fs.promises.stat(uri.fsPath)).birthtime
       );
       const originalName = path.basename(uri.fsPath);
-      const newName = `${timestamp}${config.timestampSeparator}${originalName}`;
+      const newName = buildNewName(
+        originalName,
+        timestamp,
+        config.timestampFormat,
+        config.timestampSeparator
+      );
 
       const confirmedName = await vscode.window.showInputBox({
         prompt: 'Confirm new file name',
