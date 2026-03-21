@@ -16,6 +16,10 @@ logs/
 
 docs/archive/
 
+# Claude Code generated state
+
+.claude/
+
 # Private / non-published content
 
 private/

@@ -134,10 +134,10 @@ are prompted to opt in to new configuration sections.
 |  +--------------------------+   +-----------------------------+  |
 |  |  Core                    |   |  Utils                      |  |
 |  |  - Logger                |   |  - timestamp.ts             |  |
-|  |  - ConfigManager         |   |  - jsonc.ts                 |  |
-|  |  - CommandRegistry       |   |  - version.ts               |  |
-|  |  - ExtensionStateManager |   +-----------------------------+  |
-|  |  - ConfigMigration/      |                                    |
+|  |  - ConfigManager         |   |  - timestampPrefix.ts       |  |
+|  |  - CommandRegistry       |   |  - jsonc.ts                 |  |
+|  |  - ExtensionStateManager |   |  - version.ts               |  |
+|  |  - ConfigMigration/      |   +-----------------------------+  |
 |  |    - Registry            |   +-----------------------------+  |
 |  |    - MigrationService    |   |  Types                      |  |
 |  +--------------------------+   |  - TimestampFormat           |  |

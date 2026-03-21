@@ -251,5 +251,92 @@ describe('timestampedFile commands', () => {
         'string error'
       );
     });
+
+    it('should replace existing close timestamp prefix when within 3 days', async () => {
+      const uri = { fsPath: '/path/to/202602031430-notes.md' };
+      const birthtime = new Date('2026-02-05T09:00:00.000Z');
+
+      vi.mocked(fs.promises.stat).mockResolvedValue({
+        birthtime,
+      } as unknown as Awaited<ReturnType<typeof fs.promises.stat>>);
+      window.showInputBox = vi.fn().mockResolvedValue('202602050900-notes.md');
+      workspace.fs.rename = vi.fn().mockResolvedValue(undefined);
+
+      const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
+
+      await command(uri as any);
+
+      expect(window.showInputBox).toHaveBeenCalledWith({
+        prompt: 'Confirm new file name',
+        value: '202602050900-notes.md',
+        valueSelection: [0, 0],
+      });
+    });
+
+    it('should prepend new timestamp when existing timestamp is more than 3 days away', async () => {
+      const uri = { fsPath: '/path/to/202601300900-notes.md' };
+      const birthtime = new Date('2026-02-05T09:00:00.000Z');
+
+      vi.mocked(fs.promises.stat).mockResolvedValue({
+        birthtime,
+      } as unknown as Awaited<ReturnType<typeof fs.promises.stat>>);
+      window.showInputBox = vi
+        .fn()
+        .mockResolvedValue('202602050900-202601300900-notes.md');
+      workspace.fs.rename = vi.fn().mockResolvedValue(undefined);
+
+      const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
+
+      await command(uri as any);
+
+      expect(window.showInputBox).toHaveBeenCalledWith({
+        prompt: 'Confirm new file name',
+        value: '202602050900-202601300900-notes.md',
+        valueSelection: [0, 0],
+      });
+    });
+
+    it('should replace existing close timestamp prefix with multi-character separator', async () => {
+      mockConfig.timestampSeparator = '--';
+      const uri = { fsPath: '/path/to/202602031430--notes.md' };
+      const birthtime = new Date('2026-02-05T09:00:00.000Z');
+
+      vi.mocked(fs.promises.stat).mockResolvedValue({
+        birthtime,
+      } as unknown as Awaited<ReturnType<typeof fs.promises.stat>>);
+      window.showInputBox = vi.fn().mockResolvedValue('202602050900--notes.md');
+      workspace.fs.rename = vi.fn().mockResolvedValue(undefined);
+
+      const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
+
+      await command(uri as any);
+
+      expect(window.showInputBox).toHaveBeenCalledWith({
+        prompt: 'Confirm new file name',
+        value: '202602050900--notes.md',
+        valueSelection: [0, 0],
+      });
+    });
+
+    it('should prepend new timestamp when original file name has no timestamp prefix', async () => {
+      const uri = { fsPath: '/path/to/notes.md' };
+      const birthtime = new Date('2026-02-05T09:00:00.000Z');
+
+      vi.mocked(fs.promises.stat).mockResolvedValue({
+        birthtime,
+      } as unknown as Awaited<ReturnType<typeof fs.promises.stat>>);
+      window.showInputBox = vi.fn().mockResolvedValue('202602050900-notes.md');
+      workspace.fs.rename = vi.fn().mockResolvedValue(undefined);
+
+      const command = prefixTimestampToFileCommand(mockConfig as any, mockLogger as any);
+
+      await command(uri as any);
+
+      expect(window.showInputBox).toHaveBeenCalledWith({
+        prompt: 'Confirm new file name',
+        value: '202602050900-notes.md',
+        valueSelection: [0, 0],
+      });
+    });
   });
 });
