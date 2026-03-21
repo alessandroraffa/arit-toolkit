@@ -1,3 +1,15 @@
+## [1.18.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.17.0...v1.18.0) (2026-03-21)
+
+### Features
+
+* **timestamp:** add timestamp proximity detection and replacement utility ([6d65ae8](https://github.com/alessandroraffa/arit-toolkit/commit/6d65ae82c7a01acef827d16f1f6e1f42e5628d10))
+* **timestamp:** replace existing close timestamp prefix on rename command ([bdbdcda](https://github.com/alessandroraffa/arit-toolkit/commit/bdbdcda3f4d2af87f552a6c4837ed5f9f4440833))
+
+### Bug Fixes
+
+* **lint:** exclude .claude/ from markdownlint and document --no-verify violation ([46e372e](https://github.com/alessandroraffa/arit-toolkit/commit/46e372e4f2e65d6686c19bea286710f45fb943d7))
+* **timestamp:** use startswith for multi-character separator comparison ([8694d25](https://github.com/alessandroraffa/arit-toolkit/commit/8694d25bb588688b2f57d4ccbe8e36c10dea5b8e))
+
 ## [1.17.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.16.0...v1.17.0) (2026-03-19)
 
 ### Features
