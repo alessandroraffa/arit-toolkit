@@ -342,6 +342,31 @@ describe('timestampedDirectory commands', () => {
       });
     });
 
+    it('should replace existing close timestamp prefix with multi-character separator', async () => {
+      mockConfig.timestampSeparator = '--';
+      const uri = { fsPath: '/path/to/202602031430--my-folder' };
+      const birthtime = new Date('2026-02-05T09:00:00.000Z');
+
+      vi.mocked(fs.promises.stat).mockResolvedValue({
+        birthtime,
+      } as unknown as Awaited<ReturnType<typeof fs.promises.stat>>);
+      window.showInputBox = vi.fn().mockResolvedValue('202602050900--my-folder');
+      workspace.fs.rename = vi.fn().mockResolvedValue(undefined);
+
+      const command = prefixTimestampToDirectoryCommand(
+        mockConfig as any,
+        mockLogger as any
+      );
+
+      await command(uri as any);
+
+      expect(window.showInputBox).toHaveBeenCalledWith({
+        prompt: 'Confirm new directory name',
+        value: '202602050900--my-folder',
+        valueSelection: [0, 0],
+      });
+    });
+
     it('should prepend new timestamp when original directory name has no timestamp prefix', async () => {
       const uri = { fsPath: '/path/to/my-folder' };
       const birthtime = new Date('2026-02-05T09:00:00.000Z');

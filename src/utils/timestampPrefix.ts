@@ -10,24 +10,24 @@ export function extractExistingTimestampPrefix(
 ): string | null {
   switch (format) {
     case 'YYYYMMDD':
-      if (/^\d{8}/.test(name) && name[8] === separator) {
+      if (/^\d{8}/.test(name) && name.startsWith(separator, 8)) {
         return name.slice(0, 8);
       }
       return null;
     case 'YYYYMMDDHHmm':
-      if (/^\d{12}/.test(name) && name[12] === separator) {
+      if (/^\d{12}/.test(name) && name.startsWith(separator, 12)) {
         return name.slice(0, 12);
       }
       return null;
     case 'YYYYMMDDHHmmss':
-      if (/^\d{14}/.test(name) && name[14] === separator) {
+      if (/^\d{14}/.test(name) && name.startsWith(separator, 14)) {
         return name.slice(0, 14);
       }
       return null;
     case 'ISO':
       if (
         /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z/.test(name) &&
-        name[24] === separator
+        name.startsWith(separator, 24)
       ) {
         return name.slice(0, 24);
       }

@@ -60,6 +60,18 @@ describe('extractExistingTimestampPrefix', () => {
     ).toBeNull();
   });
 
+  it('returns the prefix when the separator is multi-character', () => {
+    expect(
+      extractExistingTimestampPrefix('202602051430--notes.md', 'YYYYMMDDHHmm', '--')
+    ).toBe('202602051430');
+  });
+
+  it('returns null when a multi-character separator is only partially present', () => {
+    expect(
+      extractExistingTimestampPrefix('202602051430-notes.md', 'YYYYMMDDHHmm', '--')
+    ).toBeNull();
+  });
+
   it('returns null for any format when the name is shorter than the expected timestamp length', () => {
     expect(extractExistingTimestampPrefix('2026', 'YYYYMMDD', '-')).toBeNull();
     expect(extractExistingTimestampPrefix('2026020514', 'YYYYMMDDHHmm', '-')).toBeNull();
@@ -137,6 +149,12 @@ describe('buildNewName', () => {
         '-'
       )
     ).toBe('202602051500-my-project-notes.md');
+  });
+
+  it('replaces the existing timestamp with a multi-character separator', () => {
+    expect(
+      buildNewName('202602051430--notes.md', '202602051500', 'YYYYMMDDHHmm', '--')
+    ).toBe('202602051500--notes.md');
   });
 
   it('handles an ISO format replacement', () => {

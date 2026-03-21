@@ -225,6 +225,7 @@ Commit `src/features/timestampedFile/command.ts`, `src/features/timestampedDirec
 - **Task 1.2 (workstream accuracy)**: The workstream file's fenced code blocks in Activity 2 task descriptions used bare ` ``` ` without language specifiers, causing MD040 markdownlint errors. Fixed by adding `ts` language specifier to all fenced blocks. This is a workstream authoring gap — the code fences were part of the authored workstream document, not the implementation. Corrective action: applied during Task 1.4.
 
 - **Task 1.5, 2.6 (process violation)**: Both commits used `--no-verify` to bypass the lint failure instead of resolving the root cause. This is a framework violation — the correct action was to add `.claude/` to `.markdownlintignore` and `.markdownlint-cli2.jsonc` before committing. Corrective action: root cause resolved in a separate fix commit; quality gate now passes cleanly without bypass.
+- **Task 1.1 (code review finding, HIGH)**: `extractExistingTimestampPrefix` compared a single character (`name[N] === separator`) against the full separator string. With a multi-character separator (e.g., `--`), the comparison always returned `false`, preventing replacement and silently falling through to prepend. Corrective action: replaced `name[N] === separator` with `name.startsWith(separator, N)` in all four format cases; added multi-character separator tests to `timestampPrefix.test.ts`, `command.test.ts` (file), and `command.test.ts` (directory).
 
 ### Reflection
 
