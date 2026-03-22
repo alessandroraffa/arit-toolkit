@@ -7,8 +7,8 @@
     "archivePath": "docs/archive/agent-sessions",
     "intervalMinutes": 5
   },
-  "version": "1.17.0",
-  "versionCode": 1001017000,
+  "version": "1.18.0",
+  "versionCode": 1001018000,
   "textStats": {
     "enabled": true,
     "delimiter": " | ",
