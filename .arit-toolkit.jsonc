@@ -1,11 +1,12 @@
 // ARIT Toolkit workspace configuration
 // Managed by the ARIT Toolkit extension
 {
+  "logLevel": "debug",
   "enabled": true,
   "agentSessionsArchiving": {
     "enabled": true,
     "archivePath": "docs/archive/agent-sessions",
-    "intervalMinutes": 5
+    "intervalMinutes": 5,
   },
   "version": "1.18.0",
   "versionCode": 1001018000,
@@ -24,7 +25,7 @@
       "lines",
       "paragraphs",
       "readTime",
-      "size"
-    ]
-  }
+      "size",
+    ],
+  },
 }
