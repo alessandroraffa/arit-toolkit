@@ -272,9 +272,9 @@
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.19.9",
     "@types/vscode": "^1.109.0",
-    "@vitest/coverage-v8": "^2.1.9",
+    "@vitest/coverage-v8": "^4.1.1",
     "@vitest/eslint-plugin": "^1.6.6",
-    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
     "conventional-changelog-conventionalcommits": "^9.2.0",
@@ -291,7 +291,7 @@
     "semantic-release-vsce": "^6.0.24",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
-    "vitest": "^2.1.9"
+    "vitest": "^4.1.1"
   },
   "pnpm": {
     "overrides": {
