@@ -277,7 +277,7 @@
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
-    "conventional-changelog-conventionalcommits": "^9.2.0",
+    "conventional-changelog-conventionalcommits": "^9.3.0",
     "esbuild": "^0.27.3",
     "eslint": "^9.39.2",
     "globals": "^15.15.0",
@@ -288,7 +288,7 @@
     "npm-run-all2": "^7.0.2",
     "prettier": "^3.8.1",
     "semantic-release": "^25.0.3",
-    "semantic-release-vsce": "^6.0.24",
+    "semantic-release-vsce": "^6.1.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
     "vitest": "^2.1.9"

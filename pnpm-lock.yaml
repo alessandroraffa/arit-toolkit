@@ -74,8 +74,8 @@ importers:
         specifier: ^3.7.1
         version: 3.7.1
       conventional-changelog-conventionalcommits:
-        specifier: ^9.2.0
-        version: 9.2.0
+        specifier: ^9.3.0
+        version: 9.3.0
       esbuild:
         specifier: '>=0.25.0'
         version: 0.27.3
@@ -107,8 +107,8 @@ importers:
         specifier: ^25.0.3
         version: 25.0.3(typescript@5.9.3)
       semantic-release-vsce:
-        specifier: ^6.0.24
-        version: 6.0.24(semantic-release@25.0.3(typescript@5.9.3))
+        specifier: ^6.1.0
+        version: 6.1.0(semantic-release@25.0.3(typescript@5.9.3))
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -287,14 +287,14 @@ packages:
     resolution: {integrity: sha512-aO5l99BQJ0X34ft8b0h7QFkQlqxC6e7ZPVmBKz13xM9O8obDaM1Cld4sQlJDXXU/VFuUzQ30mVtHjVz74TuStw==}
     engines: {node: '>=v18'}
 
-  '@emnapi/core@1.8.1':
-    resolution: {integrity: sha512-AvT9QFpxK0Zd8J0jopedNm+w/2fIzvtPKPjqyw9jwvBaReTTqPBk9Hixaz7KbjimP+QNz605/XnjFcDAL2pqBg==}
+  '@emnapi/core@1.9.1':
+    resolution: {integrity: sha512-mukuNALVsoix/w1BJwFzwXBN/dHeejQtuVzcDsfOEsdpCumXb/E9j8w11h5S54tT1xhifGfbbSm/ICrObRb3KA==}
 
-  '@emnapi/runtime@1.8.1':
-    resolution: {integrity: sha512-mehfKSMWjjNol8659Z8KxEMrdSJDDot5SXMq00dM8BN4o+CLNXQ0xH2V7EchNHV4RmbZLmmPdEaXZc5H2FXmDg==}
+  '@emnapi/runtime@1.9.1':
+    resolution: {integrity: sha512-VYi5+ZVLhpgK4hQ0TAjiQiZ6ol0oe4mBx7mVv7IflsiEp0OWoVsp/+f9Vc1hOhE0TtkORVrI1GvzyreqpgWtkA==}
 
-  '@emnapi/wasi-threads@1.1.0':
-    resolution: {integrity: sha512-WI0DdZ8xFSbgMjR1sFsKABJ/C5OnRrjT06JXbZKexJGrDuPTzZdDYfFlsgcCXCyf+suG5QU2e/y1Wo2V/OapLQ==}
+  '@emnapi/wasi-threads@1.2.0':
+    resolution: {integrity: sha512-N10dEJNSsUx41Z6pZsXU8FjPjpBEplgH24sfkmITrBED1/U2Esum9F3lfLrMjKHHjmi557zQn7kR9R+XWXu5Rg==}
 
   '@esbuild/aix-ppc64@0.27.3':
     resolution: {integrity: sha512-9fJMTNFTWZMh5qwrBItuziu834eOCUcEqymSH7pY+zoMVEZg3gcPuBNxH1EvfVYe9h0x/Ptw8KBzv7qxb7l8dg==}
@@ -1482,8 +1482,8 @@ packages:
     resolution: {integrity: sha512-GGf2Nipn1RUCAktxuVauVr1e3r8QrLP/B0lEUsFktmGqc3ddbQkhoJZHJctVU829U1c6mTSWftrVOCHaL85Q3w==}
     engines: {node: '>=18'}
 
-  conventional-changelog-conventionalcommits@9.2.0:
-    resolution: {integrity: sha512-fCf+ODjseueTV09wVBoC0HXLi3OyuBJ+HfE3L63Khxqnr99f9nUcnQh3a15lCWHlGLihyZShW/mVVkBagr9JvQ==}
+  conventional-changelog-conventionalcommits@9.3.0:
+    resolution: {integrity: sha512-kYFx6gAyjSIMwNtASkI3ZE99U1fuVDJr0yTYgVy+I2QG46zNZfl2her+0+eoviG82c5WQvW1jMt1eOQTeJLodA==}
     engines: {node: '>=18'}
 
   conventional-changelog-writer@8.2.0:
@@ -1910,6 +1910,10 @@ packages:
 
   fs-extra@11.3.3:
     resolution: {integrity: sha512-VWSRii4t0AFm6ixFFmLLx1t7wS1gh+ckoa84aOeapGum0h+EZd1EhEumSB+ZdDLnEPuucsVB9oB7cxJHap6Afg==}
+    engines: {node: '>=14.14'}
+
+  fs-extra@11.3.4:
+    resolution: {integrity: sha512-CTXd6rk/M3/ULNQj8FBqBWHYBVYybQ3VPBw0xGKFe3tuH7ytT6ACnvzpIQ3UZtB8yvUKC2cXn1a+x+5EVQLovA==}
     engines: {node: '>=14.14'}
 
   fs.realpath@1.0.0:
@@ -2537,8 +2541,8 @@ packages:
     resolution: {integrity: sha512-vFrFJkWtJvJnD5hg+hJvVE8Lh/TcMzKnTgCWmtBipwI5yLX/iX+5UB2tfuyODF5E7k9xEzMdYgGqaSb1c0c5Yw==}
     engines: {node: 20 || >=22}
 
-  lru-cache@11.2.6:
-    resolution: {integrity: sha512-ESL2CrkS/2wTPfuend7Zhkzo2u0daGJ/A2VucJOgQ/C48S/zB8MMeMHSGKYpXhIjbPxfuezITkaBH1wqv00DDQ==}
+  lru-cache@11.2.7:
+    resolution: {integrity: sha512-aY/R+aEsRelme17KGQa/1ZSIpLpNYYrhcrepKTZgE+W3WM16YMCaPwOHLHsmopZHELU0Ojin1lPVxKR0MihncA==}
     engines: {node: 20 || >=22}
 
   lru-cache@6.0.0:
@@ -3291,8 +3295,8 @@ packages:
     engines: {node: '>=20.0.0'}
     hasBin: true
 
-  semantic-release-vsce@6.0.24:
-    resolution: {integrity: sha512-zKCx4LgOeZV+ff4I2FwDPhsOlSPd6ZKElt+82j2biwjAlDx7zT9QFm5lSHDEl6bb6WYfCxhtEmDfo23u/3JNQA==}
+  semantic-release-vsce@6.1.0:
+    resolution: {integrity: sha512-op8u5H19EXQvVwQwMqsGCULMvc2VShpbB1WMWcOJjUaQT8UOi6XChSz8akEG8503ZRGQ/aal6fe1t2bpPHmLfw==}
     engines: {node: ^20.8.1 || >=22.0.0}
     peerDependencies:
       semantic-release: '>=20'
@@ -4095,7 +4099,7 @@ snapshots:
   '@commitlint/config-conventional@20.4.1':
     dependencies:
       '@commitlint/types': 20.4.0
-      conventional-changelog-conventionalcommits: 9.2.0
+      conventional-changelog-conventionalcommits: 9.3.0
 
   '@commitlint/config-validator@20.4.0':
     dependencies:
@@ -4188,18 +4192,18 @@ snapshots:
       conventional-commits-parser: 6.2.1
       picocolors: 1.1.1
 
-  '@emnapi/core@1.8.1':
+  '@emnapi/core@1.9.1':
     dependencies:
-      '@emnapi/wasi-threads': 1.1.0
+      '@emnapi/wasi-threads': 1.2.0
       tslib: 2.8.1
     optional: true
 
-  '@emnapi/runtime@1.8.1':
+  '@emnapi/runtime@1.9.1':
     dependencies:
       tslib: 2.8.1
     optional: true
 
-  '@emnapi/wasi-threads@1.1.0':
+  '@emnapi/wasi-threads@1.2.0':
     dependencies:
       tslib: 2.8.1
     optional: true
@@ -4368,8 +4372,8 @@ snapshots:
 
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
-      '@emnapi/core': 1.8.1
-      '@emnapi/runtime': 1.8.1
+      '@emnapi/core': 1.9.1
+      '@emnapi/runtime': 1.9.1
       '@tybys/wasm-util': 0.10.1
     optional: true
 
@@ -4754,7 +4758,7 @@ snapshots:
       aggregate-error: 5.0.0
       env-ci: 11.2.0
       execa: 9.6.1
-      fs-extra: 11.3.3
+      fs-extra: 11.3.4
       lodash-es: 4.17.23
       nerf-dart: 1.0.0
       normalize-url: 8.1.1
@@ -5450,7 +5454,7 @@ snapshots:
     dependencies:
       compare-func: 2.0.0
 
-  conventional-changelog-conventionalcommits@9.2.0:
+  conventional-changelog-conventionalcommits@9.3.0:
     dependencies:
       compare-func: 2.0.0
 
@@ -5919,6 +5923,12 @@ snapshots:
     optional: true
 
   fs-extra@11.3.3:
+    dependencies:
+      graceful-fs: 4.2.11
+      jsonfile: 6.2.0
+      universalify: 2.0.1
+
+  fs-extra@11.3.4:
     dependencies:
       graceful-fs: 4.2.11
       jsonfile: 6.2.0
@@ -6531,7 +6541,7 @@ snapshots:
 
   lru-cache@11.2.5: {}
 
-  lru-cache@11.2.6: {}
+  lru-cache@11.2.7: {}
 
   lru-cache@6.0.0:
     dependencies:
@@ -6906,7 +6916,7 @@ snapshots:
   node-sarif-builder@3.4.0:
     dependencies:
       '@types/sarif': 2.1.7
-      fs-extra: 11.3.3
+      fs-extra: 11.3.4
 
   normalize-package-data@6.0.2:
     dependencies:
@@ -7143,7 +7153,7 @@ snapshots:
 
   path-scurry@2.0.2:
     dependencies:
-      lru-cache: 11.2.6
+      lru-cache: 11.2.7
       minipass: 7.1.3
 
   path-type@4.0.0: {}
@@ -7377,12 +7387,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  semantic-release-vsce@6.0.24(semantic-release@25.0.3(typescript@5.9.3)):
+  semantic-release-vsce@6.1.0(semantic-release@25.0.3(typescript@5.9.3)):
     dependencies:
       '@semantic-release/error': 4.0.0
       '@vscode/vsce': 3.7.1
-      execa: 9.6.1
-      fs-extra: 11.3.3
+      fs-extra: 11.3.4
       glob: 13.0.6
       ovsx: 0.10.9
       semantic-release: 25.0.3(typescript@5.9.3)
