@@ -2,7 +2,7 @@
 title: 'Copilot Chat envelope unwrapping, empty session filtering, and turn mismatch investigation'
 plan: PLAN-003-archiving-parser-correctness
 workstream: WS-0010
-status: idle
+status: in-progress
 workspaces: []
 dependencies: []
 created: 2026-03-23
@@ -26,26 +26,26 @@ This workstream implements Increment 2 of PLAN-003. It addresses three defects. 
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Investigate user/agent turn mismatches in Copilot Chat source files
+### [x] Activity 1: Investigate user/agent turn mismatches in Copilot Chat source files
 
-#### [ ] Task 1.1: Locate source files for the two mismatch sessions with a response gap
+#### [x] Task 1.1: Locate source files for the two mismatch sessions with a response gap
 
-- [ ] Locate the source file for session `202504051500-copilot-chat-9d33fd10` (archived with 12 user turns and 11 agent turns) in VS Code workspaceStorage or globalStorage Copilot Chat directories. The file will be in the VS Code globalStorage directory for the Copilot Chat extension or in a workspace-scoped storage path.
-- [ ] Locate the source file for session `202603221254-copilot-chat-6c25d312` (archived with 6 user turns and 3 agent turns) in the same directories.
-- [ ] For each located file, determine whether it is single-line JSON (direct format or envelope), multi-line JSONL (delta format), or absent. If absent, record the finding and skip Tasks 1.2 and 1.3 for that session.
+- [x] Locate the source file for session `202504051500-copilot-chat-9d33fd10` (archived with 12 user turns and 11 agent turns) in VS Code workspaceStorage or globalStorage Copilot Chat directories. The file will be in the VS Code globalStorage directory for the Copilot Chat extension or in a workspace-scoped storage path.
+- [x] Locate the source file for session `202603221254-copilot-chat-6c25d312` (archived with 6 user turns and 3 agent turns) in the same directories.
+- [x] For each located file, determine whether it is single-line JSON (direct format or envelope), multi-line JSONL (delta format), or absent. If absent, record the finding and skip Tasks 1.2 and 1.3 for that session.
 
-#### [ ] Task 1.2: Count requests and non-empty responses in source files
+#### [x] Task 1.2: Count requests and non-empty responses in source files
 
-- [ ] For `9d33fd10`: parse the file (applying envelope unwrapping if `kind: 0` is detected, or JSONL reconstruction if the file is multi-line). Count the total number of entries in `requests`. Count how many of those entries have a `response` array with at least one item whose `kind` is not `null` or whose `value` is non-empty. If the count of non-empty responses equals 12, the parser drops one valid response — identify which `kind` value on the missing response item is not handled by `extractResponse` in `copilotChatParser.ts`. If the count equals 11, the source data is genuinely incomplete.
-- [ ] For `6c25d312`: apply the same analysis. If non-empty responses number 6, identify the three `kind` values being dropped. If non-empty responses number 3, the source data is genuinely incomplete.
+- [x] For `9d33fd10`: parse the file (applying envelope unwrapping if `kind: 0` is detected, or JSONL reconstruction if the file is multi-line). Count the total number of entries in `requests`. Count how many of those entries have a `response` array with at least one item whose `kind` is not `null` or whose `value` is non-empty. If the count of non-empty responses equals 12, the parser drops one valid response — identify which `kind` value on the missing response item is not handled by `extractResponse` in `copilotChatParser.ts`. If the count equals 11, the source data is genuinely incomplete.
+- [x] For `6c25d312`: apply the same analysis. If non-empty responses number 6, identify the three `kind` values being dropped. If non-empty responses number 3, the source data is genuinely incomplete.
 
-#### [ ] Task 1.3: Record investigation finding
+#### [x] Task 1.3: Record investigation finding
 
-- [ ] Record the investigation finding in "Divergences and notes" of this workstream file before proceeding to Activity 2. If a parser defect is identified, state the specific `kind` value(s) that `extractResponse` does not handle and that produce dropped response items. If the source data is genuinely incomplete for one or both sessions, state this with the evidence (request count vs. response count in source).
+- [x] Record the investigation finding in "Divergences and notes" of this workstream file before proceeding to Activity 2. If a parser defect is identified, state the specific `kind` value(s) that `extractResponse` does not handle and that produce dropped response items. If the source data is genuinely incomplete for one or both sessions, state this with the evidence (request count vs. response count in source).
 
-#### [ ] Task 1.4: Commit investigation results
+#### [x] Task 1.4: Commit investigation results
 
-- [ ] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass. Commit this workstream file with commit message: `fix(archiving): investigate copilot chat turn mismatch in source files`.
+- [x] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass. Commit this workstream file with commit message: `fix(archiving): investigate copilot chat turn mismatch in source files`.
 
 ### [ ] Activity 2: Apply fixes to the Copilot Chat parser and archive service
 
@@ -117,7 +117,11 @@ In `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, add the f
 
 ## Divergences and notes
 
-_No divergences recorded yet._
+**Activity 1 investigation finding — turn mismatch source analysis:**
+
+- **Session `9d33fd10` (direct JSON, no envelope):** File located at `workspaceStorage/2d7b0a91d5ebbf29362cd73610268f70/chatSessions/9d33fd10-2d2c-41f9-9df3-9406d1d7df9f.json` (and duplicate at `6cabd8a896839c5d7a516c90465f1d6a`). Format: single-line JSON, direct format — no `{kind, v}` envelope. Request count: 12. Request 3 has an empty `response` array (0 items) — the source data is genuinely incomplete for that turn. Non-empty text responses: 11, matching the archived count. Unhandled `kind` values found (`progressMessage`, `inlineReference`) have no text `value`, so they do not produce dropped response items. Conclusion: **source data genuinely incomplete; no parser defect identified**.
+- **Session `6c25d312` (JSONL delta format):** File located at `workspaceStorage/6cabd8a896839c5d7a516c90465f1d6a/chatSessions/6c25d312-7471-4689-95f1-61456e19f0e3.jsonl`. Format: multi-line JSONL delta. Total requests after reconstruction: 6. Requests 1, 2, 3 have responses containing only `mcpServersStarting`, `progressMessage`, `warning`, and `command` items — all without a text `value`. Requests 0, 4, 5 have meaningful text content (18, 10, and 4 text items respectively). Non-empty responses: 3, matching the archived count. Conclusion: **source data genuinely incomplete; no parser defect identified; 6 user turns vs 3 agent turns accurately reflects the source**.
+- **Task 2.3 implication:** Both sessions have genuinely incomplete source data. Task 2.3 (fix `extractResponse` for confirmed dropped `kind` values) is **skipped** per its conditional: "If Task 1.2 confirmed incomplete source data for both sessions, skip this task."
 
 ### Reflection
 
