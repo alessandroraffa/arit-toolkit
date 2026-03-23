@@ -2,7 +2,7 @@
 title: 'One-shot re-archive of pre-fix sessions'
 plan: PLAN-003-archiving-parser-correctness
 workstream: WS-0011
-status: idle
+status: in-progress
 workspaces: []
 dependencies: [WS-0009, WS-0010]
 created: 2026-03-23
@@ -26,31 +26,31 @@ This workstream implements Increment 3 of PLAN-003. With both parser corrections
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Confirm re-archive mechanism and add unit test
+### [x] Activity 1: Confirm re-archive mechanism and add unit test
 
-#### [ ] Task 1.1: Confirm the `deduplicateAndHydrate` and `archiveSession` behavior in source
+#### [x] Task 1.1: Confirm the `deduplicateAndHydrate` and `archiveSession` behavior in source
 
 Read `src/features/agentSessionsArchiving/archiveService.ts` in full before proceeding.
 
-- [ ] Locate `deduplicateAndHydrate` (line 227). Confirm that line 241 stores `mtime: 0` for each archive file found on disk: `this.lastArchivedMap.set(archiveName, { mtime: 0, archiveFileName: best.name })`.
-- [ ] Locate `archiveSession` (line 117). Confirm that line 122 reads `entry?.mtime === session.mtime` and returns early only when the stored mtime equals the source file mtime. Because `deduplicateAndHydrate` stores `mtime: 0` and all real source file mtimes are positive integers, this guard never triggers for a session hydrated from disk, ensuring re-processing.
-- [ ] Confirm that after a successful archive write (line 135), `lastArchivedMap` is updated with the actual source `session.mtime`, so the second cycle's guard does trigger (stored mtime equals source mtime), preventing a loop.
-- [ ] Record the confirmation in "Divergences and notes". If any line numbers do not match (due to changes from WS-0009 or WS-0010), record the actual line numbers.
+- [x] Locate `deduplicateAndHydrate` (line 227). Confirm that line 241 stores `mtime: 0` for each archive file found on disk: `this.lastArchivedMap.set(archiveName, { mtime: 0, archiveFileName: best.name })`.
+- [x] Locate `archiveSession` (line 117). Confirm that line 122 reads `entry?.mtime === session.mtime` and returns early only when the stored mtime equals the source file mtime. Because `deduplicateAndHydrate` stores `mtime: 0` and all real source file mtimes are positive integers, this guard never triggers for a session hydrated from disk, ensuring re-processing.
+- [x] Confirm that after a successful archive write (line 135), `lastArchivedMap` is updated with the actual source `session.mtime`, so the second cycle's guard does trigger (stored mtime equals source mtime), preventing a loop.
+- [x] Record the confirmation in "Divergences and notes". If any line numbers do not match (due to changes from WS-0009 or WS-0010), record the actual line numbers.
 
-#### [ ] Task 1.2: Add unit test verifying that a hydrated session is reprocessed on the first cycle but skipped on the second
+#### [x] Task 1.2: Add unit test verifying that a hydrated session is reprocessed on the first cycle but skipped on the second
 
 Open `test/unit/features/agentSessionsArchiving/archiveService.test.ts` and add the following test case inside the `describe('runArchiveCycle')` block.
 
-- [ ] Add test `'should reprocess a session whose archive was hydrated from disk with mtime 0, then skip it on the second cycle'`: set `workspace.fs.readDirectory = vi.fn().mockResolvedValue([['202603090513-copilot-chat-test-session.md', 1]])` (returning one existing archive file entry for `test-session`); create a mock session with `archiveName: 'copilot-chat-test-session'`, `mtime: 1000`, `providerName: 'test-provider'`, `extension: '.json'`; set `workspace.fs.copy = vi.fn().mockResolvedValue(undefined)`; call `service.start(DEFAULT_CONFIG)` then `await service.runArchiveCycle()` — assert `workspace.fs.copy` was called (the session was re-processed despite already having an archive file, because `deduplicateAndHydrate` stored `mtime: 0`); clear the copy mock; call `await service.runArchiveCycle()` a second time — assert `workspace.fs.copy` was not called (the second cycle skips the session because `lastArchivedMap` now stores `mtime: 1000`).
+- [x] Add test `'should reprocess a session whose archive was hydrated from disk with mtime 0, then skip it on the second cycle'`: set `workspace.fs.readDirectory = vi.fn().mockResolvedValue([['202603090513-copilot-chat-test-session.md', 1]])` (returning one existing archive file entry for `test-session`); create a mock session with `archiveName: 'copilot-chat-test-session'`, `mtime: 1000`, `providerName: 'test-provider'`, `extension: '.json'`; set `workspace.fs.copy = vi.fn().mockResolvedValue(undefined)`; call `service.start(DEFAULT_CONFIG)` then `await service.runArchiveCycle()` — assert `workspace.fs.copy` was called (the session was re-processed despite already having an archive file, because `deduplicateAndHydrate` stored `mtime: 0`); clear the copy mock; call `await service.runArchiveCycle()` a second time — assert `workspace.fs.copy` was not called (the second cycle skips the session because `lastArchivedMap` now stores `mtime: 1000`).
 
-#### [ ] Task 1.3: Update impacted documentation
+#### [x] Task 1.3: Update impacted documentation
 
-- [ ] Update `docs/technical-context.md` section 8.6 ("Agent Session Archiving Model") under "Replacement semantics (not accumulation)": add a sentence stating that on each startup, `deduplicateAndHydrate` stores `mtime: 0` for all archive files read from disk, causing every session to be re-processed on the first archive cycle. After that cycle, the map is updated with actual source mtimes and subsequent cycles apply normal skip behavior.
-- [ ] Mark all completed checkboxes in this activity.
+- [x] Update `docs/technical-context.md` section 8.6 ("Agent Session Archiving Model") under "Replacement semantics (not accumulation)": add a sentence stating that on each startup, `deduplicateAndHydrate` stores `mtime: 0` for all archive files read from disk, causing every session to be re-processed on the first archive cycle. After that cycle, the map is updated with actual source mtimes and subsequent cycles apply normal skip behavior.
+- [x] Mark all completed checkboxes in this activity.
 
-#### [ ] Task 1.4: Run quality gate and commit
+#### [x] Task 1.4: Run quality gate and commit
 
-- [ ] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. Commit `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, `docs/technical-context.md`, and this workstream file with commit message: `test(archiving): verify one-shot re-archive via mtime-0 hydration on startup`.
+- [x] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. Commit `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, `docs/technical-context.md`, and this workstream file with commit message: `test(archiving): verify one-shot re-archive via mtime-0 hydration on startup`.
 
 ### [ ] Activity 2: Manual verification of re-archived session output in the oceanus workspace
 
@@ -96,6 +96,43 @@ Open `test/unit/features/agentSessionsArchiving/archiveService.test.ts` and add 
 ## Divergences and notes
 
 **D1 — Re-archive scope includes all providers, not just Codex and Copilot Chat.** The plan's Increment 3 originally stated "The re-archive must scope its reprocessing to providers affected by this initiative (Codex and Copilot Chat)." The existing `deduplicateAndHydrate` mechanism stores `mtime: 0` for ALL archive files, causing all providers' sessions to be reprocessed on the first cycle. Adding provider-scoped filtering would introduce complexity with no functional benefit — unaffected sessions regenerate identical output. PM approved accepting this divergence and updating the plan constraint (2026-03-23).
+
+**D2 — Task 1.1 line number confirmation (actual vs. workstream-specified).** The workstream specified `deduplicateAndHydrate` at line 227 and the `mtime: 0` store at line 241; the guard at line 122; the mtime update at line 135. After changes from WS-0009 and WS-0010, the actual line numbers are: `deduplicateAndHydrate` starts at line 247, `mtime: 0` store at line 261; `archiveSession` starts at line 117, guard at line 122; mtime update after successful write at lines 135–138. The guard and mtime-update line numbers match the workstream exactly; the `deduplicateAndHydrate` function shifted by 20 lines due to code additions from prior workstreams. Behavioral confirmation is unchanged: all three mechanisms operate as described.
+
+**D3 — Activity 2 (manual verification) cannot be executed by agent — requires VS Code Extension Development Host.** Activity 2 involves launching VS Code, waiting for archive cycles, and visually inspecting the archive directory. These operations require a GUI environment that is not available to the agent. The PM must perform Activity 2 manually. Detailed instructions are recorded below.
+
+**Activity 2 — Manual verification instructions for PM:**
+
+Prerequisites:
+
+- Branch `fix/archiving-parser-correctness` built successfully (`pnpm run check-types && pnpm run build` from `/Users/alessandroraffa/dev/vscode-extensions/arit`).
+- The oceanus workspace (`/Users/alessandroraffa/dev/oceanus`) has `agentSessionsArchiving.enabled: true` in `.arit-toolkit.jsonc`.
+
+Steps:
+
+1. Open VS Code Extension Development Host: `code --extensionDevelopmentPath=/Users/alessandroraffa/dev/vscode-extensions/arit /Users/alessandroraffa/dev/oceanus`
+2. In VS Code settings, set `"arit-toolkit.logLevel": "debug"` so that `Archived <session> → <filename>` log entries are visible in the ARIT Toolkit Output Channel.
+3. Wait for the first archive cycle to complete (interval set by `intervalMinutes` in config). Observe the Output Channel for `Archived` entries.
+
+Task 2.2 verification — multi-turn Codex sessions:
+
+- `202603092004-codex-019cd433.md`: count `**User:**` sections — pass if ≥ 10, fail if exactly 1.
+- `202603221444-codex-019d1600.md`: pass if ≥ 6 `**User:**` sections.
+- `202603191634-codex-019d06f2.md`: pass if ≥ 5 `**User:**` sections.
+- `202602241532-codex-019c9048.md` and `202603160054-codex-019cf41f.md`: pass if each has exactly 2 `**User:**` sections.
+
+Task 2.3 verification — Copilot Chat envelope sessions and empty session behavior:
+
+- `copilot-chat-7a54e9a3`: confirm `.md` file present with ≥ 7 `**User:**` sections (not a raw `.jsonl`).
+- Confirm none of these raw `.jsonl` files exist in archive: `copilot-chat-4ebac531.jsonl`, `copilot-chat-e3380c93.jsonl`, `copilot-chat-ee0e73f7.jsonl`, `copilot-chat-e2f0429e.jsonl`, `copilot-chat-1bc4538f.jsonl`, `copilot-chat-418b3bfd.jsonl`, `copilot-chat-b5b93bb0.jsonl`, `copilot-chat-9901b84a.jsonl`, `copilot-chat-f62147e7.jsonl`, `copilot-chat-4a4d1d26.jsonl`.
+- Check `copilot-chat-b7311380.md`, `copilot-chat-6be6586b.md`, `copilot-chat-bae38255.md`, `copilot-chat-b6145e31.md`: pass if absent or contains ≥ 1 non-empty `**User:**` or `**Agent:**` turn.
+
+Task 2.4 verification — no loop on second cycle:
+
+- After the first cycle completes, wait for the second archive cycle (or restart EDH and wait).
+- Confirm the Output Channel does NOT log `Archived <session> → <filename>` for sessions that were processed in the first cycle and whose source files have not changed.
+
+After completing the manual verification, update Tasks 2.1–2.5 checkboxes and record pass/fail results in this divergence section, then run the quality gate and create the Activity 2 closing commit per Task 2.6.
 
 ### Reflection
 

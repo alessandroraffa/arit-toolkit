@@ -473,6 +473,19 @@ exactly one archived file at any time. When the source's `mtime`
 changes, the old archive file is deleted and a new one with an updated
 timestamp prefix is created.
 
+**One-shot re-archive on startup:** On each extension startup,
+`deduplicateAndHydrate` reads all archive files from disk and stores
+`mtime: 0` for each one in `lastArchivedMap`. Because real source file
+`mtime` values are always positive integers, the skip guard
+(`entry?.mtime === session.mtime`) never triggers for any session
+hydrated from disk — every session is re-processed on the first archive
+cycle after startup. After that cycle completes, `lastArchivedMap` is
+updated with the actual source `mtime` values, and subsequent cycles
+resume normal mtime-based skip behavior. This design ensures that a
+patched extension automatically re-archives previously affected sessions
+on its first cycle without requiring any persistent flag or manual
+intervention.
+
 **Archive file naming:** `{YYYYMMDDHHmm}-{archiveName}{extension}`,
 where the timestamp is derived from the session file's creation time
 (`ctime`), not the modification time or the current time.
