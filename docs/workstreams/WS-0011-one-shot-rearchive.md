@@ -2,7 +2,7 @@
 title: 'One-shot re-archive of pre-fix sessions'
 plan: PLAN-003-archiving-parser-correctness
 workstream: WS-0011
-status: draft
+status: idle
 workspaces: []
 dependencies: [WS-0009, WS-0010]
 created: 2026-03-23

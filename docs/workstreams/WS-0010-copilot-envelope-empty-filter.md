@@ -2,7 +2,7 @@
 title: 'Copilot Chat envelope unwrapping, empty session filtering, and turn mismatch investigation'
 plan: PLAN-003-archiving-parser-correctness
 workstream: WS-0010
-status: draft
+status: idle
 workspaces: []
 dependencies: []
 created: 2026-03-23

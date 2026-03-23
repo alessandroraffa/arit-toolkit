@@ -2,7 +2,7 @@
 title: 'Codex parser multi-turn correction and reasoning investigation'
 plan: PLAN-003-archiving-parser-correctness
 workstream: WS-0009
-status: draft
+status: idle
 workspaces: []
 dependencies: []
 created: 2026-03-23
