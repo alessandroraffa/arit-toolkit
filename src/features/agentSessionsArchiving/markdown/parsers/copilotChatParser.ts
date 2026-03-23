@@ -66,7 +66,10 @@ export class CopilotChatParser implements SessionParser {
 
   private parseContent(content: string): CopilotSession {
     try {
-      return JSON.parse(content) as CopilotSession;
+      const raw = JSON.parse(content) as { v?: unknown };
+      const inner =
+        raw.v !== null && raw.v !== undefined && typeof raw.v === 'object' ? raw.v : raw;
+      return inner as CopilotSession;
     } catch {
       return this.tryJsonl(content);
     }

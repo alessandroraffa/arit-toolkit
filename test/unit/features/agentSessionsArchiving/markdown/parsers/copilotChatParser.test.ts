@@ -306,4 +306,87 @@ describe('CopilotChatParser', () => {
     expect(session.turns[1]!.toolCalls[0]!.name).toBe('copilot_findFiles');
     expect(session.turns[1]!.content).toBe('Done.');
   });
+
+  // --- VS Code envelope format ({kind: 0, v: {...}}) support ---
+
+  it('should parse an envelope-format session with kind 0 and v containing requests', () => {
+    const content = JSON.stringify({
+      kind: 0,
+      v: {
+        requests: [
+          {
+            message: { text: 'Hello' },
+            response: [{ kind: 'markdownContent', value: 'Hi there.' }],
+          },
+        ],
+      },
+    });
+
+    const session = expectParsed(parser.parse(content, 'envelope-1'));
+
+    expect(session.turns).toHaveLength(2);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('Hello');
+    expect(session.turns[1]!.role).toBe('assistant');
+    expect(session.turns[1]!.content).toBe('Hi there.');
+  });
+
+  it('should parse an envelope-format session where v.requests is empty', () => {
+    const content = JSON.stringify({ kind: 0, v: { requests: [] } });
+
+    const result = parser.parse(content, 'envelope-empty');
+
+    expect(result.status).toBe('parsed');
+    if (result.status !== 'parsed') throw new Error('expected parsed');
+    expect(result.session.turns).toHaveLength(0);
+  });
+
+  it('should parse an envelope-format session with multiple requests', () => {
+    const content = JSON.stringify({
+      kind: 0,
+      v: {
+        requests: [
+          {
+            message: { text: 'Q1' },
+            response: [{ kind: 'markdownContent', value: 'A1' }],
+          },
+          {
+            message: { text: 'Q2' },
+            response: [{ kind: 'markdownContent', value: 'A2' }],
+          },
+        ],
+      },
+    });
+
+    const session = expectParsed(parser.parse(content, 'envelope-multi'));
+
+    expect(session.turns).toHaveLength(4);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('Q1');
+    expect(session.turns[1]!.role).toBe('assistant');
+    expect(session.turns[1]!.content).toBe('A1');
+    expect(session.turns[2]!.role).toBe('user');
+    expect(session.turns[2]!.content).toBe('Q2');
+    expect(session.turns[3]!.role).toBe('assistant');
+    expect(session.turns[3]!.content).toBe('A2');
+  });
+
+  it('should continue to parse direct-format sessions without envelope', () => {
+    const content = JSON.stringify({
+      requests: [
+        {
+          message: { text: 'How do I sort an array?' },
+          response: [{ kind: 'markdownContent', value: 'Use Array.sort().' }],
+        },
+      ],
+    });
+
+    const session = expectParsed(parser.parse(content, 'direct-format'));
+
+    expect(session.turns).toHaveLength(2);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('How do I sort an array?');
+    expect(session.turns[1]!.role).toBe('assistant');
+    expect(session.turns[1]!.content).toBe('Use Array.sort().');
+  });
 });

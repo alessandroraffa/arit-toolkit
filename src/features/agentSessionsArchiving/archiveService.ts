@@ -137,6 +137,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         archiveFileName,
       });
       this.logger.debug(`Archived ${session.displayName} → ${archiveFileName}`);
+    } else {
+      this.lastArchivedMap.set(session.archiveName, {
+        mtime: session.mtime,
+        archiveFileName: '',
+      });
     }
   }
 
@@ -157,6 +162,21 @@ export class AgentSessionArchiveService implements vscode.Disposable {
           `Unrecognized format for ${session.displayName}: ${result.reason}`
         );
         return await this.copyRawArchive(session, archiveUri, timestamp);
+      }
+
+      const allTurnsEmpty = result.session.turns.every(
+        (turn) =>
+          !turn.content.trim() &&
+          turn.toolCalls.length === 0 &&
+          !turn.thinking &&
+          turn.filesRead.length === 0 &&
+          turn.filesModified.length === 0
+      );
+      if (allTurnsEmpty) {
+        this.logger.info(
+          `Skipped empty session ${session.displayName} — zero non-empty turns`
+        );
+        return undefined;
       }
 
       const mdFileName = `${timestamp}-${session.archiveName}.md`;

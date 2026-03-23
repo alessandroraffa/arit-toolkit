@@ -311,6 +311,81 @@ describe('AgentSessionArchiveService', () => {
 
       service.dispose();
     });
+
+    it('should skip writing and log info for a parsed copilot-chat session with zero non-empty turns', async () => {
+      const session = createMockSession({
+        providerName: 'copilot-chat',
+        archiveName: 'copilot-chat-empty',
+        displayName: 'Copilot Empty Session',
+        extension: '.json',
+        mtime: 1000,
+      });
+      const provider = createMockProvider([session]);
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode(JSON.stringify({ kind: 0, v: { requests: [] } }))
+        );
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.writeFile).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('Skipped empty session')
+      );
+
+      // Second cycle: session is not re-parsed (lastArchivedMap prevents reprocessing)
+      vi.mocked(workspace.fs.readFile).mockClear();
+      await service.runArchiveCycle();
+      expect(workspace.fs.readFile).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should write the archive file for a parsed copilot-chat session with at least one non-empty turn', async () => {
+      const session = createMockSession({
+        providerName: 'copilot-chat',
+        archiveName: 'copilot-chat-session',
+        displayName: 'Copilot Session',
+        extension: '.json',
+        mtime: 1000,
+      });
+      const provider = createMockProvider([session]);
+      workspace.fs.readFile = vi.fn().mockResolvedValue(
+        new TextEncoder().encode(
+          JSON.stringify({
+            requests: [
+              {
+                message: { text: 'Hello' },
+                response: [{ kind: 'markdownContent', value: 'Hi.' }],
+              },
+            ],
+          })
+        )
+      );
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.writeFile).toHaveBeenCalled();
+
+      service.dispose();
+    });
   });
 
   describe('reconfigure', () => {

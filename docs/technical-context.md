@@ -440,7 +440,19 @@ content and check if it references the workspace root path.
 or `{ status: 'unrecognized', reason: string }`. When a parser cannot
 interpret a file (unexpected format or schema), `ArchiveService` logs a
 warning and falls back to copying the raw file instead of generating
-markdown.
+markdown. The Copilot Chat parser detects and unwraps the VS Code
+`{kind, v}` serialization envelope before accessing session fields: when
+the parsed JSON contains a `v` property that is a non-null object, the
+parser uses `v` as the session root; otherwise it uses the object
+directly, preserving backward compatibility with the direct format.
+
+**Empty session filtering:** After parsing, the archive service checks
+whether all turns in the session have empty content, no tool calls, no
+thinking, and no file references. If every turn is empty, the session
+write is skipped and the skip is logged at `info` level. The session's
+`mtime` is still recorded in `lastArchivedMap` (with an empty
+`archiveFileName`) so the session is not reprocessed on subsequent
+archive cycles.
 
 **Codex parser multi-turn handling:** The Codex parser detects each
 `user_message` event as a turn boundary. When a new user message arrives,
