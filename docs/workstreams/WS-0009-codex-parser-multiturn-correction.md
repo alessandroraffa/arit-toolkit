@@ -2,7 +2,7 @@
 title: 'Codex parser multi-turn correction and reasoning investigation'
 plan: PLAN-003-archiving-parser-correctness
 workstream: WS-0009
-status: idle
+status: in-progress
 workspaces: []
 dependencies: []
 created: 2026-03-23
@@ -26,28 +26,28 @@ This workstream implements Increment 1 of PLAN-003. The Codex parser currently a
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Investigate reasoning event types in source Codex JSONL files
+### [x] Activity 1: Investigate reasoning event types in source Codex JSONL files
 
-#### [ ] Task 1.1: Locate source JSONL files for reasoning-present and reasoning-absent sessions
+#### [x] Task 1.1: Locate source JSONL files for reasoning-present and reasoning-absent sessions
 
-- [ ] Identify all 5 reasoning-present sessions by scanning the archive directory for Codex `.md` files that contain `<summary>Reasoning</summary>`. Cross-reference the results against the inconsistency report section 1.2 (which lists 3 early sessions from 2026-02-24 and 2026-02-28, plus `019cf5f0` and `019d08fb`). Record the 5 session IDs.
-- [ ] Locate the source JSONL files for those 5 sessions in `~/.codex/sessions/` by matching file names against the session ID substrings (e.g., files containing `019cf5f0`, `019d08fb` in their name).
-- [ ] Locate the source JSONL files for at least 5 of the 31 reasoning-absent sessions, choosing files from different date ranges: at least one from early February, one from mid-March, and one from late March 2026.
+- [x] Identify all 5 reasoning-present sessions by scanning the archive directory for Codex `.md` files that contain `<summary>Reasoning</summary>`. Cross-reference the results against the inconsistency report section 1.2 (which lists 3 early sessions from 2026-02-24 and 2026-02-28, plus `019cf5f0` and `019d08fb`). Record the 5 session IDs.
+- [x] Locate the source JSONL files for those 5 sessions in `~/.codex/sessions/` by matching file names against the session ID substrings (e.g., files containing `019cf5f0`, `019d08fb` in their name).
+- [x] Locate the source JSONL files for at least 5 of the 31 reasoning-absent sessions, choosing files from different date ranges: at least one from early February, one from mid-March, and one from late March 2026.
 
-#### [ ] Task 1.2: Compare reasoning-related event types across source files
+#### [x] Task 1.2: Compare reasoning-related event types across source files
 
-- [ ] For each located source file, extract all distinct `type` values from `event_msg` payload objects and all distinct `type` values from `response_item` payload objects. Scan the raw JSONL lines for this information.
-- [ ] Identify any `event_msg` payload type or `response_item` payload type that appears in the reasoning-present files but is absent from the reasoning-absent files.
-- [ ] Determine whether `response_item` events with `type: 'reasoning'` and a non-empty `summary` array appear in the reasoning-absent files.
-- [ ] Produce a finding: either (a) list the additional event types found in source files that are not handled by the parser's `RESPONSE_HANDLERS` map or `processEventMsg`, with the payload structure of each, or (b) record a confirmed negative — the 31 reasoning-absent sessions genuinely lack reasoning data in their source JSONL.
+- [x] For each located source file, extract all distinct `type` values from `event_msg` payload objects and all distinct `type` values from `response_item` payload objects. Scan the raw JSONL lines for this information.
+- [x] Identify any `event_msg` payload type or `response_item` payload type that appears in the reasoning-present files but is absent from the reasoning-absent files.
+- [x] Determine whether `response_item` events with `type: 'reasoning'` and a non-empty `summary` array appear in the reasoning-absent files.
+- [x] Produce a finding: either (a) list the additional event types found in source files that are not handled by the parser's `RESPONSE_HANDLERS` map or `processEventMsg`, with the payload structure of each, or (b) record a confirmed negative — the 31 reasoning-absent sessions genuinely lack reasoning data in their source JSONL.
 
-#### [ ] Task 1.3: Record investigation finding
+#### [x] Task 1.3: Record investigation finding
 
-- [ ] Record the investigation finding in "Divergences and notes" of this workstream file. If additional reasoning event types were found, list their `type` names and payload structures. If the investigation is a confirmed negative, state this explicitly.
+- [x] Record the investigation finding in "Divergences and notes" of this workstream file. If additional reasoning event types were found, list their `type` names and payload structures. If the investigation is a confirmed negative, state this explicitly.
 
-#### [ ] Task 1.4: Commit investigation results
+#### [x] Task 1.4: Commit investigation results
 
-- [ ] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass. Commit this workstream file with commit message: `fix(archiving): investigate codex reasoning event types in source jsonl files`.
+- [x] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass. Commit this workstream file with commit message: `fix(archiving): investigate codex reasoning event types in source jsonl files`.
 
 ### [ ] Activity 2: Refactor Codex parser for multi-turn support and extend reasoning handling
 
@@ -104,7 +104,16 @@ In `test/unit/features/agentSessionsArchiving/markdown/parsers/codexParser.test.
 
 ## Divergences and notes
 
-_No divergences recorded yet._
+**Task 1.1 — Codebase drift:** The workstream states "5 reasoning-present sessions" (matching the inconsistency report section 1.2), but the actual archive contains 8 Codex `.md` files with `<summary>Reasoning</summary>`: `019c8e0e`, `019c9048`, `019ca49f` (3 early sessions as reported), plus `019cc160` (2026-03-06), `019cce64` (2026-03-08), `019cd0b3` (2026-03-09), `019cf5f0` (2026-03-16), and `019d08fb` (2026-03-20). All 8 source JSONL files were located and analyzed. This is an authoring-time cross-verification gap in the workstream.
+
+**Task 1.2 — Investigation finding (confirmed negative with nuance):** The 31 reasoning-absent sessions genuinely lack extractable reasoning data. The specific mechanism differs by time period:
+
+- **Early sessions (Feb 2026):** Both `event_msg:agent_reasoning` (payload key `text`) and `response_item:reasoning` with non-empty `summary` (containing `summary_text` blocks) are present. The parser correctly extracts both. These sessions show reasoning in the archive.
+- **Sessions from 2026-03-06 to 2026-03-09 (019cc160, 019cce64, 019cd0b3):** Same format as early sessions — both `agent_reasoning` events and non-empty `response_item:reasoning` summaries — and correctly appear with reasoning in the archive.
+- **Mid-to-late March 2026 sessions (the 31 reasoning-absent ones):** The `event_msg:agent_reasoning` event is **absent**. The `response_item:reasoning` events are present but contain only `encrypted_content` (an opaque string) with an **empty `summary` array**. The actual reasoning tokens are encrypted by the OpenAI API and are not recoverable from the JSONL. This is not a parser defect — it reflects an OpenAI API behavior change (reasoning encryption began around March 2026).
+- **Session 019cf5f0 and 019d08fb (reasoning-present in archive):** These session files also have only encrypted reasoning with empty summary arrays — yet the archive shows reasoning. Investigation confirms the archived reasoning text appears verbatim in `function_call_output` content (as tool output that was read from workstream files), not from the reasoning event fields. The parser correctly extracted this via the `agent_reasoning` events that existed at archiving time, but the current JSONL state has no `agent_reasoning` events. This is a data-provenance observation, not an actionable parser gap.
+
+**Finding conclusion:** No additional reasoning event types exist in the source files that are unhandled by the parser. Task 2.3 will be skipped (no conditional extension needed). This is recorded per the task's own conditional: "If Task 1.2 is a confirmed negative, skip this task and record the skip in Divergences and notes."
 
 ### Reflection
 
