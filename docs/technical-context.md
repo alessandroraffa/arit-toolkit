@@ -442,6 +442,14 @@ interpret a file (unexpected format or schema), `ArchiveService` logs a
 warning and falls back to copying the raw file instead of generating
 markdown.
 
+**Codex parser multi-turn handling:** The Codex parser detects each
+`user_message` event as a turn boundary. When a new user message arrives,
+the parser emits the accumulated turn pair (user turn plus any assistant
+content, tool calls, and reasoning accumulated so far) into a completed
+turns list and resets the state before starting the new turn, so
+multi-turn sessions produce distinct user and assistant turn pairs in
+their original sequence.
+
 **JSONL delta reconstruction (`copilotJsonlReconstructor.ts`):** GitHub
 Copilot Chat stores newer sessions as append-only JSONL delta files. The
 reconstructor processes three event kinds — `0` (init), `1` (set field),
