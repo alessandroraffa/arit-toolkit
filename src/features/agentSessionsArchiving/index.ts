@@ -67,7 +67,8 @@ function registerCommands(
       );
       return;
     }
-    await service.runArchiveCycle();
+    await service.runArchiveCycle(true);
+    void vscode.window.showInformationMessage('Agent sessions archive completed.');
   });
 
   logger.debug(`Registered commands: ${COMMAND_ID_TOGGLE}, ${COMMAND_ID_ARCHIVE_NOW}`);

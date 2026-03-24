@@ -2,7 +2,7 @@
 title: 'Archive service observability and force re-archive'
 objective: Fix config re-read error swallowing, add archive cycle logging, and make "Archive Now" bypass the mtime cache.
 workstream: WS-0012
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: []
 created: 2026-03-23
@@ -74,49 +74,53 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` before making any c
 - [x] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. If any check fails, fix the failure before proceeding — do not commit with a failing quality gate.
 - [x] Commit `src/core/extensionStateManager.ts`, `src/features/agentSessionsArchiving/archiveService.ts`, `docs/technical-context.md`, and this workstream file with message: `fix(archiving): include error detail in config re-read warning and add cycle observability`.
 
-### [ ] Activity 2: Introduce force parameter and user feedback for "Archive Now"
+### [x] Activity 2: Introduce force parameter and user feedback for "Archive Now"
 
-#### [ ] Task 2.1: Add the `force` parameter to `runArchiveCycle()` and thread it to `archiveFromProviders()`
+#### [x] Task 2.1: Add the `force` parameter to `runArchiveCycle()` and thread it to `archiveFromProviders()`
 
 Read `src/features/agentSessionsArchiving/archiveService.ts` before making any change.
 
-- [ ] Change the signature of `runArchiveCycle()` at line 73 from `public async runArchiveCycle(): Promise<void>` to `public async runArchiveCycle(force = false): Promise<void>`.
-- [ ] In the body of `runArchiveCycle()`, change the call `await this.archiveFromProviders(archiveUri);` to `await this.archiveFromProviders(archiveUri, force);`.
-- [ ] Change the signature of `archiveFromProviders()` at line 88 from `private async archiveFromProviders(archiveUri: vscode.Uri): Promise<void>` to `private async archiveFromProviders(archiveUri: vscode.Uri, force = false): Promise<void>`.
-- [ ] In the body of `archiveFromProviders()`, change the call `await this.archiveSession(session, archiveUri);` to `await this.archiveSession(session, archiveUri, force);`.
+- [x] Change the signature of `runArchiveCycle()` at line 73 from `public async runArchiveCycle(): Promise<void>` to `public async runArchiveCycle(force = false): Promise<void>`.
+- [x] In the body of `runArchiveCycle()`, change the call `await this.archiveFromProviders(archiveUri);` to `await this.archiveFromProviders(archiveUri, force);`.
+- [x] Change the signature of `archiveFromProviders()` at line 88 from `private async archiveFromProviders(archiveUri: vscode.Uri): Promise<void>` to `private async archiveFromProviders(archiveUri: vscode.Uri, force = false): Promise<void>`.
+- [x] In the body of `archiveFromProviders()`, change the call `await this.archiveSession(session, archiveUri);` to `await this.archiveSession(session, archiveUri, force);`.
 
-#### [ ] Task 2.2: Add the `force` parameter to `archiveSession()` and bypass the mtime guard when `force` is `true`
+#### [x] Task 2.2: Add the `force` parameter to `archiveSession()` and bypass the mtime guard when `force` is `true`
 
-- [ ] Change the signature of `archiveSession()` at line 117 from `private async archiveSession(session: SessionFile, archiveUri: vscode.Uri): Promise<void>` to `private async archiveSession(session: SessionFile, archiveUri: vscode.Uri, force = false): Promise<void>`.
-- [ ] Change the guard condition at line 122 from `if (entry?.mtime === session.mtime) {` to `if (!force && entry?.mtime === session.mtime) {`. The entire guard block (including the debug log added in Task 1.3 and the `return;`) remains unchanged; only the condition prefix changes.
+- [x] Change the signature of `archiveSession()` at line 117 from `private async archiveSession(session: SessionFile, archiveUri: vscode.Uri): Promise<void>` to `private async archiveSession(session: SessionFile, archiveUri: vscode.Uri, force = false): Promise<void>`.
+- [x] Change the guard condition at line 122 from `if (entry?.mtime === session.mtime) {` to `if (!force && entry?.mtime === session.mtime) {`. The entire guard block (including the debug log added in Task 1.3 and the `return;`) remains unchanged; only the condition prefix changes.
 
-#### [ ] Task 2.3: Update the "Archive Now" handler to pass `force = true` and show a completion message
+#### [x] Task 2.3: Update the "Archive Now" handler to pass `force = true` and show a completion message
 
 Read `src/features/agentSessionsArchiving/index.ts` before making any change.
 
-- [ ] In the `COMMAND_ID_ARCHIVE_NOW` handler at lines 63–71, change the call `await service.runArchiveCycle();` to `await service.runArchiveCycle(true);`.
-- [ ] Immediately after `await service.runArchiveCycle(true);` and before the closing brace of the handler, add: `void vscode.window.showInformationMessage('Agent sessions archive completed.');`.
+- [x] In the `COMMAND_ID_ARCHIVE_NOW` handler at lines 63–71, change the call `await service.runArchiveCycle();` to `await service.runArchiveCycle(true);`.
+- [x] Immediately after `await service.runArchiveCycle(true);` and before the closing brace of the handler, add: `void vscode.window.showInformationMessage('Agent sessions archive completed.');`.
 
-#### [ ] Task 2.4: Update unit tests for the `force` parameter and "Archive Now" handler behavior
+#### [x] Task 2.4: Update unit tests for the `force` parameter and "Archive Now" handler behavior
 
 Read `test/unit/features/agentSessionsArchiving/archiveService.test.ts` and `test/unit/features/agentSessionsArchiving/index.test.ts` before making any change.
 
-- [ ] In `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, locate the existing test `'should skip files with unchanged mtime'` inside `describe('runArchiveCycle')`. After that test, add a new test case: `'should re-archive a session with unchanged mtime when force is true'`. The test: creates a `session` with `mtime: 1000`; creates a provider returning that session; calls `service.start(DEFAULT_CONFIG)` then `await service.runArchiveCycle()` to populate the cache; clears `workspace.fs.copy` mock; calls `await service.runArchiveCycle(true)`; asserts `workspace.fs.copy` was called (the session was reprocessed despite unchanged mtime).
-- [ ] In `test/unit/features/agentSessionsArchiving/index.test.ts`, locate the `describe('archive now command')` block. Find the test `'should run archive cycle when service is running'`. Extend its assertion to also verify that `mockService.runArchiveCycle` was called with `true` as the first argument: replace `expect(mockService.runArchiveCycle).toHaveBeenCalled();` with `expect(mockService.runArchiveCycle).toHaveBeenCalledWith(true);`.
-- [ ] In `test/unit/features/agentSessionsArchiving/index.test.ts`, inside `describe('archive now command')`, add a new test case: `'should show information message after archive cycle completes'`. The test: sets `mockService.currentConfig = { enabled: true }`; registers the feature; retrieves the `arit.archiveAgentSessionsNow` handler; calls `await handler()`; asserts `window.showInformationMessage` was called with `'Agent sessions archive completed.'`.
+- [x] In `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, locate the existing test `'should skip files with unchanged mtime'` inside `describe('runArchiveCycle')`. After that test, add a new test case: `'should re-archive a session with unchanged mtime when force is true'`. The test: creates a `session` with `mtime: 1000`; creates a provider returning that session; calls `service.start(DEFAULT_CONFIG)` then `await service.runArchiveCycle()` to populate the cache; clears `workspace.fs.copy` mock; calls `await service.runArchiveCycle(true)`; asserts `workspace.fs.copy` was called (the session was reprocessed despite unchanged mtime).
+- [x] In `test/unit/features/agentSessionsArchiving/index.test.ts`, locate the `describe('archive now command')` block. Find the test `'should run archive cycle when service is running'`. Extend its assertion to also verify that `mockService.runArchiveCycle` was called with `true` as the first argument: replace `expect(mockService.runArchiveCycle).toHaveBeenCalled();` with `expect(mockService.runArchiveCycle).toHaveBeenCalledWith(true);`.
+- [x] In `test/unit/features/agentSessionsArchiving/index.test.ts`, inside `describe('archive now command')`, add a new test case: `'should show information message after archive cycle completes'`. The test: sets `mockService.currentConfig = { enabled: true }`; registers the feature; retrieves the `arit.archiveAgentSessionsNow` handler; calls `await handler()`; asserts `window.showInformationMessage` was called with `'Agent sessions archive completed.'`.
 
-#### [ ] Task 2.5: Update impacted documentation
+#### [x] Task 2.5: Update impacted documentation
 
-- [ ] In `docs/technical-context.md`, in the same archiving section updated in Task 1.4, add a sentence stating that `runArchiveCycle()` accepts an optional `force` boolean parameter; when `true`, the mtime guard in `archiveSession()` is bypassed, causing all sessions to be reprocessed regardless of their cached mtime. Note that the "Archive Now" command passes `force = true` and that the automatic timer and file-watcher callbacks use the default `force = false`.
-- [ ] Mark all completed checkboxes in this activity.
+- [x] In `docs/technical-context.md`, in the same archiving section updated in Task 1.4, add a sentence stating that `runArchiveCycle()` accepts an optional `force` boolean parameter; when `true`, the mtime guard in `archiveSession()` is bypassed, causing all sessions to be reprocessed regardless of their cached mtime. Note that the "Archive Now" command passes `force = true` and that the automatic timer and file-watcher callbacks use the default `force = false`.
+- [x] Mark all completed checkboxes in this activity.
 
-#### [ ] Task 2.6: Commit changes
+#### [x] Task 2.6: Commit changes
 
-- [ ] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. If any check fails, fix the failure before proceeding — do not commit with a failing quality gate.
-- [ ] Commit `src/features/agentSessionsArchiving/archiveService.ts`, `src/features/agentSessionsArchiving/index.ts`, `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, `test/unit/features/agentSessionsArchiving/index.test.ts`, `docs/technical-context.md`, and this workstream file with message: `fix(archiving): add force re-archive parameter and completion feedback for archive now command`.
+- [x] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. If any check fails, fix the failure before proceeding — do not commit with a failing quality gate.
+- [x] Commit `src/features/agentSessionsArchiving/archiveService.ts`, `src/features/agentSessionsArchiving/index.ts`, `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, `test/unit/features/agentSessionsArchiving/index.test.ts`, `docs/technical-context.md`, and this workstream file with message: `fix(archiving): add force re-archive parameter and completion feedback for archive now command`.
 
 ## Divergences and notes
 
+**D1 — Markdownlint formatting corrections in workstream file.** The original workstream file had MD025 (duplicate H1 heading after frontmatter title), MD031 (missing blank lines around fenced code blocks), and MD040 (missing language specifier on a fenced code block). These were corrected during Activity 1 before the first commit. Root cause: workstream authoring did not validate markdown lint rules.
+
 ### Reflection
 
-_To be compiled at workstream completion._
+Divergence count: 1 (Spec gap).
+
+**Spec gap (1 occurrence):** The workstream file as authored contained markdown formatting violations (duplicate H1, missing blank lines around code blocks, missing language specifier). These were detected by the quality gate and corrected before committing. Single occurrence, low impact — no systemic issue. Proposed improvement: workstream authoring could run markdownlint validation before finalizing drafts.

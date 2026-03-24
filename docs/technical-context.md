@@ -494,6 +494,13 @@ where the timestamp is derived from the session file's creation time
 entries at cycle start and end. `archiveSession()` emits a `debug`-level
 entry when it skips a session due to an unchanged `mtime`.
 
+**Force re-archive:** `runArchiveCycle()` accepts an optional `force`
+boolean parameter. When `true`, the `mtime` guard in `archiveSession()`
+is bypassed, causing all sessions to be reprocessed regardless of their
+cached `mtime`. The "Archive Now" command passes `force = true`; the
+automatic timer and file-watcher callbacks use the default
+`force = false`.
+
 **Change detection:** When a session file's `mtime` changes, the old
 archive file is deleted and a new one (with the same ctime-based prefix)
 is created with updated content.

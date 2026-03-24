@@ -180,6 +180,26 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
 
+    it('should re-archive a session with unchanged mtime when force is true', async () => {
+      const session = createMockSession({ mtime: 1000 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.runArchiveCycle();
+      vi.mocked(workspace.fs.copy).mockClear();
+
+      await service.runArchiveCycle(true);
+
+      expect(workspace.fs.copy).toHaveBeenCalled();
+
+      service.dispose();
+    });
+
     it('should replace old archive when mtime changes', async () => {
       const session = createMockSession({ mtime: 1000 });
       const provider = createMockProvider([session]);
