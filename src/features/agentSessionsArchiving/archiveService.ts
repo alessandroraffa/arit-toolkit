@@ -74,6 +74,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     if (!this._currentConfig) {
       return;
     }
+    this.logger.debug('Archive cycle starting');
     const archiveUri = vscode.Uri.joinPath(
       this.workspaceRootUri,
       this._currentConfig.archivePath
@@ -83,6 +84,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this._needsDedup = false;
     }
     await this.archiveFromProviders(archiveUri);
+    this.logger.debug('Archive cycle complete');
   }
 
   private async archiveFromProviders(archiveUri: vscode.Uri): Promise<void> {
@@ -120,6 +122,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   ): Promise<void> {
     const entry = this.lastArchivedMap.get(session.archiveName);
     if (entry?.mtime === session.mtime) {
+      this.logger.debug(
+        `Skipped ${session.displayName} — mtime unchanged (${String(session.mtime)})`
+      );
       return;
     }
 

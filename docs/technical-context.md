@@ -490,6 +490,10 @@ intervention.
 where the timestamp is derived from the session file's creation time
 (`ctime`), not the modification time or the current time.
 
+**Cycle observability:** `runArchiveCycle()` emits `debug`-level log
+entries at cycle start and end. `archiveSession()` emits a `debug`-level
+entry when it skips a session due to an unchanged `mtime`.
+
 **Change detection:** When a session file's `mtime` changes, the old
 archive file is deleted and a new one (with the same ctime-based prefix)
 is created with updated content.
