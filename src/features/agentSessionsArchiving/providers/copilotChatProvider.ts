@@ -9,6 +9,29 @@ function isSessionFile(name: string): boolean {
   return name.endsWith('.json') || name.endsWith('.jsonl');
 }
 
+function pickPreferredSession(
+  current: SessionFile | undefined,
+  candidate: SessionFile
+): SessionFile {
+  if (!current) {
+    return candidate;
+  }
+
+  if (candidate.mtime > current.mtime) {
+    return candidate;
+  }
+
+  if (candidate.mtime < current.mtime) {
+    return current;
+  }
+
+  if (candidate.extension === '.jsonl' && current.extension !== '.jsonl') {
+    return candidate;
+  }
+
+  return current;
+}
+
 export class CopilotChatProvider implements SessionProvider {
   public readonly name = 'copilot-chat';
   public readonly displayName = 'GitHub Copilot Chat';
@@ -17,7 +40,10 @@ export class CopilotChatProvider implements SessionProvider {
 
   public getWatchPatterns(): WatchPattern[] {
     const baseUri = vscode.Uri.joinPath(this.workspaceStorageDir, SESSIONS_DIR);
-    return [{ baseUri, glob: '*.json' }];
+    return [
+      { baseUri, glob: '*.json' },
+      { baseUri, glob: '*.jsonl' },
+    ];
   }
 
   public async findSessions(_workspaceRootPath: string): Promise<SessionFile[]> {
@@ -30,17 +56,21 @@ export class CopilotChatProvider implements SessionProvider {
       return [];
     }
 
-    const results: SessionFile[] = [];
+    const results = new Map<string, SessionFile>();
     for (const [name, type] of entries) {
       if (type !== vscode.FileType.File || !isSessionFile(name)) {
         continue;
       }
       const session = await this.toSessionFile(sessionsUri, name);
       if (session) {
-        results.push(session);
+        results.set(
+          session.archiveName,
+          pickPreferredSession(results.get(session.archiveName), session)
+        );
       }
     }
-    return results;
+
+    return Array.from(results.values());
   }
 
   private async toSessionFile(
