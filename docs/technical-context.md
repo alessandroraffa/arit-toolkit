@@ -468,10 +468,25 @@ reconstructor processes three event kinds — `0` (init), `1` (set field),
 `2` (append to field) — to produce a complete in-memory session object
 before it is passed to the standard `copilotChatParser`.
 
+**Copilot source deduplication:** `CopilotChatProvider` watches both
+`.json` and `.jsonl` files under `chatSessions`. When both
+representations exist for the same session ID, the provider deduplicates
+them by `archiveName`, keeps the newest source by `mtime`, and prefers
+`.jsonl` on equal mtimes. This prevents startup re-archive loops caused
+by alternating between two source files that would otherwise map to the
+same archive file.
+
 **Replacement semantics (not accumulation):** Each source session has
 exactly one archived file at any time. When the source's `mtime`
 changes, the old archive file is deleted and a new one with an updated
 timestamp prefix is created.
+
+**Orphan archive retention:** Replacement only applies to session IDs
+returned by the current provider scan. If a historical archive file no
+longer has a corresponding source session in provider storage, ARIT
+retains the archive file instead of pruning it automatically. This keeps
+the archive append-preserving for historical sessions even when the
+source store has already dropped them.
 
 **One-shot re-archive on startup:** On each extension startup,
 `deduplicateAndHydrate` reads all archive files from disk and stores

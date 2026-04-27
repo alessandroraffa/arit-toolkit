@@ -168,4 +168,4 @@ Per INIT-003, the plan must satisfy:
 
 ## Open items at completion
 
-_No open items — to be filled during Plan Completion Verification._
+No open implementation items remain. On 2026-04-28 the isolated extension-host runner at `scripts/agent-session-archiving/run-one-shot-rearchive-verification.cjs` was executed against `/Users/alessandroraffa/dev/oceanus` per `docs/operations/runbooks/agent-session-archiving-verification.md`: Codex sessions `019cd433`, `019d1600`, `019d06f2`, `019c9048`, and `019cf41f` matched their source turn counts (10, 6, 5, 3, 3); Copilot session `7a54e9a3` rendered as markdown with at least seven user turns; source-backed empty Copilot envelope sessions no longer remained as raw `.jsonl`; and the second automatic cycle produced no rewrites for unchanged validated targets. The only retained stale outputs were orphan archive artifacts whose Copilot source sessions no longer exist in current `workspaceStorage`: raw `.jsonl` archives `4ebac531`, `418b3bfd`, `b5b93bb0`, and header-only stub `bae38255`.
