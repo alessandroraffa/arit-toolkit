@@ -1,3 +1,17 @@
+## [1.19.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v1.18.3...v1.19.0) (2026-04-28)
+
+### ⚠ BREAKING CHANGES
+
+* extension renamed from arit-toolkit to tangyr. All command
+
+IDs and configuration keys moved to the new namespace. User keybindings
+
+referencing old command IDs must be updated manually.
+
+### Features
+
+* rename extension from arit-toolkit to tangyr ([0606c6a](https://github.com/alessandroraffa/tangyr-vscode/commit/0606c6a78921fd8c1586e1cd823e5d4e41698a11))
+
 ## [1.18.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.18.2...v1.18.3) (2026-04-28)
 
 ### Bug Fixes
