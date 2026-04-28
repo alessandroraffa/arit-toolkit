@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Keep the containing Oceanus superproject pinned to the latest submodule commit.
+# In a standalone clone, this hook is intentionally inert.
+PARENT="$(git rev-parse --show-superproject-working-tree 2>/dev/null)"
+[ -z "$PARENT" ] && exit 0
+
+SUBMODULE_PATH="${PWD#"$PARENT"/}"
+SUBMODULE_NAME="$(basename "$SUBMODULE_PATH")"
+SHORT_HASH="$(git rev-parse --short HEAD)"
+
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
+
+cd "$PARENT" || exit 0
+git add "$SUBMODULE_PATH"
+git diff --cached --quiet -- "$SUBMODULE_PATH" && exit 0
+git commit --only "$SUBMODULE_PATH" \
+  -m "chore($SUBMODULE_NAME): bump to $SHORT_HASH" \
+  --no-verify
