@@ -1,3 +1,15 @@
+## [1.18.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.18.0...v1.18.1) (2026-04-28)
+
+### Bug Fixes
+
+* **archiving:** add force re-archive parameter and completion feedback for archive now command ([4e2ca5a](https://github.com/alessandroraffa/arit-toolkit/commit/4e2ca5ab7307d9e0102a78d24c05a17ec9a400c3))
+* **archiving:** correct codex parser multi-turn handling and reasoning extraction ([394d810](https://github.com/alessandroraffa/arit-toolkit/commit/394d8109be3598a9d7ae8937600056ba829a19c0))
+* **archiving:** deduplicate copilot source sessions during rearchive ([dbabc6b](https://github.com/alessandroraffa/arit-toolkit/commit/dbabc6b0a7dc0cc04835f18f900ca1854fe4bc12))
+* **archiving:** include error detail in config re-read warning and add cycle observability ([e84d0ae](https://github.com/alessandroraffa/arit-toolkit/commit/e84d0ae3cf169e9a1b40714304c6a7e6a946b412))
+* **archiving:** investigate codex reasoning event types in source jsonl files ([ad5c70b](https://github.com/alessandroraffa/arit-toolkit/commit/ad5c70b2f9fbacb5518461775dea7f7b248e7cf6))
+* **archiving:** investigate copilot chat turn mismatch in source files ([b7ca63f](https://github.com/alessandroraffa/arit-toolkit/commit/b7ca63f21ccef5dbd31486c6a663916010a7c13e))
+* **archiving:** unwrap copilot chat envelope, filter empty sessions, resolve turn mismatch ([8738a40](https://github.com/alessandroraffa/arit-toolkit/commit/8738a40395f893394c0a927e78ac76345ba67734))
+
 ## [1.18.0](https://github.com/alessandroraffa/arit-toolkit/compare/v1.17.0...v1.18.0) (2026-03-21)
 
 ### Features
