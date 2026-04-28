@@ -2,10 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TokenCounter } from '../../../../../src/features/textStats/metrics/tokens';
 
 const mockEncode = vi.fn((text: string) => text.split(/\s+/).filter(Boolean));
+const mockTiktoken = vi.fn(function MockTiktoken() {
+  return { encode: mockEncode };
+});
 
 // Mock js-tiktoken
 vi.mock('js-tiktoken', () => ({
-  Tiktoken: vi.fn(() => ({ encode: mockEncode })),
+  Tiktoken: mockTiktoken,
   getEncoding: vi.fn(() => ({ encode: mockEncode })),
 }));
 
