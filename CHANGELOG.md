@@ -1,3 +1,9 @@
+## [1.18.3](https://github.com/alessandroraffa/arit-toolkit/compare/v1.18.2...v1.18.3) (2026-04-28)
+
+### Bug Fixes
+
+* **deprecation:** notify users about upcoming rename to tangyr ([b0d3836](https://github.com/alessandroraffa/arit-toolkit/commit/b0d38364921171d2928a2cf18698ed817a8e7453))
+
 ## [1.18.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.18.1...v1.18.2) (2026-04-28)
 
 ### Bug Fixes

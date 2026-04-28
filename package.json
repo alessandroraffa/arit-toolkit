@@ -2,8 +2,8 @@
   "name": "arit-toolkit",
   "displayName": "ARIT Toolkit",
   "description": "Archive AI coding sessions (Claude Code, Cline, Aider, Copilot, Roo Code, Continue) into your workspace. Real-time token counting, text stats, and timestamped file management for agentic coding.",
-  "version": "1.18.2",
-  "versionCode": 1001018002,
+  "version": "1.18.3",
+  "versionCode": 1001018003,
   "publisher": "alessandroraffa",
   "license": "MIT",
   "repository": {
