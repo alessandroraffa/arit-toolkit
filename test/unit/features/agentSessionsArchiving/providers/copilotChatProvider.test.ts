@@ -62,6 +62,31 @@ describe('CopilotChatProvider', () => {
     expect(sessions[1]!.extension).toBe('.jsonl');
   });
 
+  it('should deduplicate duplicate session ids and keep the newer source file', async () => {
+    workspace.fs.readDirectory = vi.fn().mockResolvedValue([
+      ['same-session.json', FileType.File],
+      ['same-session.jsonl', FileType.File],
+    ]);
+    workspace.fs.stat = vi.fn().mockImplementation(async (uri: Uri) => {
+      if (uri.fsPath.endsWith('.json')) {
+        return { mtime: 100, ctime: 90 };
+      }
+
+      if (uri.fsPath.endsWith('.jsonl')) {
+        return { mtime: 200, ctime: 190 };
+      }
+
+      throw new Error(`unexpected path: ${uri.fsPath}`);
+    });
+
+    const sessions = await provider.findSessions('/workspace');
+
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]!.archiveName).toBe('copilot-chat-same-session');
+    expect(sessions[0]!.extension).toBe('.jsonl');
+    expect(sessions[0]!.mtime).toBe(200);
+  });
+
   it('should return empty array when sessions directory does not exist', async () => {
     workspace.fs.readDirectory = vi.fn().mockRejectedValue(new Error('not found'));
 
@@ -124,8 +149,10 @@ describe('CopilotChatProvider', () => {
   it('should return watch patterns for chatSessions directory', () => {
     const patterns = provider.getWatchPatterns('/workspace');
 
-    expect(patterns).toHaveLength(1);
+    expect(patterns).toHaveLength(2);
     expect(patterns[0]!.baseUri.fsPath).toBe('/workspace/storage/abc123/chatSessions');
     expect(patterns[0]!.glob).toBe('*.json');
+    expect(patterns[1]!.baseUri.fsPath).toBe('/workspace/storage/abc123/chatSessions');
+    expect(patterns[1]!.glob).toBe('*.jsonl');
   });
 });

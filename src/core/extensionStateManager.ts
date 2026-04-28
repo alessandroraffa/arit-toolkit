@@ -215,9 +215,11 @@ export class ExtensionStateManager {
       this.logger.debug(
         `Read workspace config: enabled=${String(this._isEnabled)}, versionCode=${String(this._configVersionCode)}`
       );
-    } catch {
+    } catch (err) {
       if (this._fullConfig) {
-        this.logger.warn('Failed to re-read workspace config, keeping existing state');
+        this.logger.warn(
+          `Failed to re-read workspace config, keeping existing state: ${String(err)}`
+        );
         return;
       }
       this._isInitialized = false;

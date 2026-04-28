@@ -134,7 +134,23 @@ describe('registerAgentSessionsArchivingFeature', () => {
       const handler = archiveNowCall![1] as () => Promise<void>;
       await handler();
 
-      expect(mockService.runArchiveCycle).toHaveBeenCalled();
+      expect(mockService.runArchiveCycle).toHaveBeenCalledWith(true);
+    });
+
+    it('should show information message after archive cycle completes', async () => {
+      mockService.currentConfig = { enabled: true };
+      registerAgentSessionsArchivingFeature(ctx);
+
+      const registerCalls = vi.mocked(ctx.registry.register).mock.calls;
+      const archiveNowCall = registerCalls.find(
+        (c) => c[0] === 'arit.archiveAgentSessionsNow'
+      );
+      const handler = archiveNowCall![1] as () => Promise<void>;
+      await handler();
+
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'Agent sessions archive completed.'
+      );
     });
 
     it('should show warning when service is not running', async () => {

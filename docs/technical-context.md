@@ -440,7 +440,27 @@ content and check if it references the workspace root path.
 or `{ status: 'unrecognized', reason: string }`. When a parser cannot
 interpret a file (unexpected format or schema), `ArchiveService` logs a
 warning and falls back to copying the raw file instead of generating
-markdown.
+markdown. The Copilot Chat parser detects and unwraps the VS Code
+`{kind, v}` serialization envelope before accessing session fields: when
+the parsed JSON contains a `v` property that is a non-null object, the
+parser uses `v` as the session root; otherwise it uses the object
+directly, preserving backward compatibility with the direct format.
+
+**Empty session filtering:** After parsing, the archive service checks
+whether all turns in the session have empty content, no tool calls, no
+thinking, and no file references. If every turn is empty, the session
+write is skipped and the skip is logged at `info` level. The session's
+`mtime` is still recorded in `lastArchivedMap` (with an empty
+`archiveFileName`) so the session is not reprocessed on subsequent
+archive cycles.
+
+**Codex parser multi-turn handling:** The Codex parser detects each
+`user_message` event as a turn boundary. When a new user message arrives,
+the parser emits the accumulated turn pair (user turn plus any assistant
+content, tool calls, and reasoning accumulated so far) into a completed
+turns list and resets the state before starting the new turn, so
+multi-turn sessions produce distinct user and assistant turn pairs in
+their original sequence.
 
 **JSONL delta reconstruction (`copilotJsonlReconstructor.ts`):** GitHub
 Copilot Chat stores newer sessions as append-only JSONL delta files. The
@@ -448,14 +468,53 @@ reconstructor processes three event kinds — `0` (init), `1` (set field),
 `2` (append to field) — to produce a complete in-memory session object
 before it is passed to the standard `copilotChatParser`.
 
+**Copilot source deduplication:** `CopilotChatProvider` watches both
+`.json` and `.jsonl` files under `chatSessions`. When both
+representations exist for the same session ID, the provider deduplicates
+them by `archiveName`, keeps the newest source by `mtime`, and prefers
+`.jsonl` on equal mtimes. This prevents startup re-archive loops caused
+by alternating between two source files that would otherwise map to the
+same archive file.
+
 **Replacement semantics (not accumulation):** Each source session has
 exactly one archived file at any time. When the source's `mtime`
 changes, the old archive file is deleted and a new one with an updated
 timestamp prefix is created.
 
+**Orphan archive retention:** Replacement only applies to session IDs
+returned by the current provider scan. If a historical archive file no
+longer has a corresponding source session in provider storage, ARIT
+retains the archive file instead of pruning it automatically. This keeps
+the archive append-preserving for historical sessions even when the
+source store has already dropped them.
+
+**One-shot re-archive on startup:** On each extension startup,
+`deduplicateAndHydrate` reads all archive files from disk and stores
+`mtime: 0` for each one in `lastArchivedMap`. Because real source file
+`mtime` values are always positive integers, the skip guard
+(`entry?.mtime === session.mtime`) never triggers for any session
+hydrated from disk — every session is re-processed on the first archive
+cycle after startup. After that cycle completes, `lastArchivedMap` is
+updated with the actual source `mtime` values, and subsequent cycles
+resume normal mtime-based skip behavior. This design ensures that a
+patched extension automatically re-archives previously affected sessions
+on its first cycle without requiring any persistent flag or manual
+intervention.
+
 **Archive file naming:** `{YYYYMMDDHHmm}-{archiveName}{extension}`,
 where the timestamp is derived from the session file's creation time
 (`ctime`), not the modification time or the current time.
+
+**Cycle observability:** `runArchiveCycle()` emits `debug`-level log
+entries at cycle start and end. `archiveSession()` emits a `debug`-level
+entry when it skips a session due to an unchanged `mtime`.
+
+**Force re-archive:** `runArchiveCycle()` accepts an optional `force`
+boolean parameter. When `true`, the `mtime` guard in `archiveSession()`
+is bypassed, causing all sessions to be reprocessed regardless of their
+cached `mtime`. The "Archive Now" command passes `force = true`; the
+automatic timer and file-watcher callbacks use the default
+`force = false`.
 
 **Change detection:** When a session file's `mtime` changes, the old
 archive file is deleted and a new one (with the same ctime-based prefix)

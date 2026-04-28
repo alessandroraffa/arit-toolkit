@@ -2,13 +2,13 @@
 // Managed by the ARIT Toolkit extension
 {
   "enabled": true,
+  "version": "1.18.0",
+  "versionCode": 1001018000,
   "agentSessionsArchiving": {
     "enabled": true,
     "archivePath": "docs/archive/agent-sessions",
     "intervalMinutes": 5
   },
-  "version": "1.18.0",
-  "versionCode": 1001018000,
   "textStats": {
     "enabled": true,
     "delimiter": " | ",

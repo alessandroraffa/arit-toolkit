@@ -180,6 +180,26 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
 
+    it('should re-archive a session with unchanged mtime when force is true', async () => {
+      const session = createMockSession({ mtime: 1000 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.runArchiveCycle();
+      vi.mocked(workspace.fs.copy).mockClear();
+
+      await service.runArchiveCycle(true);
+
+      expect(workspace.fs.copy).toHaveBeenCalled();
+
+      service.dispose();
+    });
+
     it('should replace old archive when mtime changes', async () => {
       const session = createMockSession({ mtime: 1000 });
       const provider = createMockProvider([session]);
@@ -308,6 +328,118 @@ describe('AgentSessionArchiveService', () => {
       await service.runArchiveCycle();
 
       expect(workspace.fs.copy).toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should skip writing and log info for a parsed copilot-chat session with zero non-empty turns', async () => {
+      const session = createMockSession({
+        providerName: 'copilot-chat',
+        archiveName: 'copilot-chat-empty',
+        displayName: 'Copilot Empty Session',
+        extension: '.json',
+        mtime: 1000,
+      });
+      const provider = createMockProvider([session]);
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode(JSON.stringify({ kind: 0, v: { requests: [] } }))
+        );
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.writeFile).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('Skipped empty session')
+      );
+
+      // Second cycle: session is not re-parsed (lastArchivedMap prevents reprocessing)
+      vi.mocked(workspace.fs.readFile).mockClear();
+      await service.runArchiveCycle();
+      expect(workspace.fs.readFile).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should reprocess a session whose archive was hydrated from disk with mtime 0, then skip it on the second cycle', async () => {
+      // Simulate an existing archive file on disk for 'copilot-chat-test-session'.
+      // deduplicateAndHydrate will store { mtime: 0 } for this archiveName.
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockResolvedValue([['202603090513-copilot-chat-test-session.md', 1]]);
+
+      const session = createMockSession({
+        archiveName: 'copilot-chat-test-session',
+        mtime: 1000,
+        providerName: 'test-provider',
+        extension: '.json',
+      });
+      const provider = createMockProvider([session]);
+      workspace.fs.copy = vi.fn().mockResolvedValue(undefined);
+
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      // First cycle: deduplicateAndHydrate stored mtime: 0, source mtime is 1000.
+      // Guard (entry?.mtime === session.mtime) → 0 !== 1000 → re-processes.
+      await service.runArchiveCycle();
+      expect(workspace.fs.copy).toHaveBeenCalled();
+
+      // Second cycle: lastArchivedMap now stores mtime: 1000, source mtime is still 1000.
+      // Guard (entry?.mtime === session.mtime) → 1000 === 1000 → skips.
+      vi.mocked(workspace.fs.copy).mockClear();
+      await service.runArchiveCycle();
+      expect(workspace.fs.copy).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should write the archive file for a parsed copilot-chat session with at least one non-empty turn', async () => {
+      const session = createMockSession({
+        providerName: 'copilot-chat',
+        archiveName: 'copilot-chat-session',
+        displayName: 'Copilot Session',
+        extension: '.json',
+        mtime: 1000,
+      });
+      const provider = createMockProvider([session]);
+      workspace.fs.readFile = vi.fn().mockResolvedValue(
+        new TextEncoder().encode(
+          JSON.stringify({
+            requests: [
+              {
+                message: { text: 'Hello' },
+                response: [{ kind: 'markdownContent', value: 'Hi.' }],
+              },
+            ],
+          })
+        )
+      );
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.writeFile).toHaveBeenCalled();
 
       service.dispose();
     });

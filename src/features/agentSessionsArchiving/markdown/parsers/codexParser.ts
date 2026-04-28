@@ -112,8 +112,14 @@ function buildToolCalls(
   });
 }
 
-function processEventMsg(payload: EventMsgPayload, state: ParseState): void {
+function processEventMsg(
+  payload: EventMsgPayload,
+  state: ParseState,
+  completedTurns: NormalizedTurn[]
+): void {
   if (payload.type === 'user_message' && typeof payload.message === 'string') {
+    completedTurns.push(...buildTurns(state));
+    Object.assign(state, emptyState());
     state.userContent = extractUserRequest(payload.message);
     return;
   }
@@ -217,16 +223,18 @@ export class CodexParser implements SessionParser {
       return { status: 'unrecognized', reason: 'first line is not a Codex session_meta' };
     }
     const state = emptyState();
+    const completedTurns: NormalizedTurn[] = [];
     for (const line of lines) {
-      this.processLine(line, state);
+      this.processLine(line, state, completedTurns);
     }
+    completedTurns.push(...buildTurns(state));
     return {
       status: 'parsed',
       session: {
         providerName: 'codex',
         providerDisplayName: 'OpenAI Codex',
         sessionId,
-        turns: buildTurns(state),
+        turns: completedTurns,
       },
     };
   }
@@ -242,7 +250,11 @@ export class CodexParser implements SessionParser {
     }
   }
 
-  private processLine(line: string, state: ParseState): void {
+  private processLine(
+    line: string,
+    state: ParseState,
+    completedTurns: NormalizedTurn[]
+  ): void {
     let obj: { type?: string; payload?: unknown };
     try {
       obj = JSON.parse(line) as { type?: string; payload?: unknown };
@@ -250,7 +262,8 @@ export class CodexParser implements SessionParser {
       return;
     }
     if (!obj.payload) return;
-    if (obj.type === 'event_msg') processEventMsg(obj.payload as EventMsgPayload, state);
+    if (obj.type === 'event_msg')
+      processEventMsg(obj.payload as EventMsgPayload, state, completedTurns);
     else if (obj.type === 'response_item')
       processResponseItem(obj.payload as ResponseItemPayload, state);
   }

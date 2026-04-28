@@ -354,6 +354,122 @@ describe('CodexParser', () => {
     expect(session.turns).toHaveLength(0);
   });
 
+  it('should produce two user and two assistant turns for a two-turn session', () => {
+    const content = jsonl(
+      SESSION_META,
+      userMessage('First request'),
+      assistantMessage('First response'),
+      userMessage('Second request'),
+      assistantMessage('Second response')
+    );
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(4);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('First request');
+    expect(session.turns[1]!.role).toBe('assistant');
+    expect(session.turns[1]!.content).toBe('First response');
+    expect(session.turns[2]!.role).toBe('user');
+    expect(session.turns[2]!.content).toBe('Second request');
+    expect(session.turns[3]!.role).toBe('assistant');
+    expect(session.turns[3]!.content).toBe('Second response');
+  });
+
+  it('should produce three turn pairs for a three-turn session', () => {
+    const content = jsonl(
+      SESSION_META,
+      userMessage('Turn 1 request'),
+      assistantMessage('Turn 1 response'),
+      userMessage('Turn 2 request'),
+      assistantMessage('Turn 2 response'),
+      userMessage('Turn 3 request'),
+      assistantMessage('Turn 3 response')
+    );
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(6);
+    expect(session.turns[0]!.content).toBe('Turn 1 request');
+    expect(session.turns[2]!.content).toBe('Turn 2 request');
+    expect(session.turns[4]!.content).toBe('Turn 3 request');
+  });
+
+  it('should produce five turn pairs for a five-turn session', () => {
+    const content = jsonl(
+      SESSION_META,
+      userMessage('Turn 1 request'),
+      assistantMessage('Turn 1 response'),
+      userMessage('Turn 2 request'),
+      assistantMessage('Turn 2 response'),
+      userMessage('Turn 3 request'),
+      assistantMessage('Turn 3 response'),
+      userMessage('Turn 4 request'),
+      assistantMessage('Turn 4 response'),
+      userMessage('Turn 5 request'),
+      assistantMessage('Turn 5 response')
+    );
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(10);
+    expect(session.turns[0]!.content).toBe('Turn 1 request');
+    expect(session.turns[9]!.content).toBe('Turn 5 response');
+  });
+
+  it('should handle consecutive user messages without intervening assistant response', () => {
+    const content = jsonl(
+      SESSION_META,
+      userMessage('First'),
+      userMessage('Second'),
+      assistantMessage('Response to second')
+    );
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(3);
+    expect(session.turns[0]!.role).toBe('user');
+    expect(session.turns[0]!.content).toBe('First');
+    expect(session.turns[1]!.role).toBe('user');
+    expect(session.turns[1]!.content).toBe('Second');
+    expect(session.turns[2]!.role).toBe('assistant');
+    expect(session.turns[2]!.content).toBe('Response to second');
+  });
+
+  it('should assign tool calls to the correct turn in a multi-turn session', () => {
+    const content = jsonl(
+      SESSION_META,
+      userMessage('First'),
+      functionCall('exec_command', { cmd: 'git status' }, 'call-1'),
+      functionCallOutput('call-1', 'On branch main'),
+      assistantMessage('Checked.'),
+      userMessage('Second'),
+      functionCall('exec_command', { cmd: 'git diff' }, 'call-2'),
+      functionCallOutput('call-2', 'No changes'),
+      assistantMessage('No diff.')
+    );
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(4);
+    expect(session.turns[1]!.toolCalls).toHaveLength(1);
+    expect(session.turns[1]!.toolCalls[0]!.input).toBe('git status');
+    expect(session.turns[3]!.toolCalls).toHaveLength(1);
+    expect(session.turns[3]!.toolCalls[0]!.input).toBe('git diff');
+  });
+
+  it('should assign reasoning to the correct assistant turn in a multi-turn session', () => {
+    const content = jsonl(
+      SESSION_META,
+      userMessage('First'),
+      reasoning('Reasoning for first'),
+      assistantMessage('First response'),
+      userMessage('Second'),
+      reasoning('Reasoning for second'),
+      assistantMessage('Second response')
+    );
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(4);
+    expect(session.turns[1]!.thinking).toBe('Reasoning for first');
+    expect(session.turns[3]!.thinking).toBe('Reasoning for second');
+  });
+
   it('should match tool calls with outputs by call_id', () => {
     const content = jsonl(
       SESSION_META,
