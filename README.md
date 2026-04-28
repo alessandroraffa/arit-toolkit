@@ -1,23 +1,18 @@
 <!-- markdownlint-disable MD041 -->
 
-> **This extension has been renamed.**
-> Please install [`alessandroraffa.tangyr`](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr) instead.
-> Existing settings will be migrated automatically on first run of the new extension.
-> This package will no longer receive updates.
+> This extension was previously published as `alessandroraffa.arit-toolkit`.
+> If you have the old version installed, VS Code will show a Migrate button once Marketplace deprecation is processed.
+> Your settings are copied automatically on first activation of this extension.
 
----
+# Tangyr Workbench
 
-# ARIT Toolkit
-
-[![CI](https://github.com/alessandroraffa/arit-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/alessandroraffa/arit-toolkit/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/alessandroraffa/arit-toolkit/graph/badge.svg)](https://codecov.io/gh/alessandroraffa/arit-toolkit)
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/alessandroraffa.arit-toolkit)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.arit-toolkit)
-[![Downloads](https://img.shields.io/visual-studio-marketplace/d/alessandroraffa.arit-toolkit)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.arit-toolkit)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/alessandroraffa.tangyr)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
+[![Downloads](https://img.shields.io/visual-studio-marketplace/d/alessandroraffa.tangyr)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Chat sessions with Claude Code, Cline, Aider, Roo Code, GitHub Copilot Chat, Continue, and OpenAI Codex are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. ARIT Toolkit collects them automatically into your workspace, organized by date, as project artifacts.
+Chat sessions with Claude Code, Cline, Aider, Roo Code, GitHub Copilot Chat, Continue, and OpenAI Codex are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. Tangyr Workbench collects them automatically into your workspace, organized by date, as project artifacts.
 
-In the context of agentic coding, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. ARIT Toolkit archives AI sessions from 7 assistants, creates timestamped files and folders for chronological project documentation, prefixes existing items with their creation date, and gives you real-time token counts and text metrics in the status bar — all without leaving VS Code.
+In the context of agentic coding, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. Tangyr Workbench archives AI sessions from 7 assistants, creates timestamped files and folders for chronological project documentation, prefixes existing items with their creation date, and gives you real-time token counts and text metrics in the status bar — all without leaving VS Code.
 
 ## Agent Sessions Archiving
 
@@ -35,7 +30,7 @@ AI coding assistants store their session files in different locations and format
 | GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`)                           | Per-workspace storage (`.json` and `.jsonl`) |
 | Continue            | `~/.continue/sessions/`                                               | Session content references workspace path    |
 
-Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-toolkit/issues) to request support.
+Missing your assistant? Contact the maintainer to request support.
 
 **How it works:**
 
@@ -46,7 +41,7 @@ Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-
 - Only sessions belonging to the current workspace are archived
 - Session file changes are detected automatically via file system watchers (with 10-second debounce), in addition to the periodic interval
 
-**Configuration** (in `.arit-toolkit.jsonc`):
+**Configuration** (in `.tangyr.jsonc`):
 
 ```jsonc
 {
@@ -61,28 +56,28 @@ Missing your assistant? [Open an issue](https://github.com/alessandroraffa/arit-
 
 Set `ignoreSessionsBefore` to a `YYYYMMDD` date to skip sessions created before that date. Omit the field to archive everything.
 
-**Toggle:** Command Palette → "ARIT: Toggle Agent Sessions Archiving"
+**Toggle:** Command Palette → "Tangyr: Toggle Agent Sessions Archiving"
 
-**Archive Now:** Command Palette → "ARIT: Archive Agent Sessions Now" (also available in the status bar tooltip). Triggers an immediate archive cycle without waiting for the next interval.
+**Archive Now:** Command Palette → "Tangyr: Archive Agent Sessions Now" (also available in the status bar tooltip). Triggers an immediate archive cycle without waiting for the next interval.
 
 ## Timestamped Files and Folders
 
 Create new files or directories with an automatic UTC timestamp prefix. Useful for meeting notes, decision logs, daily journals, or any artifact that benefits from chronological ordering.
 
-**New file:** Right-click a folder → "ARIT: New File with Timestamp" or `Ctrl+Alt+N` / `Cmd+Alt+N`
+**New file:** Right-click a folder → "Tangyr: New File with Timestamp" or `Ctrl+Alt+N` / `Cmd+Alt+N`
 Creates `202602051430-meeting-notes.md`
 
-**New folder:** Right-click a folder → "ARIT: New Folder with Timestamp" or `Ctrl+Alt+Shift+N` / `Cmd+Alt+Shift+N`
+**New folder:** Right-click a folder → "Tangyr: New Folder with Timestamp" or `Ctrl+Alt+Shift+N` / `Cmd+Alt+Shift+N`
 Creates `202602051430-project-assets/`
 
 ## Prefix Creation Timestamp
 
 Add the creation timestamp to existing files or directories. The timestamp is derived from the item's actual creation date. These commands are available only via the Explorer context menu (right-click), not from the Command Palette.
 
-Right-click a file → "ARIT: Prefix Creation Timestamp"
+Right-click a file → "Tangyr: Prefix Creation Timestamp"
 `report.pdf` → `202602051430-report.pdf`
 
-Right-click a folder → "ARIT: Prefix Creation Timestamp to Folder"
+Right-click a folder → "Tangyr: Prefix Creation Timestamp to Folder"
 `assets/` → `202602051430-assets/`
 
 ## Text Stats
@@ -97,7 +92,7 @@ Real-time text statistics displayed in the status bar. Shows character count, to
 
 **Tokenizer models:** Choose between OpenAI `cl100k_base`, OpenAI `o200k_base`, or Anthropic `claude` tokenizer for accurate token counting. Token counting is lazy-loaded on first use and cached per model.
 
-**Configuration** (in `.arit-toolkit.jsonc`):
+**Configuration** (in `.tangyr.jsonc`):
 
 ```jsonc
 {
@@ -133,8 +128,8 @@ Real-time text statistics displayed in the status bar. Shows character count, to
 | `tokenSizeLimit`    | `500000`  | Skip token counting for files exceeding this character count |
 | `visibleMetrics`    | all 7     | Which metrics to show and in what order                      |
 
-**Toggle:** Command Palette → "ARIT: Toggle Text Stats"
-**Change tokenizer:** Click the status bar item or Command Palette → "ARIT: Change Tokenizer"
+**Toggle:** Command Palette → "Tangyr: Toggle Text Stats"
+**Change tokenizer:** Click the status bar item or Command Palette → "Tangyr: Change Tokenizer"
 
 ## Markdown Headings
 
@@ -149,30 +144,30 @@ If any heading would exceed the valid range (h1–h6), the entire operation is a
 
 - **Editor context menu** (right-click in a `.md` file): operates on selection if present, otherwise on the entire file.
 - **Explorer context menu** (right-click on a `.md` file): operates on the entire file.
-- **Command Palette:** "ARIT: Increment Markdown Headings" / "ARIT: Decrement Markdown Headings"
+- **Command Palette:** "Tangyr: Increment Markdown Headings" / "Tangyr: Decrement Markdown Headings"
 
 ## Extension Toggle
 
-An **ARIT** status bar item (bottom-right) shows the current state and lets you enable or disable advanced features with a click. Hover for a tooltip with active services and their status, with quick toggle buttons. A **Checkup** button in the tooltip runs a health check — it verifies version alignment, applies any pending config migration, preserves your customizations, and optionally commits the updated config file.
+A **Tangyr** status bar item (bottom-right) shows the current state and lets you enable or disable advanced features with a click. Hover for a tooltip with active services and their status, with quick toggle buttons. A **Checkup** button in the tooltip runs a health check — it verifies version alignment, applies any pending config migration, preserves your customizations, and optionally commits the updated config file.
 
-Command Palette → "ARIT: Toggle Extension (Enable/Disable)" or "ARIT: Checkup"
+Command Palette → "Tangyr: Toggle Extension (Enable/Disable)" or "Tangyr: Checkup"
 
-**Workspace initialization:** When you open a single-root workspace for the first time, ARIT Toolkit offers to create a `.arit-toolkit.jsonc` configuration file at the workspace root. When the extension updates and introduces new configuration sections, you will be prompted to add them.
+**Workspace initialization:** When you open a single-root workspace for the first time, Tangyr Workbench offers to create a `.tangyr.jsonc` configuration file at the workspace root. When the extension updates and introduces new configuration sections, you will be prompted to add them.
 
-**Config auto-commit:** In a Git repository, when the extension writes changes to `.arit-toolkit.jsonc` and the file is not gitignored, you are prompted to commit the change automatically. If the file has no actual Git changes, the prompt is skipped. Git hooks (pre-commit, commit-msg) are bypassed for these automated commits because VS Code's extension host process has a restricted environment where tools like `pnpm` may not be available.
+**Config auto-commit:** In a Git repository, when the extension writes changes to `.tangyr.jsonc` and the file is not gitignored, you are prompted to commit the change automatically. If the file has no actual Git changes, the prompt is skipped. Git hooks (pre-commit, commit-msg) are bypassed for these automated commits because VS Code's extension host process has a restricted environment where tools like `pnpm` may not be available.
 
 **Workspace modes:**
 
-- **Single-root workspace:** Full functionality. State persisted in `.arit-toolkit.jsonc`.
+- **Single-root workspace:** Full functionality. State persisted in `.tangyr.jsonc`.
 - **Multi-root workspace:** Timestamp commands available. Toggle and archiving disabled; status bar shows limited mode.
 
-## Why ARIT Toolkit
+## Why Tangyr Workbench
 
 - Archives sessions from 6 AI coding assistants into one place — no other extension does this
 - Archived files live in your workspace: version them with Git, share them with your team
 - Real-time token counting with OpenAI and Anthropic tokenizers — know the cost of every file before you send it to an AI assistant
 - Timestamps give you a consultable timeline of the work done on a project
-- Minimal configuration: one `.arit-toolkit.jsonc` file, sensible defaults
+- Minimal configuration: one `.tangyr.jsonc` file, sensible defaults
 - Zero runtime dependencies — VS Code API only
 
 ## What's Next
@@ -184,11 +179,11 @@ Command Palette → "ARIT: Toggle Extension (Enable/Disable)" or "ARIT: Checkup"
 
 ## Configuration
 
-| Setting                   | Default        | Description                              |
-| ------------------------- | -------------- | ---------------------------------------- |
-| `arit.timestampFormat`    | `YYYYMMDDHHmm` | Format for the timestamp prefix          |
-| `arit.timestampSeparator` | `-`            | Separator between timestamp and filename |
-| `arit.logLevel`           | `info`         | Logging level for debug output           |
+| Setting                     | Default        | Description                              |
+| --------------------------- | -------------- | ---------------------------------------- |
+| `tangyr.timestampFormat`    | `YYYYMMDDHHmm` | Format for the timestamp prefix          |
+| `tangyr.timestampSeparator` | `-`            | Separator between timestamp and filename |
+| `tangyr.logLevel`           | `info`         | Logging level for debug output           |
 
 **Timestamp formats:**
 
@@ -212,11 +207,11 @@ Command Palette → "ARIT: Toggle Extension (Enable/Disable)" or "ARIT: Checkup"
 
 1. Open VS Code
 2. Press `Ctrl+P` / `Cmd+P`
-3. Type `ext install alessandroraffa.arit-toolkit`
+3. Type `ext install alessandroraffa.tangyr`
 
 ### From VSIX File
 
-1. Download the `.vsix` file from [Releases](https://github.com/alessandroraffa/arit-toolkit/releases)
+1. Download the `.vsix` file from [Releases](https://github.com/alessandroraffa/tangyr-vscode/releases)
 2. In VS Code, press `Ctrl+Shift+P` / `Cmd+Shift+P`
 3. Type "Install from VSIX" and select the downloaded file
 
@@ -230,7 +225,7 @@ To report a security vulnerability, please see [SECURITY.md](SECURITY.md) for re
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+This repository is private. Please contact the maintainer before proposing changes.
 
 ## Changelog
 
@@ -240,8 +235,8 @@ See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
-## About ARIT
+## About Tangyr
 
-**ARIT** stands for **A**lessandro **R**affa **I**nformation **T**echnologies.
+Tangyr Workbench is the VS Code companion for Tangyr project work.
 
 **Alessandro Raffa** — [@alessandroraffa](https://github.com/alessandroraffa)

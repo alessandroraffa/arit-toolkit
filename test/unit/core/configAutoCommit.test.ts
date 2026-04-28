@@ -33,7 +33,7 @@ describe('ConfigAutoCommitService', () => {
 
     const service = new ConfigAutoCommitService(
       '/workspace',
-      '.arit-toolkit.jsonc',
+      '.tangyr.jsonc',
       logger as any
     );
     await service.onConfigWritten();
@@ -47,12 +47,12 @@ describe('ConfigAutoCommitService', () => {
 
     const service = new ConfigAutoCommitService(
       '/workspace',
-      '.arit-toolkit.jsonc',
+      '.tangyr.jsonc',
       logger as any
     );
     await service.onConfigWritten();
 
-    expect(hasGitChanges).toHaveBeenCalledWith('.arit-toolkit.jsonc', '/workspace');
+    expect(hasGitChanges).toHaveBeenCalledWith('.tangyr.jsonc', '/workspace');
     expect(window.showInformationMessage).not.toHaveBeenCalled();
   });
 
@@ -64,19 +64,19 @@ describe('ConfigAutoCommitService', () => {
 
     const service = new ConfigAutoCommitService(
       '/workspace',
-      '.arit-toolkit.jsonc',
+      '.tangyr.jsonc',
       logger as any
     );
     await service.onConfigWritten();
 
     expect(window.showInformationMessage).toHaveBeenCalledWith(
-      'ARIT Toolkit: Commit config change?',
+      'Tangyr Workbench: Commit config change?',
       'Commit',
       'Skip'
     );
     expect(gitStageAndCommit).toHaveBeenCalledWith(
-      '.arit-toolkit.jsonc',
-      'chore: update arit-toolkit config',
+      '.tangyr.jsonc',
+      'chore: update tangyr config',
       { cwd: '/workspace', skipHooks: true }
     );
     expect(logger.info).toHaveBeenCalledWith('Config change committed');
@@ -90,7 +90,7 @@ describe('ConfigAutoCommitService', () => {
 
     const service = new ConfigAutoCommitService(
       '/workspace',
-      '.arit-toolkit.jsonc',
+      '.tangyr.jsonc',
       logger as any
     );
     await service.onConfigWritten();
@@ -107,7 +107,7 @@ describe('ConfigAutoCommitService', () => {
 
     const service = new ConfigAutoCommitService(
       '/workspace',
-      '.arit-toolkit.jsonc',
+      '.tangyr.jsonc',
       logger as any
     );
     await service.onConfigWritten();
@@ -122,7 +122,7 @@ describe('ConfigAutoCommitService', () => {
 
     const service = new ConfigAutoCommitService(
       '/workspace',
-      '.arit-toolkit.jsonc',
+      '.tangyr.jsonc',
       logger as any
     );
     await service.onConfigWritten();
@@ -138,7 +138,7 @@ describe('ConfigAutoCommitService', () => {
 
     const service = new ConfigAutoCommitService(
       '/workspace',
-      '.arit-toolkit.jsonc',
+      '.tangyr.jsonc',
       logger as any
     );
     await service.onConfigWritten();
@@ -147,7 +147,7 @@ describe('ConfigAutoCommitService', () => {
       expect.stringContaining('Failed to commit config change')
     );
     expect(window.showErrorMessage).toHaveBeenCalledWith(
-      'ARIT Toolkit: Failed to commit config change. Check the output log for details.'
+      'Tangyr Workbench: Failed to commit config change. Check the output log for details.'
     );
   });
 
@@ -156,7 +156,7 @@ describe('ConfigAutoCommitService', () => {
 
     const service = new ConfigAutoCommitService(
       '/workspace',
-      '.arit-toolkit.jsonc',
+      '.tangyr.jsonc',
       logger as any
     );
     await service.onConfigWritten();
@@ -173,7 +173,7 @@ describe('ConfigAutoCommitService', () => {
 
       const service = new ConfigAutoCommitService(
         '/workspace',
-        '.arit-toolkit.jsonc',
+        '.tangyr.jsonc',
         logger as any
       );
       service.suspend();
@@ -190,7 +190,7 @@ describe('ConfigAutoCommitService', () => {
 
       const service = new ConfigAutoCommitService(
         '/workspace',
-        '.arit-toolkit.jsonc',
+        '.tangyr.jsonc',
         logger as any
       );
       service.suspend();
@@ -208,7 +208,7 @@ describe('ConfigAutoCommitService', () => {
 
       const service = new ConfigAutoCommitService(
         '/workspace',
-        '.arit-toolkit.jsonc',
+        '.tangyr.jsonc',
         logger as any
       );
       const result = await service.commitIfNeeded();
@@ -222,7 +222,7 @@ describe('ConfigAutoCommitService', () => {
 
       const service = new ConfigAutoCommitService(
         '/workspace',
-        '.arit-toolkit.jsonc',
+        '.tangyr.jsonc',
         logger as any
       );
       const result = await service.commitIfNeeded();
@@ -238,7 +238,7 @@ describe('ConfigAutoCommitService', () => {
 
       const service = new ConfigAutoCommitService(
         '/workspace',
-        '.arit-toolkit.jsonc',
+        '.tangyr.jsonc',
         logger as any
       );
       const result = await service.commitIfNeeded();
@@ -254,7 +254,7 @@ describe('ConfigAutoCommitService', () => {
 
       const service = new ConfigAutoCommitService(
         '/workspace',
-        '.arit-toolkit.jsonc',
+        '.tangyr.jsonc',
         logger as any
       );
       const result = await service.commitIfNeeded();
@@ -269,7 +269,7 @@ describe('ConfigAutoCommitService', () => {
 
       const service = new ConfigAutoCommitService(
         '/workspace',
-        '.arit-toolkit.jsonc',
+        '.tangyr.jsonc',
         logger as any
       );
       const result = await service.commitIfNeeded();
@@ -285,7 +285,7 @@ describe('ConfigAutoCommitService', () => {
 
       const service = new ConfigAutoCommitService(
         '/workspace',
-        '.arit-toolkit.jsonc',
+        '.tangyr.jsonc',
         logger as any
       );
       const result = await service.commitIfNeeded();

@@ -72,6 +72,11 @@ export const workspace = {
 
 export const commands = {
   registerCommand: vi.fn(() => mockDisposable),
+  executeCommand: vi.fn(),
+};
+
+export const extensions = {
+  getExtension: vi.fn(),
 };
 
 export const Uri = {
@@ -124,6 +129,12 @@ export enum FileType {
   File = 1,
   Directory = 2,
   SymbolicLink = 64,
+}
+
+export enum ConfigurationTarget {
+  Global = 1,
+  Workspace = 2,
+  WorkspaceFolder = 3,
 }
 
 export class MarkdownString {

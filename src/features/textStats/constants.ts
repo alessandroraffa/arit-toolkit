@@ -2,11 +2,11 @@ import type { MetricKey, TokenizerModel } from '../../types';
 
 export const FEATURE_NAME = 'Text Stats';
 export const CONFIG_KEY = 'textStats';
-export const COMMAND_ID_TOGGLE = 'arit.textStats.toggle';
-export const COMMAND_ID_CHANGE_TOKENIZER = 'arit.textStats.changeTokenizer';
+export const COMMAND_ID_TOGGLE = 'tangyr.textStats.toggle';
+export const COMMAND_ID_CHANGE_TOKENIZER = 'tangyr.textStats.changeTokenizer';
 export const INTRODUCED_AT_VERSION_CODE = 1001010000; // 1.10.0
 export const STATUS_BAR_PRIORITY = 100;
-export const STATUS_BAR_NAME = 'ARIT Text Stats';
+export const STATUS_BAR_NAME = 'Tangyr Text Stats';
 export const DEBOUNCE_MS = 300;
 
 export const DEFAULT_DELIMITER = ' | ';

@@ -22,19 +22,19 @@ confirm that unchanged sessions are not rewritten.
 ## Command
 
 ```bash
-cd /Users/alessandroraffa/dev/vscode-extensions/arit
+cd /Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode
 pnpm run build
 
-export ARIT_ARCHIVE_WORKSPACE="/Users/alessandroraffa/dev/oceanus"
-export ARIT_ARCHIVE_REAL_WORKSPACE_STORAGE="$HOME/Library/Application Support/Code/User/workspaceStorage/6cabd8a896839c5d7a516c90465f1d6a"
-export ARIT_ARCHIVE_INTERVAL_MINUTES=5
+export TANGYR_ARCHIVE_WORKSPACE="/Users/alessandroraffa/dev/oceanus"
+export TANGYR_ARCHIVE_REAL_WORKSPACE_STORAGE="$HOME/Library/Application Support/Code/User/workspaceStorage/6cabd8a896839c5d7a516c90465f1d6a"
+export TANGYR_ARCHIVE_INTERVAL_MINUTES=5
 
 node scripts/agent-session-archiving/run-one-shot-rearchive-verification.cjs
 ```
 
-You can provide `ARIT_ARCHIVE_WORKSPACE_STORAGE_ID` instead of
-`ARIT_ARCHIVE_REAL_WORKSPACE_STORAGE`. The launcher also accepts
-`ARIT_ARCHIVE_KEEP_TEMP=1` when you need to inspect the temporary profile
+You can provide `TANGYR_ARCHIVE_WORKSPACE_STORAGE_ID` instead of
+`TANGYR_ARCHIVE_REAL_WORKSPACE_STORAGE`. The launcher also accepts
+`TANGYR_ARCHIVE_KEEP_TEMP=1` when you need to inspect the temporary profile
 after a failure.
 
 ## What The Runner Verifies
@@ -75,10 +75,10 @@ retained orphans and does not treat them as a failure.
   required path or storage ID before rerunning.
 - If the runner times out waiting for archive activity, verify that
   `agentSessionsArchiving.enabled` is `true` in the target workspace's
-  `.arit-toolkit.jsonc` and that the copied `workspaceStorage` snapshot
+  `.tangyr.jsonc` and that the copied `workspaceStorage` snapshot
   contains the expected Copilot `chatSessions` files.
 - If the second-cycle assertion fails, check for duplicate Copilot source
-  files with the same session ID. ARIT expects the provider to keep only
+  files with the same session ID. Tangyr Workbench expects the provider to keep only
   the newest source representation per `archiveName`.
 - The `CrossAppIPC` warning printed by VS Code on macOS is benign for
   this runbook as long as the test host continues to launch and the

@@ -8,21 +8,21 @@ import {
 describe('timestampedDirectory constants', () => {
   describe('COMMAND_ID_CREATE', () => {
     it('should be the correct command id for creating directories', () => {
-      expect(COMMAND_ID_CREATE).toBe('arit.createTimestampedDirectory');
+      expect(COMMAND_ID_CREATE).toBe('tangyr.createTimestampedDirectory');
     });
 
-    it('should start with arit prefix', () => {
-      expect(COMMAND_ID_CREATE).toMatch(/^arit\./);
+    it('should start with tangyr prefix', () => {
+      expect(COMMAND_ID_CREATE).toMatch(/^tangyr\./);
     });
   });
 
   describe('COMMAND_ID_PREFIX', () => {
     it('should be the correct command id for prefixing directories', () => {
-      expect(COMMAND_ID_PREFIX).toBe('arit.prefixTimestampToDirectory');
+      expect(COMMAND_ID_PREFIX).toBe('tangyr.prefixTimestampToDirectory');
     });
 
-    it('should start with arit prefix', () => {
-      expect(COMMAND_ID_PREFIX).toMatch(/^arit\./);
+    it('should start with tangyr prefix', () => {
+      expect(COMMAND_ID_PREFIX).toMatch(/^tangyr\./);
     });
   });
 

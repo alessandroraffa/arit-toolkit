@@ -1,4 +1,4 @@
-# ARIT Toolkit -- Technical Context Document
+# Tangyr Workbench -- Technical Context Document
 
 > **Scope.** This document follows the arc42 template (sections 1--4, 8, 12)
 > and the principles of ISO/IEC/IEEE 42010:2022 for architecture description.
@@ -10,9 +10,9 @@
 
 | Field              | Value                                                                                                                                       |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| System             | ARIT Toolkit -- VS Code Extension                                                                                                           |
-| Repository         | <https://github.com/alessandroraffa/arit-toolkit>                                                                                           |
-| Identifier         | `alessandroraffa.arit-toolkit`                                                                                                              |
+| System             | Tangyr Workbench -- VS Code Extension                                                                                                       |
+| Repository         | <https://github.com/alessandroraffa/tangyr-vscode>                                                                                          |
+| Identifier         | `alessandroraffa.tangyr`                                                                                                                    |
 | Current version    | 1.10.2 (versionCode `1001010002`)                                                                                                           |
 | Licence            | MIT                                                                                                                                         |
 | Architecture style | Feature-based modular architecture, dependency injection                                                                                    |
@@ -25,7 +25,7 @@
 
 ### 1.1 Requirements Overview
 
-ARIT Toolkit is a VS Code extension that bundles productivity utilities
+Tangyr Workbench is a VS Code extension that bundles productivity utilities
 for developers working inside a single-root workspace. Its capabilities
 fall into two categories:
 
@@ -36,7 +36,7 @@ fall into two categories:
 | Status bar services | Display real-time text statistics (characters, tokens, words, lines, paragraphs, reading time, file size) with selection awareness and configurable tokenizer models. |
 
 The extension is workspace-aware: a JSONC configuration file
-(`.arit-toolkit.jsonc`) at the workspace root stores the enabled state,
+(`.tangyr.jsonc`) at the workspace root stores the enabled state,
 the extension version, and per-feature settings. A version-aware
 config-migration system ensures that users upgrading from older versions
 are prompted to opt in to new configuration sections.
@@ -104,7 +104,7 @@ are prompted to opt in to new configuration sections.
                       workspace open   |
                                        v
                            +-----------------------+
-                           |    ARIT Toolkit       |
+                           |    Tangyr Workbench       |
                            |    Extension          |
                            +-----------+-----------+
                                        |
@@ -118,9 +118,9 @@ are prompted to opt in to new configuration sections.
 
 | External actor         | Interaction                                                                                                                                                                                              |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| VS Code user           | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.arit-toolkit.jsonc` manually.                                                                     |
-| `.arit-toolkit.jsonc`  | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits.                                                                                    |
-| VS Code settings       | `arit.timestampFormat`, `arit.timestampSeparator`, `arit.logLevel` -- read via `ConfigManager`.                                                                                                          |
+| VS Code user           | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.tangyr.jsonc` manually.                                                                           |
+| `.tangyr.jsonc`        | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits.                                                                                    |
+| VS Code settings       | `tangyr.timestampFormat`, `tangyr.timestampSeparator`, `tangyr.logLevel` -- read via `ConfigManager`.                                                                                                    |
 | Active text editor     | Source for real-time text statistics. Text Stats listens to editor change, document change, and selection change events.                                                                                 |
 | AI agent session files | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/`, VS Code globalStorage/workspaceStorage directories. Only sessions belonging to the current workspace are copied to the archive path. |
 | VS Code Marketplace    | Publish target for `.vsix` packages via semantic-release pipeline.                                                                                                                                       |
@@ -170,7 +170,7 @@ are prompted to opt in to new configuration sections.
 +------------------------------------------------------------------+
          |                   |                    |
          v                   v                    v
-   .arit-toolkit.jsonc    workspace FS     global FS / VS Code
+   .tangyr.jsonc    workspace FS     global FS / VS Code
    (workspace root)       (file create/    storage (agent
                            rename)          session sources)
 ```
@@ -229,7 +229,7 @@ are prompted to opt in to new configuration sections.
 
 | #   | Decision                                                | Context                                                                      | Consequences                                                                                                                                                                                                                                                              |
 | --- | ------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Single-root workspace requirement for stateful features | Multi-root workspaces have no single root to place `.arit-toolkit.jsonc`.    | Multi-root mode degrades gracefully: basic commands available, toggle and archiving disabled. Status bar shows warning.                                                                                                                                                   |
+| 1   | Single-root workspace requirement for stateful features | Multi-root workspaces have no single root to place `.tangyr.jsonc`.          | Multi-root mode degrades gracefully: basic commands available, toggle and archiving disabled. Status bar shows warning.                                                                                                                                                   |
 | 2   | Global toggle + per-feature toggles                     | Users need coarse-grained and fine-grained control over background services. | `enabled: false` at root level stops all background activity. Each feature's `enabled` is preserved and resumes independently when global toggle returns to `true`.                                                                                                       |
 | 3   | Presence-based config migration                         | Adding new config sections should not break existing users.                  | On activation, `ConfigMigrationService` detects sections whose keys are absent from the workspace config and prompts users individually. Declined sections are re-prompted on the next activation (only when the extension is globally enabled).                          |
 | 4   | mtime-based change detection for archiving              | Reading and hashing large session files is expensive.                        | `vscode.workspace.fs.stat()` is fast and sufficient. Each source session maps to exactly one archived file (latest version), replaced on mtime change.                                                                                                                    |
@@ -247,8 +247,8 @@ activate(context)
   +-- registerAllFeatures(ctx)
   |     |
   |     +-- registerStatusBarToggleFeature(ctx)
-  |     |     +-- register arit.toggleEnabled command
-  |     |     +-- register arit.checkup command
+  |     |     +-- register tangyr.toggleEnabled command
+  |     |     +-- register tangyr.checkup command
   |     +-- registerTimestampedFileFeature(registry, config, logger)
   |     +-- registerTimestampedDirectoryFeature(registry, config, logger)
   |     +-- registerAgentSessionsArchivingFeature(ctx)
@@ -306,12 +306,12 @@ stateManager.checkup()  [async, triggered by "Checkup" button]
 
 ### 8.1 Workspace State Persistence
 
-The `.arit-toolkit.jsonc` file is the single source of truth for
+The `.tangyr.jsonc` file is the single source of truth for
 workspace-level state:
 
 ```jsonc
-// ARIT Toolkit workspace configuration
-// Managed by the ARIT Toolkit extension
+// Tangyr Workbench workspace configuration
+// Managed by the Tangyr Workbench extension
 {
   "enabled": true,
   "version": "1.4.0",
@@ -483,7 +483,7 @@ timestamp prefix is created.
 
 **Orphan archive retention:** Replacement only applies to session IDs
 returned by the current provider scan. If a historical archive file no
-longer has a corresponding source session in provider storage, ARIT
+longer has a corresponding source session in provider storage, Tangyr Workbench
 retains the archive file instead of pruning it automatically. This keeps
 the archive append-preserving for historical sessions even when the
 source store has already dropped them.
@@ -548,7 +548,7 @@ filtering:
 | `info`  | Errors, warnings, informational |
 | `debug` | Everything                      |
 
-The level is configurable via `arit.logLevel` (VS Code setting) and
+The level is configurable via `tangyr.logLevel` (VS Code setting) and
 updates reactively when the setting changes.
 
 ### 8.9 Testing Strategy
@@ -680,12 +680,12 @@ extension. The bundled vocabularies increase the extension size from
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Archive cycle**         | A single pass of the `AgentSessionArchiveService` that queries all providers, detects mtime changes, and copies/replaces session files in the archive directory.                                                                                      |
 | **Config migration**      | The process of detecting configuration sections missing from an older workspace config and prompting the user to add them with default values.                                                                                                        |
-| **Config section**        | A top-level key in `.arit-toolkit.jsonc` owned by a specific feature (e.g., `agentSessionsArchiving`).                                                                                                                                                |
+| **Config section**        | A top-level key in `.tangyr.jsonc` owned by a specific feature (e.g., `agentSessionsArchiving`).                                                                                                                                                      |
 | **Feature**               | A self-contained module under `src/features/<name>/` that registers commands, UI elements, and/or background services.                                                                                                                                |
-| **Global toggle**         | The top-level `enabled` boolean in `.arit-toolkit.jsonc` that controls whether all background services are active.                                                                                                                                    |
+| **Global toggle**         | The top-level `enabled` boolean in `.tangyr.jsonc` that controls whether all background services are active.                                                                                                                                          |
 | **Guarded command**       | A VS Code command that checks `stateManager.isEnabled` before executing and shows a warning if the extension is disabled.                                                                                                                             |
 | **mtime**                 | File modification timestamp obtained via `vscode.workspace.fs.stat()`, used for change detection without reading file contents.                                                                                                                       |
-| **Onboarding**            | The first-time notification shown when a user opens a single-root workspace that does not yet have `.arit-toolkit.jsonc`.                                                                                                                             |
+| **Onboarding**            | The first-time notification shown when a user opens a single-root workspace that does not yet have `.tangyr.jsonc`.                                                                                                                                   |
 | **Checkup**               | A comprehensive health check triggered via the "Checkup" tooltip button. Reads config, runs migration, preserves user customizations, and optionally commits the updated config file. Suspends auto-commit during execution to avoid race conditions. |
 | **Session file**          | A file produced by an AI coding assistant that contains chat interaction history (not rules or configuration).                                                                                                                                        |
 | **Session provider**      | An implementation of `SessionProvider` that discovers session files for a specific AI coding assistant.                                                                                                                                               |
@@ -694,4 +694,4 @@ extension. The bundled vocabularies increase the extension size from
 | **Token counter**         | A lazy-loaded component in the Text Stats feature that counts tokens using a configurable tokenizer model (`cl100k`, `o200k`, or `claude`). Encoders are cached per model and invalidated on model change.                                            |
 | **Tokenizer model**       | One of three supported token-counting schemes: `cl100k` (OpenAI cl100k_base), `o200k` (OpenAI o200k_base), or `claude` (Anthropic Claude). Selected via the `textStats.tokenizer` config or the quick-pick command.                                   |
 | **Version code**          | A numeric encoding of a semantic version (`1XXXYYYZZZ`) used for fast comparison in the migration system.                                                                                                                                             |
-| **Workspace config**      | The `.arit-toolkit.jsonc` file at the workspace root, managed by `ExtensionStateManager`.                                                                                                                                                             |
+| **Workspace config**      | The `.tangyr.jsonc` file at the workspace root, managed by `ExtensionStateManager`.                                                                                                                                                                   |

@@ -40,7 +40,7 @@ describe('isGitIgnored', () => {
       }
     );
 
-    const result = await isGitIgnored('.arit-toolkit.jsonc', '/workspace');
+    const result = await isGitIgnored('.tangyr.jsonc', '/workspace');
     expect(result).toBe(true);
   });
 
@@ -58,7 +58,7 @@ describe('isGitIgnored', () => {
       }
     );
 
-    const result = await isGitIgnored('.arit-toolkit.jsonc', '/workspace');
+    const result = await isGitIgnored('.tangyr.jsonc', '/workspace');
     expect(result).toBe(false);
   });
 
@@ -76,7 +76,7 @@ describe('isGitIgnored', () => {
       }
     );
 
-    const result = await isGitIgnored('.arit-toolkit.jsonc', '/workspace');
+    const result = await isGitIgnored('.tangyr.jsonc', '/workspace');
     expect(result).toBe(true);
   });
 
@@ -94,7 +94,7 @@ describe('isGitIgnored', () => {
       }
     );
 
-    const result = await isGitIgnored('.arit-toolkit.jsonc', '/workspace');
+    const result = await isGitIgnored('.tangyr.jsonc', '/workspace');
     expect(result).toBe(true);
   });
 });
@@ -118,18 +118,18 @@ describe('gitStageAndCommit', () => {
       }
     );
 
-    await gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update config', {
+    await gitStageAndCommit('.tangyr.jsonc', 'chore: update config', {
       cwd: '/workspace',
     });
 
     expect(calls).toHaveLength(2);
-    expect(calls[0]).toEqual(['add', '--', '.arit-toolkit.jsonc']);
+    expect(calls[0]).toEqual(['add', '--', '.tangyr.jsonc']);
     expect(calls[1]).toEqual([
       'commit',
       '-m',
       'chore: update config',
       '--',
-      '.arit-toolkit.jsonc',
+      '.tangyr.jsonc',
     ]);
   });
 
@@ -146,7 +146,7 @@ describe('gitStageAndCommit', () => {
     );
 
     await expect(
-      gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update', { cwd: '/workspace' })
+      gitStageAndCommit('.tangyr.jsonc', 'chore: update', { cwd: '/workspace' })
     ).rejects.toThrow('add failed');
   });
 
@@ -176,19 +176,13 @@ describe('gitStageAndCommit', () => {
     );
 
     await expect(
-      gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update', { cwd: '/workspace' })
+      gitStageAndCommit('.tangyr.jsonc', 'chore: update', { cwd: '/workspace' })
     ).rejects.toThrow('commit failed');
 
     expect(calls).toHaveLength(3);
-    expect(calls[0]).toEqual(['add', '--', '.arit-toolkit.jsonc']);
-    expect(calls[1]).toEqual([
-      'commit',
-      '-m',
-      'chore: update',
-      '--',
-      '.arit-toolkit.jsonc',
-    ]);
-    expect(calls[2]).toEqual(['reset', 'HEAD', '--', '.arit-toolkit.jsonc']);
+    expect(calls[0]).toEqual(['add', '--', '.tangyr.jsonc']);
+    expect(calls[1]).toEqual(['commit', '-m', 'chore: update', '--', '.tangyr.jsonc']);
+    expect(calls[2]).toEqual(['reset', 'HEAD', '--', '.tangyr.jsonc']);
   });
 
   it('should pass HUSKY=0 env to git commit when skipHooks is true', async () => {
@@ -205,7 +199,7 @@ describe('gitStageAndCommit', () => {
       }
     );
 
-    await gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update config', {
+    await gitStageAndCommit('.tangyr.jsonc', 'chore: update config', {
       cwd: '/workspace',
       skipHooks: true,
     });
@@ -233,7 +227,7 @@ describe('gitStageAndCommit', () => {
       }
     );
 
-    await gitStageAndCommit('.arit-toolkit.jsonc', 'chore: update config', {
+    await gitStageAndCommit('.tangyr.jsonc', 'chore: update config', {
       cwd: '/workspace',
     });
 
@@ -262,10 +256,10 @@ describe('gitUnstage', () => {
       }
     );
 
-    await gitUnstage('.arit-toolkit.jsonc', '/workspace');
+    await gitUnstage('.tangyr.jsonc', '/workspace');
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual(['reset', 'HEAD', '--', '.arit-toolkit.jsonc']);
+    expect(calls[0]).toEqual(['reset', 'HEAD', '--', '.tangyr.jsonc']);
   });
 
   it('should throw when git reset fails', async () => {
@@ -280,7 +274,7 @@ describe('gitUnstage', () => {
       }
     );
 
-    await expect(gitUnstage('.arit-toolkit.jsonc', '/workspace')).rejects.toThrow(
+    await expect(gitUnstage('.tangyr.jsonc', '/workspace')).rejects.toThrow(
       'reset failed'
     );
   });
@@ -299,11 +293,11 @@ describe('hasGitChanges', () => {
         _opts: unknown,
         cb: (...args: unknown[]) => void
       ) => {
-        cb(null, ' M .arit-toolkit.jsonc\n', '');
+        cb(null, ' M .tangyr.jsonc\n', '');
       }
     );
 
-    const result = await hasGitChanges('.arit-toolkit.jsonc', '/workspace');
+    const result = await hasGitChanges('.tangyr.jsonc', '/workspace');
     expect(result).toBe(true);
   });
 
@@ -319,7 +313,7 @@ describe('hasGitChanges', () => {
       }
     );
 
-    const result = await hasGitChanges('.arit-toolkit.jsonc', '/workspace');
+    const result = await hasGitChanges('.tangyr.jsonc', '/workspace');
     expect(result).toBe(false);
   });
 
@@ -337,7 +331,7 @@ describe('hasGitChanges', () => {
       }
     );
 
-    const result = await hasGitChanges('.arit-toolkit.jsonc', '/workspace');
+    const result = await hasGitChanges('.tangyr.jsonc', '/workspace');
     expect(result).toBe(false);
   });
 
@@ -355,7 +349,7 @@ describe('hasGitChanges', () => {
       }
     );
 
-    const result = await hasGitChanges('.arit-toolkit.jsonc', '/workspace');
+    const result = await hasGitChanges('.tangyr.jsonc', '/workspace');
     expect(result).toBe(false);
   });
 });

@@ -28,8 +28,8 @@ export class CommandRegistry {
     return async (uri?: vscode.Uri): Promise<void> => {
       if (this.stateManager && !this.stateManager.isEnabled) {
         void vscode.window.showWarningMessage(
-          'ARIT Toolkit is currently disabled for this workspace. ' +
-            'Click the ARIT icon in the status bar to re-enable it.'
+          'Tangyr Workbench is currently disabled for this workspace. ' +
+            'Click the Tangyr icon in the status bar to re-enable it.'
         );
         return;
       }

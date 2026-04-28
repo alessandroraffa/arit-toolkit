@@ -101,8 +101,8 @@ describe('CommandRegistry', () => {
 
       expect(handler).not.toHaveBeenCalled();
       expect(window.showWarningMessage).toHaveBeenCalledWith(
-        'ARIT Toolkit is currently disabled for this workspace. ' +
-          'Click the ARIT icon in the status bar to re-enable it.'
+        'Tangyr Workbench is currently disabled for this workspace. ' +
+          'Click the Tangyr icon in the status bar to re-enable it.'
       );
     });
 

@@ -19,7 +19,7 @@ describe('Logger', () => {
 
   describe('getInstance', () => {
     it('should create output channel on first call', () => {
-      expect(window.createOutputChannel).toHaveBeenCalledWith('ARIT Toolkit');
+      expect(window.createOutputChannel).toHaveBeenCalledWith('Tangyr Workbench');
     });
 
     it('should return singleton instance', () => {

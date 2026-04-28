@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { LogLevel, TimestampFormat } from '../types';
 
 export class ConfigManager {
-  private static readonly SECTION = 'arit';
+  private static readonly SECTION = 'tangyr';
 
   private get config(): vscode.WorkspaceConfiguration {
     return vscode.workspace.getConfiguration(ConfigManager.SECTION);

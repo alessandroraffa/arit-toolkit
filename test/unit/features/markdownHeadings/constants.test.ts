@@ -11,13 +11,13 @@ describe('markdownHeadings constants', () => {
   });
 
   it('should export COMMAND_ID_INCREMENT with correct prefix', () => {
-    expect(COMMAND_ID_INCREMENT).toBe('arit.markdownHeadings.increment');
-    expect(COMMAND_ID_INCREMENT).toMatch(/^arit\./);
+    expect(COMMAND_ID_INCREMENT).toBe('tangyr.markdownHeadings.increment');
+    expect(COMMAND_ID_INCREMENT).toMatch(/^tangyr\./);
   });
 
   it('should export COMMAND_ID_DECREMENT with correct prefix', () => {
-    expect(COMMAND_ID_DECREMENT).toBe('arit.markdownHeadings.decrement');
-    expect(COMMAND_ID_DECREMENT).toMatch(/^arit\./);
+    expect(COMMAND_ID_DECREMENT).toBe('tangyr.markdownHeadings.decrement');
+    expect(COMMAND_ID_DECREMENT).toMatch(/^tangyr\./);
   });
 
   it('should have unique command IDs', () => {

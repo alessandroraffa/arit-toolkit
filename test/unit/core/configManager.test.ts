@@ -20,7 +20,7 @@ describe('ConfigManager', () => {
       mockGet.mockReturnValue('YYYYMMDD');
 
       expect(configManager.timestampFormat).toBe('YYYYMMDD');
-      expect(workspace.getConfiguration).toHaveBeenCalledWith('arit');
+      expect(workspace.getConfiguration).toHaveBeenCalledWith('tangyr');
       expect(mockGet).toHaveBeenCalledWith('timestampFormat');
     });
 
@@ -70,7 +70,7 @@ describe('ConfigManager', () => {
       expect(disposable).toBe(mockDisposable);
     });
 
-    it('should call callback when arit configuration changes', () => {
+    it('should call callback when tangyr configuration changes', () => {
       const callback = vi.fn();
       let registeredHandler: (e: {
         affectsConfiguration: (s: string) => boolean;
@@ -83,8 +83,8 @@ describe('ConfigManager', () => {
 
       configManager.onConfigChange(callback);
 
-      // Simulate configuration change for 'arit' section
-      registeredHandler({ affectsConfiguration: (section) => section === 'arit' });
+      // Simulate configuration change for 'tangyr' section
+      registeredHandler({ affectsConfiguration: (section) => section === 'tangyr' });
 
       expect(callback).toHaveBeenCalled();
     });

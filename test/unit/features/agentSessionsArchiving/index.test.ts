@@ -118,7 +118,7 @@ describe('registerAgentSessionsArchivingFeature', () => {
   it('should register toggle command', () => {
     registerAgentSessionsArchivingFeature(ctx);
     expect(ctx.registry.register).toHaveBeenCalledWith(
-      'arit.toggleAgentSessionsArchiving',
+      'tangyr.toggleAgentSessionsArchiving',
       expect.any(Function)
     );
   });
@@ -126,7 +126,7 @@ describe('registerAgentSessionsArchivingFeature', () => {
   it('should register archive now command', () => {
     registerAgentSessionsArchivingFeature(ctx);
     expect(ctx.registry.register).toHaveBeenCalledWith(
-      'arit.archiveAgentSessionsNow',
+      'tangyr.archiveAgentSessionsNow',
       expect.any(Function)
     );
   });
@@ -151,7 +151,7 @@ describe('registerAgentSessionsArchivingFeature', () => {
 
       const registerCalls = vi.mocked(ctx.registry.register).mock.calls;
       const archiveNowCall = registerCalls.find(
-        (c) => c[0] === 'arit.archiveAgentSessionsNow'
+        (c) => c[0] === 'tangyr.archiveAgentSessionsNow'
       );
       const handler = archiveNowCall![1] as () => Promise<void>;
       await handler();
@@ -165,7 +165,7 @@ describe('registerAgentSessionsArchivingFeature', () => {
 
       const registerCalls = vi.mocked(ctx.registry.register).mock.calls;
       const archiveNowCall = registerCalls.find(
-        (c) => c[0] === 'arit.archiveAgentSessionsNow'
+        (c) => c[0] === 'tangyr.archiveAgentSessionsNow'
       );
       const handler = archiveNowCall![1] as () => Promise<void>;
       await handler();
@@ -181,7 +181,7 @@ describe('registerAgentSessionsArchivingFeature', () => {
 
       const registerCalls = vi.mocked(ctx.registry.register).mock.calls;
       const archiveNowCall = registerCalls.find(
-        (c) => c[0] === 'arit.archiveAgentSessionsNow'
+        (c) => c[0] === 'tangyr.archiveAgentSessionsNow'
       );
       const handler = archiveNowCall![1] as () => Promise<void>;
       await handler();
@@ -202,7 +202,7 @@ describe('registerAgentSessionsArchivingFeature', () => {
       expect.objectContaining({
         actions: [
           expect.objectContaining({
-            commandId: 'arit.archiveAgentSessionsNow',
+            commandId: 'tangyr.archiveAgentSessionsNow',
             label: 'Archive Now',
           }),
         ],

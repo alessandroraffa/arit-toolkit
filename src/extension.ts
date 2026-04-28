@@ -8,37 +8,46 @@ import {
   ConfigSectionRegistry,
   ConfigMigrationService,
 } from './core';
-import { showFarewellNoticeOnce } from './farewell';
 import { registerAllFeatures } from './features';
+import { runMigrationIfNeeded } from './migration';
 
 let logger: Logger | undefined;
+
+function setupConfiguration(
+  context: vscode.ExtensionContext,
+  log: Logger
+): ConfigManager {
+  const configManager = new ConfigManager();
+  log.setLevel(configManager.logLevel);
+  const configDisposable = configManager.onConfigChange(() => {
+    logger?.setLevel(configManager.logLevel);
+  });
+  context.subscriptions.push(configDisposable);
+  return configManager;
+}
 
 function setupAutoCommit(stateManager: ExtensionStateManager, log: Logger): void {
   if (stateManager.workspaceRootUri) {
     stateManager.setAutoCommitService(
       new ConfigAutoCommitService(
         stateManager.workspaceRootUri.fsPath,
-        '.arit-toolkit.jsonc',
+        '.tangyr.jsonc',
         log
       )
     );
   }
 }
 
+function runSettingsMigration(context: vscode.ExtensionContext): void {
+  void runMigrationIfNeeded(context).catch((err: unknown) => {
+    console.error('[migration] Unexpected failure:', err);
+  });
+}
+
 export function activate(context: vscode.ExtensionContext): void {
   logger = Logger.getInstance();
-  const configManager = new ConfigManager();
-
-  // Set initial log level from configuration
-  logger.setLevel(configManager.logLevel);
-
-  // Update log level when configuration changes
-  const configDisposable = configManager.onConfigChange(() => {
-    logger?.setLevel(configManager.logLevel);
-  });
-  context.subscriptions.push(configDisposable);
-
-  logger.info('ARIT Toolkit is activating...');
+  const configManager = setupConfiguration(context, logger);
+  logger.info('Tangyr Workbench is activating...');
 
   // Create config migration infrastructure
   const migrationRegistry = new ConfigSectionRegistry();
@@ -67,14 +76,13 @@ export function activate(context: vscode.ExtensionContext): void {
     String((context.extension.packageJSON as Record<string, unknown>).version)
   );
 
-  // End-of-life notice. Non-blocking so activation is not delayed by user input.
-  void showFarewellNoticeOnce(context);
+  runSettingsMigration(context);
 
-  logger.info('ARIT Toolkit activated successfully');
+  logger.info('Tangyr Workbench activated successfully');
 }
 
 export function deactivate(): void {
-  logger?.info('ARIT Toolkit deactivated');
+  logger?.info('Tangyr Workbench deactivated');
   logger?.dispose();
   logger = undefined;
 }

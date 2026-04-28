@@ -5,12 +5,12 @@ suite('Extension Test Suite', () => {
   vscode.window.showInformationMessage('Start all tests.');
 
   test('Extension should be present', () => {
-    const ext = vscode.extensions.getExtension('alessandroraffa.arit-toolkit');
+    const ext = vscode.extensions.getExtension('alessandroraffa.tangyr');
     assert.ok(ext, 'Extension should be installed');
   });
 
   test('Extension should activate', async () => {
-    const ext = vscode.extensions.getExtension('alessandroraffa.arit-toolkit');
+    const ext = vscode.extensions.getExtension('alessandroraffa.tangyr');
     assert.ok(ext, 'Extension should be installed');
 
     await ext.activate();
@@ -20,21 +20,21 @@ suite('Extension Test Suite', () => {
   test('Command should be registered', async () => {
     const commands = await vscode.commands.getCommands(true);
     assert.ok(
-      commands.includes('arit.createTimestampedFile'),
-      'Command arit.createTimestampedFile should be registered'
+      commands.includes('tangyr.createTimestampedFile'),
+      'Command tangyr.createTimestampedFile should be registered'
     );
   });
 
   test('Toggle command should be registered', async () => {
     const commands = await vscode.commands.getCommands(true);
     assert.ok(
-      commands.includes('arit.toggleEnabled'),
-      'Command arit.toggleEnabled should be registered'
+      commands.includes('tangyr.toggleEnabled'),
+      'Command tangyr.toggleEnabled should be registered'
     );
   });
 
   test('Configuration should have default values', () => {
-    const config = vscode.workspace.getConfiguration('arit');
+    const config = vscode.workspace.getConfiguration('tangyr');
 
     assert.strictEqual(
       config.get('timestampFormat'),

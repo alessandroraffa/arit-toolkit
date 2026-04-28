@@ -5,9 +5,10 @@ import type { ConfigMigrationService } from './configMigration/migrationService'
 import type { ConfigAutoCommitService } from './configAutoCommit';
 import { parseJsonc, formatJsonc, computeVersionCode } from '../utils';
 
-const CONFIG_FILENAME = '.arit-toolkit.jsonc';
+const CONFIG_FILENAME = '.tangyr.jsonc';
+const LEGACY_CONFIG_FILENAME = '.arit-toolkit.jsonc';
 const CONFIG_HEADER =
-  'ARIT Toolkit workspace configuration\nManaged by the ARIT Toolkit extension';
+  'Tangyr Workbench workspace configuration\nManaged by the Tangyr Workbench extension';
 
 type SectionListener = (value: unknown) => void;
 
@@ -37,6 +38,7 @@ export class ExtensionStateManager {
   private _configVersionCode: number | undefined;
   private _fullConfig: Record<string, unknown> | undefined;
   private _autoCommitService: ConfigAutoCommitService | undefined;
+  private _loadedLegacyConfigFile = false;
 
   constructor(
     private readonly logger: Logger,
@@ -126,6 +128,8 @@ export class ExtensionStateManager {
       this._onDidChangeState.fire(this._isEnabled);
       if (this._isEnabled) {
         await this.runMigration();
+      } else {
+        await this.ensureCurrentConfigFile();
       }
     } else {
       const accepted = await this.showOnboardingNotification();
@@ -163,14 +167,14 @@ export class ExtensionStateManager {
       await this.runMigration();
     }
     this.logger.info(
-      `ARIT Toolkit ${newState ? 'enabled' : 'disabled'} for this workspace`
+      `Tangyr Workbench ${newState ? 'enabled' : 'disabled'} for this workspace`
     );
     return newState;
   }
 
   public async showOnboardingNotification(): Promise<boolean> {
     const action = await vscode.window.showInformationMessage(
-      'ARIT Toolkit: Initialize this workspace for advanced features?',
+      'Tangyr Workbench: Initialize this workspace for advanced features?',
       'Initialize'
     );
     if (action === 'Initialize') {
@@ -189,7 +193,7 @@ export class ExtensionStateManager {
     this._isInitialized = true;
     this._isEnabled = true;
     this._onDidChangeState.fire(true);
-    this.logger.info('Workspace initialized for ARIT Toolkit');
+    this.logger.info('Workspace initialized for Tangyr Workbench');
   }
 
   public dispose(): void {
@@ -197,36 +201,69 @@ export class ExtensionStateManager {
     this._onDidChangeState.dispose();
   }
 
-  private getConfigUri(): vscode.Uri | undefined {
+  private getConfigUri(fileName = CONFIG_FILENAME): vscode.Uri | undefined {
     return this._workspaceRoot
-      ? vscode.Uri.joinPath(this._workspaceRoot, CONFIG_FILENAME)
+      ? vscode.Uri.joinPath(this._workspaceRoot, fileName)
       : undefined;
   }
 
   private async readStateFromFile(): Promise<void> {
-    const configUri = this.getConfigUri();
-    if (!configUri) {
+    if (!this._workspaceRoot) {
       return;
     }
     try {
-      const raw = await vscode.workspace.fs.readFile(configUri);
-      const config = parseJsonc(new TextDecoder().decode(raw)) as Record<string, unknown>;
-      this.applyConfig(config);
-      this.logger.debug(
-        `Read workspace config: enabled=${String(this._isEnabled)}, versionCode=${String(this._configVersionCode)}`
-      );
+      await this.readCurrentConfigFile();
     } catch (err) {
-      if (this._fullConfig) {
-        this.logger.warn(
-          `Failed to re-read workspace config, keeping existing state: ${String(err)}`
-        );
-        return;
-      }
-      this._isInitialized = false;
-      this._isEnabled = false;
-      this._fullConfig = undefined;
-      this.logger.debug('No workspace config file found');
+      await this.handleConfigReadFailure(err);
     }
+  }
+
+  private async readCurrentConfigFile(): Promise<void> {
+    const config = await this.readConfigFile(CONFIG_FILENAME);
+    this.applyConfig(config);
+    this._loadedLegacyConfigFile = false;
+    this.logger.debug(
+      `Read workspace config: enabled=${String(this._isEnabled)}, versionCode=${String(this._configVersionCode)}`
+    );
+  }
+
+  private async handleConfigReadFailure(err: unknown): Promise<void> {
+    if (!this._fullConfig && (await this.tryReadLegacyConfigFile())) {
+      return;
+    }
+    if (this._fullConfig) {
+      this.logger.warn(
+        `Failed to re-read workspace config, keeping existing state: ${String(err)}`
+      );
+      return;
+    }
+    this._isInitialized = false;
+    this._isEnabled = false;
+    this._fullConfig = undefined;
+    this.logger.debug('No workspace config file found');
+  }
+
+  private async tryReadLegacyConfigFile(): Promise<boolean> {
+    try {
+      const config = await this.readConfigFile(LEGACY_CONFIG_FILENAME);
+      this.applyConfig(config);
+      this._loadedLegacyConfigFile = true;
+      this.logger.info(
+        `Loaded legacy workspace config ${LEGACY_CONFIG_FILENAME}; it will be copied to ${CONFIG_FILENAME}`
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async readConfigFile(fileName: string): Promise<Record<string, unknown>> {
+    const configUri = this.getConfigUri(fileName);
+    if (!configUri) {
+      return {};
+    }
+    const raw = await vscode.workspace.fs.readFile(configUri);
+    return parseJsonc(new TextDecoder().decode(raw)) as Record<string, unknown>;
   }
 
   private applyConfig(config: Record<string, unknown>): void {
@@ -294,14 +331,27 @@ export class ExtensionStateManager {
       this._extensionVersion
     );
     if (!merged) {
-      return false;
+      return await this.ensureCurrentConfigFile();
     }
     const oldConfig = { ...this._fullConfig };
     await this.writeFullConfig(merged);
+    this._loadedLegacyConfigFile = false;
     this._fullConfig = merged;
     this._configVersionCode = merged.versionCode as number | undefined;
     this.notifySectionListeners(oldConfig, merged);
     this.logger.info(`Workspace config migrated to version ${this._extensionVersion}`);
+    return true;
+  }
+
+  private async ensureCurrentConfigFile(): Promise<boolean> {
+    if (!this._loadedLegacyConfigFile || !this._fullConfig) {
+      return false;
+    }
+    await this.writeFullConfig(this._fullConfig);
+    this._loadedLegacyConfigFile = false;
+    this.logger.info(
+      `Workspace config copied from ${LEGACY_CONFIG_FILENAME} to ${CONFIG_FILENAME}`
+    );
     return true;
   }
 

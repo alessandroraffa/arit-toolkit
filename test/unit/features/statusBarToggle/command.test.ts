@@ -81,7 +81,7 @@ describe('toggleEnabledCommand', () => {
 
     await command();
 
-    expect(mockStatusBarItem.text).toBe('$(tools) ARIT');
+    expect(mockStatusBarItem.text).toBe('$(tools) Tangyr');
   });
 
   it('should log the new state', async () => {
@@ -101,7 +101,7 @@ describe('toggleEnabledCommand', () => {
     await command();
 
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'ARIT Toolkit enabled for this workspace'
+      'Tangyr Workbench enabled for this workspace'
     );
   });
 
@@ -120,7 +120,7 @@ describe('toggleEnabledCommand', () => {
 
     expect(mockStateManager.toggle).not.toHaveBeenCalled();
     expect(window.showInformationMessage).toHaveBeenCalledWith(
-      'ARIT Toolkit: Toggle is not available in multi-directory workspaces.'
+      'Tangyr Workbench: Toggle is not available in multi-directory workspaces.'
     );
   });
 });
@@ -191,7 +191,7 @@ describe('checkupCommand', () => {
 
     await command();
 
-    expect(mockStatusBarItem.text).toBe('$(tools) ARIT');
+    expect(mockStatusBarItem.text).toBe('$(tools) Tangyr');
   });
 
   it('should show summary message', async () => {
@@ -204,7 +204,7 @@ describe('checkupCommand', () => {
     await command();
 
     expect(window.showInformationMessage).toHaveBeenCalledWith(
-      'ARIT Toolkit: Config is up to date.'
+      'Tangyr Workbench: Config is up to date.'
     );
   });
 
@@ -217,7 +217,7 @@ describe('checkupCommand', () => {
 
     await command();
 
-    expect(mockLogger.info).toHaveBeenCalledWith('ARIT Toolkit checkup completed');
+    expect(mockLogger.info).toHaveBeenCalledWith('Tangyr Workbench checkup completed');
   });
 });
 
@@ -225,36 +225,36 @@ describe('buildCheckupMessage', () => {
   it('should return up to date when no changes', () => {
     expect(
       buildCheckupMessage({ configUpdated: false, commitResult: 'no-changes' })
-    ).toBe('ARIT Toolkit: Config is up to date.');
+    ).toBe('Tangyr Workbench: Config is up to date.');
   });
 
   it('should return up to date for git-ignored', () => {
     expect(
       buildCheckupMessage({ configUpdated: false, commitResult: 'git-ignored' })
-    ).toBe('ARIT Toolkit: Config is up to date.');
+    ).toBe('Tangyr Workbench: Config is up to date.');
   });
 
   it('should mention config updated and committed', () => {
     expect(buildCheckupMessage({ configUpdated: true, commitResult: 'committed' })).toBe(
-      'ARIT Toolkit: Config updated. changes committed.'
+      'Tangyr Workbench: Config updated. changes committed.'
     );
   });
 
   it('should mention config updated with uncommitted changes', () => {
     expect(buildCheckupMessage({ configUpdated: true, commitResult: 'skipped' })).toBe(
-      'ARIT Toolkit: Config updated. file has uncommitted changes.'
+      'Tangyr Workbench: Config updated. file has uncommitted changes.'
     );
   });
 
   it('should mention config updated when git-ignored', () => {
     expect(
       buildCheckupMessage({ configUpdated: true, commitResult: 'git-ignored' })
-    ).toBe('ARIT Toolkit: Config updated.');
+    ).toBe('Tangyr Workbench: Config updated.');
   });
 
   it('should mention commit failed', () => {
     expect(buildCheckupMessage({ configUpdated: true, commitResult: 'failed' })).toBe(
-      'ARIT Toolkit: Config updated. commit failed — check output log.'
+      'Tangyr Workbench: Config updated. commit failed — check output log.'
     );
   });
 });

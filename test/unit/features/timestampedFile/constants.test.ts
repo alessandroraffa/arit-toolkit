@@ -8,21 +8,21 @@ import {
 describe('timestampedFile constants', () => {
   describe('COMMAND_ID_CREATE', () => {
     it('should be the correct command id for creating files', () => {
-      expect(COMMAND_ID_CREATE).toBe('arit.createTimestampedFile');
+      expect(COMMAND_ID_CREATE).toBe('tangyr.createTimestampedFile');
     });
 
-    it('should start with arit prefix', () => {
-      expect(COMMAND_ID_CREATE).toMatch(/^arit\./);
+    it('should start with tangyr prefix', () => {
+      expect(COMMAND_ID_CREATE).toMatch(/^tangyr\./);
     });
   });
 
   describe('COMMAND_ID_PREFIX', () => {
     it('should be the correct command id for prefixing files', () => {
-      expect(COMMAND_ID_PREFIX).toBe('arit.prefixTimestampToFile');
+      expect(COMMAND_ID_PREFIX).toBe('tangyr.prefixTimestampToFile');
     });
 
-    it('should start with arit prefix', () => {
-      expect(COMMAND_ID_PREFIX).toMatch(/^arit\./);
+    it('should start with tangyr prefix', () => {
+      expect(COMMAND_ID_PREFIX).toMatch(/^tangyr\./);
     });
   });
 

@@ -13,9 +13,9 @@ describe('statusBarToggle constants', () => {
     expect(FEATURE_NAME).toBe('Status Bar Toggle');
   });
 
-  it('should have command id with arit prefix', () => {
-    expect(COMMAND_ID_TOGGLE).toBe('arit.toggleEnabled');
-    expect(COMMAND_ID_TOGGLE.startsWith('arit.')).toBe(true);
+  it('should have command id with tangyr prefix', () => {
+    expect(COMMAND_ID_TOGGLE).toBe('tangyr.toggleEnabled');
+    expect(COMMAND_ID_TOGGLE.startsWith('tangyr.')).toBe(true);
   });
 
   it('should have a numeric priority', () => {
@@ -28,10 +28,10 @@ describe('statusBarToggle constants', () => {
   });
 
   it('should have status bar text', () => {
-    expect(STATUS_BAR_TEXT).toBe('ARIT');
+    expect(STATUS_BAR_TEXT).toBe('Tangyr');
   });
 
   it('should have status bar name', () => {
-    expect(STATUS_BAR_NAME).toBe('ARIT Toolkit');
+    expect(STATUS_BAR_NAME).toBe('Tangyr Workbench');
   });
 });

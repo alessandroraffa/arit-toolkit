@@ -201,7 +201,7 @@ describe('ExtensionStateManager', () => {
       expect(manager.isInitialized).toBe(false);
       expect(manager.isEnabled).toBe(false);
       expect(window.showInformationMessage).toHaveBeenCalledWith(
-        'ARIT Toolkit: Initialize this workspace for advanced features?',
+        'Tangyr Workbench: Initialize this workspace for advanced features?',
         'Initialize'
       );
     });
@@ -246,6 +246,26 @@ describe('ExtensionStateManager', () => {
       expect(manager.isInitialized).toBe(true);
       expect(manager.isEnabled).toBe(false);
       expect(mockMigrationService.migrate).not.toHaveBeenCalled();
+    });
+
+    it('should copy legacy workspace config to the tangyr config file', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('File not found'))
+        .mockResolvedValueOnce(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001018003 }')
+        );
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+      const manager = createManager();
+      await manager.initialize('1.18.3');
+
+      expect(manager.isInitialized).toBe(true);
+      expect(manager.isEnabled).toBe(true);
+      expect(workspace.fs.writeFile).toHaveBeenCalled();
+      const writeCall = vi.mocked(workspace.fs.writeFile).mock.calls[0];
+      expect(writeCall[0]).toEqual({ fsPath: '/workspace/.tangyr.jsonc' });
     });
 
     it('should set up file watcher in single-root', async () => {
@@ -454,7 +474,7 @@ describe('ExtensionStateManager', () => {
         key: 'myService',
         label: 'My Service',
         icon: '$(gear)',
-        toggleCommandId: 'arit.toggleMyService',
+        toggleCommandId: 'tangyr.toggleMyService',
       };
 
       manager.registerService(descriptor);

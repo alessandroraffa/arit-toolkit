@@ -30,9 +30,9 @@ export function buildCheckupMessage(result: CheckupResult): string {
       break;
   }
   if (parts.length === 0) {
-    return 'ARIT Toolkit: Config is up to date.';
+    return 'Tangyr Workbench: Config is up to date.';
   }
-  return `ARIT Toolkit: ${parts.join('. ')}.`;
+  return `Tangyr Workbench: ${parts.join('. ')}.`;
 }
 
 export function checkupCommand(deps: ToggleCommandDeps): () => Promise<void> {
@@ -41,7 +41,7 @@ export function checkupCommand(deps: ToggleCommandDeps): () => Promise<void> {
     const result = await stateManager.checkup();
     updateStatusBarItem(statusBarItem, stateManager);
     void vscode.window.showInformationMessage(buildCheckupMessage(result));
-    logger.info('ARIT Toolkit checkup completed');
+    logger.info('Tangyr Workbench checkup completed');
   };
 }
 
@@ -50,7 +50,7 @@ export function toggleEnabledCommand(deps: ToggleCommandDeps): () => Promise<voi
   return async (): Promise<void> => {
     if (!stateManager.isToggleable) {
       void vscode.window.showInformationMessage(
-        'ARIT Toolkit: Toggle is not available in multi-directory workspaces.'
+        'Tangyr Workbench: Toggle is not available in multi-directory workspaces.'
       );
       return;
     }
@@ -58,7 +58,7 @@ export function toggleEnabledCommand(deps: ToggleCommandDeps): () => Promise<voi
     await stateManager.toggle();
     updateStatusBarItem(statusBarItem, stateManager);
     logger.info(
-      `ARIT Toolkit ${stateManager.isEnabled ? 'enabled' : 'disabled'} for this workspace`
+      `Tangyr Workbench ${stateManager.isEnabled ? 'enabled' : 'disabled'} for this workspace`
     );
   };
 }

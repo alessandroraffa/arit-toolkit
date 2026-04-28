@@ -1,6 +1,6 @@
 {
-  "name": "arit-toolkit",
-  "displayName": "ARIT Toolkit",
+  "name": "tangyr",
+  "displayName": "Tangyr Workbench",
   "description": "Archive AI coding sessions (Claude Code, Cline, Aider, Copilot, Roo Code, Continue) into your workspace. Real-time token counting, text stats, and timestamped file management for agentic coding.",
   "version": "1.18.3",
   "versionCode": 1001018003,
@@ -8,12 +8,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/alessandroraffa/arit-toolkit"
+    "url": "https://github.com/alessandroraffa/tangyr-vscode"
   },
   "bugs": {
-    "url": "https://github.com/alessandroraffa/arit-toolkit/issues"
+    "url": "https://github.com/alessandroraffa/tangyr-vscode/issues"
   },
-  "homepage": "https://github.com/alessandroraffa/arit-toolkit#readme",
+  "homepage": "https://github.com/alessandroraffa/tangyr-vscode#readme",
   "icon": "media/icon.png",
   "galleryBanner": {
     "color": "#1e1e1e",
@@ -41,159 +41,159 @@
   "contributes": {
     "commands": [
       {
-        "command": "arit.createTimestampedFile",
-        "title": "ARIT: New File with Timestamp",
+        "command": "tangyr.createTimestampedFile",
+        "title": "Tangyr: New File with Timestamp",
         "icon": "$(new-file)"
       },
       {
-        "command": "arit.prefixTimestampToFile",
-        "title": "ARIT: Prefix Creation Timestamp",
+        "command": "tangyr.prefixTimestampToFile",
+        "title": "Tangyr: Prefix Creation Timestamp",
         "icon": "$(calendar)"
       },
       {
-        "command": "arit.createTimestampedDirectory",
-        "title": "ARIT: New Folder with Timestamp",
+        "command": "tangyr.createTimestampedDirectory",
+        "title": "Tangyr: New Folder with Timestamp",
         "icon": "$(new-folder)"
       },
       {
-        "command": "arit.prefixTimestampToDirectory",
-        "title": "ARIT: Prefix Creation Timestamp to Folder",
+        "command": "tangyr.prefixTimestampToDirectory",
+        "title": "Tangyr: Prefix Creation Timestamp to Folder",
         "icon": "$(folder)"
       },
       {
-        "command": "arit.toggleEnabled",
-        "title": "ARIT: Toggle Extension (Enable/Disable)",
+        "command": "tangyr.toggleEnabled",
+        "title": "Tangyr: Toggle Extension (Enable/Disable)",
         "icon": "$(tools)"
       },
       {
-        "command": "arit.checkup",
-        "title": "ARIT: Checkup",
+        "command": "tangyr.checkup",
+        "title": "Tangyr: Checkup",
         "icon": "$(gear)"
       },
       {
-        "command": "arit.toggleAgentSessionsArchiving",
-        "title": "ARIT: Toggle Agent Sessions Archiving",
+        "command": "tangyr.toggleAgentSessionsArchiving",
+        "title": "Tangyr: Toggle Agent Sessions Archiving",
         "icon": "$(archive)"
       },
       {
-        "command": "arit.archiveAgentSessionsNow",
-        "title": "ARIT: Archive Agent Sessions Now",
+        "command": "tangyr.archiveAgentSessionsNow",
+        "title": "Tangyr: Archive Agent Sessions Now",
         "icon": "$(sync)"
       },
       {
-        "command": "arit.textStats.toggle",
-        "title": "ARIT: Toggle Text Stats",
+        "command": "tangyr.textStats.toggle",
+        "title": "Tangyr: Toggle Text Stats",
         "icon": "$(symbol-number)"
       },
       {
-        "command": "arit.textStats.changeTokenizer",
-        "title": "ARIT: Change Tokenizer Model",
+        "command": "tangyr.textStats.changeTokenizer",
+        "title": "Tangyr: Change Tokenizer Model",
         "icon": "$(symbol-number)"
       },
       {
-        "command": "arit.markdownHeadings.increment",
-        "title": "ARIT: Increment Markdown Headings",
+        "command": "tangyr.markdownHeadings.increment",
+        "title": "Tangyr: Increment Markdown Headings",
         "icon": "$(arrow-down)"
       },
       {
-        "command": "arit.markdownHeadings.decrement",
-        "title": "ARIT: Decrement Markdown Headings",
+        "command": "tangyr.markdownHeadings.decrement",
+        "title": "Tangyr: Decrement Markdown Headings",
         "icon": "$(arrow-up)"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "arit.createTimestampedFile",
+          "command": "tangyr.createTimestampedFile",
           "group": "navigation@1",
           "when": "explorerResourceIsFolder"
         },
         {
-          "command": "arit.createTimestampedDirectory",
+          "command": "tangyr.createTimestampedDirectory",
           "group": "navigation@2",
           "when": "explorerResourceIsFolder"
         },
         {
-          "command": "arit.prefixTimestampToFile",
+          "command": "tangyr.prefixTimestampToFile",
           "group": "navigation@3",
           "when": "!explorerResourceIsFolder"
         },
         {
-          "command": "arit.prefixTimestampToDirectory",
+          "command": "tangyr.prefixTimestampToDirectory",
           "group": "navigation@4",
           "when": "explorerResourceIsFolder"
         },
         {
-          "command": "arit.markdownHeadings.increment",
-          "group": "1_arit@1",
+          "command": "tangyr.markdownHeadings.increment",
+          "group": "1_tangyr@1",
           "when": "!explorerResourceIsFolder && resourceLangId == markdown"
         },
         {
-          "command": "arit.markdownHeadings.decrement",
-          "group": "1_arit@2",
+          "command": "tangyr.markdownHeadings.decrement",
+          "group": "1_tangyr@2",
           "when": "!explorerResourceIsFolder && resourceLangId == markdown"
         }
       ],
       "editor/context": [
         {
-          "command": "arit.markdownHeadings.increment",
-          "group": "1_arit@1",
+          "command": "tangyr.markdownHeadings.increment",
+          "group": "1_tangyr@1",
           "when": "resourceLangId == markdown"
         },
         {
-          "command": "arit.markdownHeadings.decrement",
-          "group": "1_arit@2",
+          "command": "tangyr.markdownHeadings.decrement",
+          "group": "1_tangyr@2",
           "when": "resourceLangId == markdown"
         }
       ],
       "commandPalette": [
         {
-          "command": "arit.createTimestampedFile",
+          "command": "tangyr.createTimestampedFile",
           "when": "workspaceFolderCount > 0"
         },
         {
-          "command": "arit.prefixTimestampToFile",
+          "command": "tangyr.prefixTimestampToFile",
           "when": "false"
         },
         {
-          "command": "arit.createTimestampedDirectory",
+          "command": "tangyr.createTimestampedDirectory",
           "when": "workspaceFolderCount > 0"
         },
         {
-          "command": "arit.prefixTimestampToDirectory",
+          "command": "tangyr.prefixTimestampToDirectory",
           "when": "false"
         },
         {
-          "command": "arit.toggleEnabled"
+          "command": "tangyr.toggleEnabled"
         },
         {
-          "command": "arit.markdownHeadings.increment",
+          "command": "tangyr.markdownHeadings.increment",
           "when": "editorLangId == markdown"
         },
         {
-          "command": "arit.markdownHeadings.decrement",
+          "command": "tangyr.markdownHeadings.decrement",
           "when": "editorLangId == markdown"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "arit.createTimestampedFile",
+        "command": "tangyr.createTimestampedFile",
         "key": "ctrl+alt+n",
         "mac": "cmd+alt+n",
         "when": "explorerViewletFocus"
       },
       {
-        "command": "arit.createTimestampedDirectory",
+        "command": "tangyr.createTimestampedDirectory",
         "key": "ctrl+alt+shift+n",
         "mac": "cmd+alt+shift+n",
         "when": "explorerViewletFocus"
       }
     ],
     "configuration": {
-      "title": "ARIT Toolkit",
+      "title": "Tangyr Workbench",
       "properties": {
-        "arit.timestampFormat": {
+        "tangyr.timestampFormat": {
           "type": "string",
           "default": "YYYYMMDDHHmm",
           "enum": [
@@ -210,12 +210,12 @@
           ],
           "description": "Format for the timestamp prefix"
         },
-        "arit.timestampSeparator": {
+        "tangyr.timestampSeparator": {
           "type": "string",
           "default": "-",
           "description": "Separator between timestamp and filename"
         },
-        "arit.logLevel": {
+        "tangyr.logLevel": {
           "type": "string",
           "default": "info",
           "enum": [
@@ -225,7 +225,7 @@
             "info",
             "debug"
           ],
-          "description": "Logging level for ARIT Toolkit output"
+          "description": "Logging level for Tangyr Workbench output"
         }
       }
     }

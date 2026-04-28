@@ -102,7 +102,7 @@ describe('ConfigMigrationService', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toBe(sectionA);
       expect(window.showInformationMessage).toHaveBeenCalledWith(
-        'ARIT Toolkit: Add Feature A? Description of Feature A',
+        'Tangyr Workbench: Add Feature A? Description of Feature A',
         'Add'
       );
     });
@@ -255,7 +255,7 @@ describe('ConfigMigrationService', () => {
       expect(result).toBeDefined();
       expect(result!['version']).toBe('1.3.0');
       expect(window.showInformationMessage).toHaveBeenCalledWith(
-        'ARIT Toolkit: Update workspace config to version 1.3.0?',
+        'Tangyr Workbench: Update workspace config to version 1.3.0?',
         'Update'
       );
     });
@@ -292,7 +292,7 @@ describe('ConfigMigrationService', () => {
       expect(result).toBeDefined();
       expect(result!['featureA']).toEqual({ enabled: true, path: '/default' });
       expect(window.showInformationMessage).toHaveBeenCalledWith(
-        'ARIT Toolkit: Add Feature A? Description of Feature A',
+        'Tangyr Workbench: Add Feature A? Description of Feature A',
         'Add'
       );
     });

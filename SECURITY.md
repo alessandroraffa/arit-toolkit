@@ -6,7 +6,7 @@
 | ------- | --------- |
 | Latest  | Yes       |
 
-Only the latest published version of ARIT Toolkit receives security updates.
+Only the latest published version of Tangyr Workbench receives security updates.
 
 ## Reporting a Vulnerability
 
@@ -16,8 +16,8 @@ If you discover a security vulnerability, please report it responsibly.
 
 Instead, please use one of the following methods:
 
-1. **GitHub Security Advisories (preferred):** Use the [Report a vulnerability](https://github.com/alessandroraffa/arit-toolkit/security/advisories/new) feature on GitHub
-2. **Email:** Contact the maintainer directly via the email associated with the [@alessandroraffa](https://github.com/alessandroraffa) GitHub profile
+1. **Email:** Contact the maintainer directly via the email associated with the [@alessandroraffa](https://github.com/alessandroraffa) GitHub profile
+2. **GitHub Security Advisories:** Available to collaborators with repository access
 
 ### What to Include
 
@@ -41,7 +41,7 @@ Instead, please use one of the following methods:
 
 ## Scope
 
-This security policy applies to the ARIT Toolkit VS Code extension source code and its published artifacts (`.vsix` packages on the VS Code Marketplace and GitHub Releases).
+This security policy applies to the Tangyr Workbench VS Code extension source code and its published artifacts (`.vsix` packages on the VS Code Marketplace and GitHub Releases).
 
 ## Dependencies
 

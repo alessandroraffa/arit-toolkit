@@ -55,7 +55,7 @@ describe('timestampedFile commands', () => {
       await command(undefined);
 
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        'ARIT: No folder selected or workspace open'
+        'Tangyr: No folder selected or workspace open'
       );
     });
 
@@ -132,7 +132,7 @@ describe('timestampedFile commands', () => {
         'Write failed'
       );
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        'ARIT: Failed to create file. See output for details.'
+        'Tangyr: Failed to create file. See output for details.'
       );
     });
 
@@ -158,7 +158,7 @@ describe('timestampedFile commands', () => {
 
       await command(undefined);
 
-      expect(window.showErrorMessage).toHaveBeenCalledWith('ARIT: No file selected');
+      expect(window.showErrorMessage).toHaveBeenCalledWith('Tangyr: No file selected');
     });
 
     it('should get file creation date and show input box', async () => {
@@ -233,7 +233,7 @@ describe('timestampedFile commands', () => {
         'Stat failed'
       );
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        'ARIT: Failed to rename file. See output for details.'
+        'Tangyr: Failed to rename file. See output for details.'
       );
     });
 

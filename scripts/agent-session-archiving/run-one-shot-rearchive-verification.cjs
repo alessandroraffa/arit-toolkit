@@ -15,15 +15,15 @@ function readRequiredEnv(name) {
 }
 
 function resolveWorkspaceStoragePath() {
-  const explicitPath = process.env.ARIT_ARCHIVE_REAL_WORKSPACE_STORAGE;
+  const explicitPath = process.env.TANGYR_ARCHIVE_REAL_WORKSPACE_STORAGE;
   if (explicitPath) {
     return explicitPath;
   }
 
-  const storageId = process.env.ARIT_ARCHIVE_WORKSPACE_STORAGE_ID;
+  const storageId = process.env.TANGYR_ARCHIVE_WORKSPACE_STORAGE_ID;
   if (!storageId) {
     throw new Error(
-      'Set ARIT_ARCHIVE_REAL_WORKSPACE_STORAGE or ARIT_ARCHIVE_WORKSPACE_STORAGE_ID.'
+      'Set TANGYR_ARCHIVE_REAL_WORKSPACE_STORAGE or TANGYR_ARCHIVE_WORKSPACE_STORAGE_ID.'
     );
   }
 
@@ -41,28 +41,28 @@ function assertPathExists(label, targetPath) {
 }
 
 function readIntervalMinutes() {
-  const raw = process.env.ARIT_ARCHIVE_INTERVAL_MINUTES ?? '5';
+  const raw = process.env.TANGYR_ARCHIVE_INTERVAL_MINUTES ?? '5';
   const parsed = Number(raw);
   if (!Number.isFinite(parsed) || parsed <= 0) {
     throw new Error(
-      `ARIT_ARCHIVE_INTERVAL_MINUTES must be a positive number, received: ${raw}`
+      `TANGYR_ARCHIVE_INTERVAL_MINUTES must be a positive number, received: ${raw}`
     );
   }
   return parsed;
 }
 
 (async () => {
-  const workspace = readRequiredEnv('ARIT_ARCHIVE_WORKSPACE');
+  const workspace = readRequiredEnv('TANGYR_ARCHIVE_WORKSPACE');
   const realWorkspaceStorage = resolveWorkspaceStoragePath();
   const intervalMinutes = readIntervalMinutes();
-  const keepTemp = process.env.ARIT_ARCHIVE_KEEP_TEMP === '1';
+  const keepTemp = process.env.TANGYR_ARCHIVE_KEEP_TEMP === '1';
 
   assertPathExists('workspace', workspace);
   assertPathExists('workspace storage snapshot source', realWorkspaceStorage);
   assertPathExists('extension-host runner', RUNNER_PATH);
 
   const storageId = path.basename(realWorkspaceStorage);
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'arit-osr-'));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'tangyr-osr-'));
   const userDataDir = path.join(tempRoot, 'user-data');
   const extensionsDir = path.join(tempRoot, 'extensions');
   const targetWorkspaceStorage = path.join(
@@ -84,9 +84,9 @@ function readIntervalMinutes() {
       extensionDevelopmentPath: EXTENSION_ROOT,
       extensionTestsPath: RUNNER_PATH,
       extensionTestsEnv: {
-        ARIT_ARCHIVE_WORKSPACE: workspace,
-        ARIT_ARCHIVE_WORKSPACE_STORAGE: targetWorkspaceStorage,
-        ARIT_ARCHIVE_INTERVAL_MINUTES: String(intervalMinutes),
+        TANGYR_ARCHIVE_WORKSPACE: workspace,
+        TANGYR_ARCHIVE_WORKSPACE_STORAGE: targetWorkspaceStorage,
+        TANGYR_ARCHIVE_INTERVAL_MINUTES: String(intervalMinutes),
       },
       launchArgs: [
         workspace,

@@ -24,7 +24,7 @@ export class ConfigMigrationService {
 
     for (const section of sections) {
       const action = await vscode.window.showInformationMessage(
-        `ARIT Toolkit: Add ${section.label}? ${section.description}`,
+        `Tangyr Workbench: Add ${section.label}? ${section.description}`,
         'Add'
       );
       if (action === 'Add') {
@@ -55,7 +55,7 @@ export class ConfigMigrationService {
       accepted = await this.promptForSections(missingSections);
     } else {
       const action = await vscode.window.showInformationMessage(
-        `ARIT Toolkit: Update workspace config to version ${extensionVersion}?`,
+        `Tangyr Workbench: Update workspace config to version ${extensionVersion}?`,
         'Update'
       );
       if (action !== 'Update') {

@@ -13,7 +13,7 @@ function logAndShowError(logger: Logger, operation: string, error: unknown): voi
   const message = error instanceof Error ? error.message : String(error);
   logger.error(`Failed to ${operation}`, message);
   void vscode.window.showErrorMessage(
-    `ARIT: Failed to ${operation}. See output for details.`
+    `Tangyr: Failed to ${operation}. See output for details.`
   );
 }
 
@@ -25,7 +25,9 @@ export function createTimestampedDirectoryCommand(
     try {
       const folderPath = resolveFolder(uri);
       if (!folderPath) {
-        void vscode.window.showErrorMessage('ARIT: No folder selected or workspace open');
+        void vscode.window.showErrorMessage(
+          'Tangyr: No folder selected or workspace open'
+        );
         return;
       }
 
@@ -57,7 +59,7 @@ export function prefixTimestampToDirectoryCommand(
   return async (uri?: vscode.Uri): Promise<void> => {
     try {
       if (!uri) {
-        void vscode.window.showErrorMessage('ARIT: No directory selected');
+        void vscode.window.showErrorMessage('Tangyr: No directory selected');
         return;
       }
 

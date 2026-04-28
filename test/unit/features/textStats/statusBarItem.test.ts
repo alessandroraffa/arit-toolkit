@@ -42,7 +42,7 @@ describe('createTextStatsStatusBarItem', () => {
 
   it('should return a status bar item with correct name', () => {
     const item = createTextStatsStatusBarItem();
-    expect(item.name).toBe('ARIT Text Stats');
+    expect(item.name).toBe('Tangyr Text Stats');
   });
 });
 

@@ -22,7 +22,7 @@ function createHeadingCommand(
       const message = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to ${direction} headings`, message);
       void vscode.window.showErrorMessage(
-        `ARIT: Failed to ${direction} headings. See output for details.`
+        `Tangyr: Failed to ${direction} headings. See output for details.`
       );
     }
   };
@@ -35,7 +35,7 @@ async function handleExplorer(
 ): Promise<void> {
   if (!isMarkdownUri(uri)) {
     void vscode.window.showErrorMessage(
-      'ARIT: This command only works on Markdown files.'
+      'Tangyr: This command only works on Markdown files.'
     );
     return;
   }
@@ -45,7 +45,7 @@ async function handleExplorer(
   const result = transformHeadings(text, direction);
 
   if (!result.success) {
-    void vscode.window.showWarningMessage(`ARIT: ${result.error}`);
+    void vscode.window.showWarningMessage(`Tangyr: ${result.error}`);
     return;
   }
 
@@ -67,12 +67,12 @@ function getTargetRange(editor: vscode.TextEditor): vscode.Range {
 function getMarkdownEditor(): vscode.TextEditor | undefined {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    void vscode.window.showErrorMessage('ARIT: No active editor found.');
+    void vscode.window.showErrorMessage('Tangyr: No active editor found.');
     return undefined;
   }
   if (editor.document.languageId !== 'markdown') {
     void vscode.window.showErrorMessage(
-      'ARIT: This command only works on Markdown files.'
+      'Tangyr: This command only works on Markdown files.'
     );
     return undefined;
   }
@@ -89,7 +89,7 @@ async function handleEditor(direction: Direction, logger: Logger): Promise<void>
   const result = transformHeadings(editor.document.getText(range), direction);
 
   if (!result.success) {
-    void vscode.window.showWarningMessage(`ARIT: ${result.error}`);
+    void vscode.window.showWarningMessage(`Tangyr: ${result.error}`);
     return;
   }
 

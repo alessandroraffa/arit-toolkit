@@ -4,9 +4,9 @@ const fsp = require('node:fs/promises');
 const path = require('node:path');
 const vscode = require('vscode');
 
-const WORKSPACE = readRequiredEnv('ARIT_ARCHIVE_WORKSPACE');
-const WORKSPACE_STORAGE = readRequiredEnv('ARIT_ARCHIVE_WORKSPACE_STORAGE');
-const INTERVAL_MINUTES = readPositiveNumber('ARIT_ARCHIVE_INTERVAL_MINUTES', 5);
+const WORKSPACE = readRequiredEnv('TANGYR_ARCHIVE_WORKSPACE');
+const WORKSPACE_STORAGE = readRequiredEnv('TANGYR_ARCHIVE_WORKSPACE_STORAGE');
+const INTERVAL_MINUTES = readPositiveNumber('TANGYR_ARCHIVE_INTERVAL_MINUTES', 5);
 const ARCHIVE_DIR = path.join(WORKSPACE, 'docs/archive/agent-sessions');
 const CODEX_SOURCE_ROOT = path.join(os.homedir(), '.codex/sessions');
 const COPILOT_SESSIONS_DIR = path.join(WORKSPACE_STORAGE, 'chatSessions');
@@ -281,8 +281,8 @@ exports.run = async function run() {
   assert.ok(folders && folders.length > 0, 'Expected an opened workspace.');
   assert.equal(folders[0].uri.fsPath, WORKSPACE, 'Expected configured workspace.');
 
-  const extension = vscode.extensions.getExtension('alessandroraffa.arit-toolkit');
-  assert.ok(extension, 'ARIT Toolkit extension should be available.');
+  const extension = vscode.extensions.getExtension('alessandroraffa.tangyr');
+  assert.ok(extension, 'Tangyr Workbench extension should be available.');
 
   const baseline = await latestArchiveMtime();
   log(`Baseline latest archive mtime: ${String(Math.trunc(baseline))}`);

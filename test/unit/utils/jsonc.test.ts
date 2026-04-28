@@ -59,8 +59,8 @@ describe('formatJsonc', () => {
   });
 
   it('should include comment header when provided', () => {
-    const result = formatJsonc({ enabled: false }, 'ARIT Toolkit config');
-    expect(result).toBe('// ARIT Toolkit config\n{\n  "enabled": false\n}\n');
+    const result = formatJsonc({ enabled: false }, 'Tangyr Workbench config');
+    expect(result).toBe('// Tangyr Workbench config\n{\n  "enabled": false\n}\n');
   });
 
   it('should handle multi-line header', () => {

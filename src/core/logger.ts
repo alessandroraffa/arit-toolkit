@@ -9,7 +9,7 @@ export class Logger {
   private level: LogLevel = 'info';
 
   private constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('ARIT Toolkit');
+    this.outputChannel = vscode.window.createOutputChannel('Tangyr Workbench');
   }
 
   public static getInstance(): Logger {

@@ -26,9 +26,9 @@ describe('textStats constants', () => {
     expect(CONFIG_KEY).toBe('textStats');
   });
 
-  it('should have command ids with arit prefix', () => {
-    expect(COMMAND_ID_TOGGLE).toBe('arit.textStats.toggle');
-    expect(COMMAND_ID_CHANGE_TOKENIZER).toBe('arit.textStats.changeTokenizer');
+  it('should have command ids with tangyr prefix', () => {
+    expect(COMMAND_ID_TOGGLE).toBe('tangyr.textStats.toggle');
+    expect(COMMAND_ID_CHANGE_TOKENIZER).toBe('tangyr.textStats.changeTokenizer');
   });
 
   it('should have versioning metadata', () => {
@@ -38,7 +38,7 @@ describe('textStats constants', () => {
   it('should have status bar config', () => {
     expect(typeof STATUS_BAR_PRIORITY).toBe('number');
     expect(STATUS_BAR_PRIORITY).toBe(100);
-    expect(STATUS_BAR_NAME).toBe('ARIT Text Stats');
+    expect(STATUS_BAR_NAME).toBe('Tangyr Text Stats');
   });
 
   it('should have a debounce interval', () => {

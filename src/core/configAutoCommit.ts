@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import type { Logger } from './logger';
 import { isGitIgnored, hasGitChanges, gitStageAndCommit } from './git';
 
-const COMMIT_MESSAGE = 'chore: update arit-toolkit config';
+const COMMIT_MESSAGE = 'chore: update tangyr config';
 
 export type CommitResult =
   | 'committed'
@@ -44,7 +44,7 @@ export class ConfigAutoCommitService {
     }
 
     const action = await vscode.window.showInformationMessage(
-      'ARIT Toolkit: Commit config change?',
+      'Tangyr Workbench: Commit config change?',
       'Commit',
       'Skip'
     );
@@ -66,7 +66,7 @@ export class ConfigAutoCommitService {
     }
 
     const action = await vscode.window.showInformationMessage(
-      'ARIT Toolkit: Commit config change?',
+      'Tangyr Workbench: Commit config change?',
       'Commit',
       'Skip'
     );
@@ -98,7 +98,7 @@ export class ConfigAutoCommitService {
     } catch (err) {
       this.logger.warn(`Failed to commit config change: ${String(err)}`);
       void vscode.window.showErrorMessage(
-        'ARIT Toolkit: Failed to commit config change. Check the output log for details.'
+        'Tangyr Workbench: Failed to commit config change. Check the output log for details.'
       );
     }
   }
@@ -115,7 +115,7 @@ export class ConfigAutoCommitService {
     } catch (err) {
       this.logger.warn(`Failed to commit config change: ${String(err)}`);
       void vscode.window.showErrorMessage(
-        'ARIT Toolkit: Failed to commit config change. Check the output log for details.'
+        'Tangyr Workbench: Failed to commit config change. Check the output log for details.'
       );
       return 'failed';
     }

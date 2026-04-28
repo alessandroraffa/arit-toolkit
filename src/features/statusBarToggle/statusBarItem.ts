@@ -58,7 +58,7 @@ function buildSingleRootTooltip(
   md.isTrusted = true;
   md.supportThemeIcons = true;
 
-  md.appendMarkdown(`### $(tools) ARIT Toolkit\n\n`);
+  md.appendMarkdown(`### $(tools) Tangyr Workbench\n\n`);
 
   if (!stateManager.isEnabled) {
     md.appendMarkdown(buildDisabledSection());
@@ -116,7 +116,7 @@ function buildMultiRootTooltip(): vscode.MarkdownString {
   md.isTrusted = true;
   md.supportThemeIcons = true;
 
-  md.appendMarkdown(`### $(tools) ARIT Toolkit\n\n`);
+  md.appendMarkdown(`### $(tools) Tangyr Workbench\n\n`);
   md.appendMarkdown(
     `$(warning) Some features are limited because this is a multi-directory workspace.\n\n`
   );

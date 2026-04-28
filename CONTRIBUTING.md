@@ -1,6 +1,6 @@
-# Contributing to ARIT Toolkit
+# Contributing to Tangyr Workbench
 
-Thank you for your interest in contributing to ARIT Toolkit! This document provides guidelines and instructions for contributing.
+Tangyr Workbench is developed in a private repository. Coordinate with the maintainer before opening issues, branches, or pull requests.
 
 ## Code of Conduct
 
@@ -14,7 +14,7 @@ To report a security vulnerability, please see [SECURITY.md](SECURITY.md) for re
 
 ### Reporting Bugs
 
-1. Check existing [issues](https://github.com/alessandroraffa/arit-toolkit/issues) to avoid duplicates
+1. Contact the maintainer with enough detail to triage the issue
 2. Use the bug report template
 3. Include:
    - Clear description of the issue
@@ -24,7 +24,7 @@ To report a security vulnerability, please see [SECURITY.md](SECURITY.md) for re
 
 ### Suggesting Features
 
-1. Check existing [issues](https://github.com/alessandroraffa/arit-toolkit/issues) for similar suggestions
+1. Contact the maintainer with the use case and expected behavior
 2. Use the feature request template
 3. Describe the use case and expected behavior
 
@@ -61,8 +61,8 @@ To report a security vulnerability, please see [SECURITY.md](SECURITY.md) for re
 
 ```bash
 # Clone the repository
-git clone https://github.com/alessandroraffa/arit-toolkit.git
-cd arit-toolkit
+git clone https://github.com/alessandroraffa/tangyr-vscode.git
+cd tangyr-vscode
 
 # Install dependencies
 pnpm install
@@ -117,7 +117,7 @@ pnpm run test:integration:vitest:coverage
 ## Project Structure
 
 ```text
-arit-toolkit/
+tangyr-vscode/
 ├── .devcontainer/
 │   └── devcontainer.json         # Dev Container configuration
 ├── .github/

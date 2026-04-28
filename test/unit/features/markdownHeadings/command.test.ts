@@ -27,7 +27,7 @@ describe('markdownHeadings commands', () => {
         await command();
 
         expect(window.showErrorMessage).toHaveBeenCalledWith(
-          'ARIT: No active editor found.'
+          'Tangyr: No active editor found.'
         );
       });
 
@@ -37,7 +37,7 @@ describe('markdownHeadings commands', () => {
         await command();
 
         expect(window.showErrorMessage).toHaveBeenCalledWith(
-          'ARIT: This command only works on Markdown files.'
+          'Tangyr: This command only works on Markdown files.'
         );
       });
 
@@ -90,7 +90,7 @@ describe('markdownHeadings commands', () => {
         await command();
 
         expect(window.showWarningMessage).toHaveBeenCalledWith(
-          'ARIT: Cannot increment: one or more headings are already at level 6 (maximum).'
+          'Tangyr: Cannot increment: one or more headings are already at level 6 (maximum).'
         );
         expect(editor.edit).not.toHaveBeenCalled();
       });
@@ -125,7 +125,7 @@ describe('markdownHeadings commands', () => {
         await command(uri as never);
 
         expect(window.showWarningMessage).toHaveBeenCalledWith(
-          'ARIT: Cannot increment: one or more headings are already at level 6 (maximum).'
+          'Tangyr: Cannot increment: one or more headings are already at level 6 (maximum).'
         );
         expect(workspace.fs.writeFile).not.toHaveBeenCalled();
       });
@@ -136,7 +136,7 @@ describe('markdownHeadings commands', () => {
         await command(uri as never);
 
         expect(window.showErrorMessage).toHaveBeenCalledWith(
-          'ARIT: This command only works on Markdown files.'
+          'Tangyr: This command only works on Markdown files.'
         );
       });
     });
@@ -169,7 +169,7 @@ describe('markdownHeadings commands', () => {
       await command();
 
       expect(window.showWarningMessage).toHaveBeenCalledWith(
-        'ARIT: Cannot decrement: one or more headings are already at level 1 (minimum).'
+        'Tangyr: Cannot decrement: one or more headings are already at level 1 (minimum).'
       );
     });
 

@@ -57,7 +57,7 @@ describe('statusBarItem', () => {
         mockLogger as any
       );
 
-      expect(item.command).toBe('arit.toggleEnabled');
+      expect(item.command).toBe('tangyr.toggleEnabled');
     });
 
     it('should call show on creation', () => {
@@ -70,14 +70,14 @@ describe('statusBarItem', () => {
       expect(item.show).toHaveBeenCalled();
     });
 
-    it('should set name to ARIT Toolkit', () => {
+    it('should set name to Tangyr Workbench', () => {
       const item = createStatusBarItem(
         mockStateManager as any,
 
         mockLogger as any
       );
 
-      expect(item.name).toBe('ARIT Toolkit');
+      expect(item.name).toBe('Tangyr Workbench');
     });
   });
 
@@ -92,7 +92,7 @@ describe('statusBarItem', () => {
 
       updateStatusBarItem(item, mockStateManager as any);
 
-      expect(item.text).toBe('$(tools) ARIT');
+      expect(item.text).toBe('$(tools) Tangyr');
     });
 
     it('should have no warning background when enabled', () => {
@@ -120,7 +120,7 @@ describe('statusBarItem', () => {
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
       expect(tooltip.value).toContain('Disable All');
-      expect(tooltip.value).toContain('command:arit.toggleEnabled');
+      expect(tooltip.value).toContain('command:tangyr.toggleEnabled');
       expect(tooltip.value).not.toContain('Status:');
     });
 
@@ -167,7 +167,7 @@ describe('statusBarItem', () => {
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
       expect(tooltip.value).toContain('Enable All');
-      expect(tooltip.value).toContain('command:arit.toggleEnabled');
+      expect(tooltip.value).toContain('command:tangyr.toggleEnabled');
       expect(tooltip.value).not.toContain('Status:');
     });
 
@@ -219,7 +219,7 @@ describe('statusBarItem', () => {
           key: 'agentSessionsArchiving',
           label: 'Agent Sessions Archiving',
           icon: '$(archive)',
-          toggleCommandId: 'arit.toggleAgentSessionsArchiving',
+          toggleCommandId: 'tangyr.toggleAgentSessionsArchiving',
         },
       ];
       mockStateManager.getConfigSection.mockReturnValue({ enabled: true });
@@ -233,7 +233,7 @@ describe('statusBarItem', () => {
       expect(tooltip.value).toContain('Agent Sessions Archiving');
       expect(tooltip.value).toContain('Active');
       expect(tooltip.value).toContain('Disable');
-      expect(tooltip.value).toContain('command:arit.toggleAgentSessionsArchiving');
+      expect(tooltip.value).toContain('command:tangyr.toggleAgentSessionsArchiving');
     });
 
     it('should show archiving inactive with enable button', () => {
@@ -242,7 +242,7 @@ describe('statusBarItem', () => {
           key: 'agentSessionsArchiving',
           label: 'Agent Sessions Archiving',
           icon: '$(archive)',
-          toggleCommandId: 'arit.toggleAgentSessionsArchiving',
+          toggleCommandId: 'tangyr.toggleAgentSessionsArchiving',
         },
       ];
       mockStateManager.getConfigSection.mockReturnValue({ enabled: false });
@@ -278,10 +278,10 @@ describe('statusBarItem', () => {
           key: 'agentSessionsArchiving',
           label: 'Agent Sessions Archiving',
           icon: '$(archive)',
-          toggleCommandId: 'arit.toggleAgentSessionsArchiving',
+          toggleCommandId: 'tangyr.toggleAgentSessionsArchiving',
           actions: [
             {
-              commandId: 'arit.archiveAgentSessionsNow',
+              commandId: 'tangyr.archiveAgentSessionsNow',
               label: 'Archive Now',
               icon: '$(sync)',
             },
@@ -293,7 +293,7 @@ describe('statusBarItem', () => {
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
       expect(tooltip.value).toContain('Archive Now');
-      expect(tooltip.value).toContain('command:arit.archiveAgentSessionsNow');
+      expect(tooltip.value).toContain('command:tangyr.archiveAgentSessionsNow');
     });
 
     it('should not render actions when service has none', () => {
@@ -302,7 +302,7 @@ describe('statusBarItem', () => {
           key: 'agentSessionsArchiving',
           label: 'Agent Sessions Archiving',
           icon: '$(archive)',
-          toggleCommandId: 'arit.toggleAgentSessionsArchiving',
+          toggleCommandId: 'tangyr.toggleAgentSessionsArchiving',
         },
       ];
       mockStateManager.getConfigSection.mockReturnValue({ enabled: true });
@@ -320,7 +320,7 @@ describe('statusBarItem', () => {
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
       expect(tooltip.value).toContain('Checkup');
-      expect(tooltip.value).toContain('command:arit.checkup');
+      expect(tooltip.value).toContain('command:tangyr.checkup');
     });
 
     it('should show checkup button when disabled', () => {
@@ -329,7 +329,7 @@ describe('statusBarItem', () => {
 
       const tooltip = item.tooltip as InstanceType<typeof MarkdownString>;
       expect(tooltip.value).toContain('Checkup');
-      expect(tooltip.value).toContain('command:arit.checkup');
+      expect(tooltip.value).toContain('command:tangyr.checkup');
     });
   });
 });

@@ -75,7 +75,7 @@ describe('registerTextStatsFeature', () => {
     expect(ctx.stateManager.registerService).toHaveBeenCalledWith(
       expect.objectContaining({
         key: 'textStats',
-        toggleCommandId: 'arit.textStats.toggle',
+        toggleCommandId: 'tangyr.textStats.toggle',
       })
     );
   });
@@ -83,11 +83,11 @@ describe('registerTextStatsFeature', () => {
   it('should register toggle and tokenizer commands', () => {
     registerTextStatsFeature(ctx);
     expect(commands.registerCommand).toHaveBeenCalledWith(
-      'arit.textStats.toggle',
+      'tangyr.textStats.toggle',
       expect.any(Function)
     );
     expect(commands.registerCommand).toHaveBeenCalledWith(
-      'arit.textStats.changeTokenizer',
+      'tangyr.textStats.changeTokenizer',
       expect.any(Function)
     );
   });

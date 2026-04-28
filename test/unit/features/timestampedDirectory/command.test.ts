@@ -58,7 +58,7 @@ describe('timestampedDirectory commands', () => {
       await command(undefined);
 
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        'ARIT: No folder selected or workspace open'
+        'Tangyr: No folder selected or workspace open'
       );
     });
 
@@ -151,7 +151,7 @@ describe('timestampedDirectory commands', () => {
         'Create failed'
       );
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        'ARIT: Failed to create directory. See output for details.'
+        'Tangyr: Failed to create directory. See output for details.'
       );
     });
 
@@ -183,7 +183,9 @@ describe('timestampedDirectory commands', () => {
 
       await command(undefined);
 
-      expect(window.showErrorMessage).toHaveBeenCalledWith('ARIT: No directory selected');
+      expect(window.showErrorMessage).toHaveBeenCalledWith(
+        'Tangyr: No directory selected'
+      );
     });
 
     it('should get directory creation date and show input box', async () => {
@@ -270,7 +272,7 @@ describe('timestampedDirectory commands', () => {
         'Stat failed'
       );
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        'ARIT: Failed to rename directory. See output for details.'
+        'Tangyr: Failed to rename directory. See output for details.'
       );
     });
 
