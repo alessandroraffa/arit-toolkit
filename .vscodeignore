@@ -32,6 +32,7 @@ vitest.config.ts
 *.map
 dist/**/*.map
 media/icon-2048.png
+media/icon.backup-2048.png
 CONTRIBUTING.md
 CODE_OF_CONDUCT.md
 SECURITY.md
