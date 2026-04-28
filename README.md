@@ -1,3 +1,12 @@
+<!-- markdownlint-disable MD041 -->
+
+> **This extension has been renamed.**
+> Please install [`alessandroraffa.tangyr`](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr) instead.
+> Existing settings will be migrated automatically on first run of the new extension.
+> This package will no longer receive updates.
+
+---
+
 # ARIT Toolkit
 
 [![CI](https://github.com/alessandroraffa/arit-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/alessandroraffa/arit-toolkit/actions/workflows/ci.yml)

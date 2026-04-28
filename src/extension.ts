@@ -8,6 +8,7 @@ import {
   ConfigSectionRegistry,
   ConfigMigrationService,
 } from './core';
+import { showFarewellNoticeOnce } from './farewell';
 import { registerAllFeatures } from './features';
 
 let logger: Logger | undefined;
@@ -65,6 +66,9 @@ export function activate(context: vscode.ExtensionContext): void {
   void stateManager.initialize(
     String((context.extension.packageJSON as Record<string, unknown>).version)
   );
+
+  // End-of-life notice. Non-blocking so activation is not delayed by user input.
+  void showFarewellNoticeOnce(context);
 
   logger.info('ARIT Toolkit activated successfully');
 }
