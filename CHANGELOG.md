@@ -1,3 +1,9 @@
+## [1.18.2](https://github.com/alessandroraffa/arit-toolkit/compare/v1.18.1...v1.18.2) (2026-04-28)
+
+### Bug Fixes
+
+* **release:** use stable lodash overrides ([fbf87b8](https://github.com/alessandroraffa/arit-toolkit/commit/fbf87b8c571d94e5b3eff4346f8084657475c3f4))
+
 ## [1.18.1](https://github.com/alessandroraffa/arit-toolkit/compare/v1.18.0...v1.18.1) (2026-04-28)
 
 ### Bug Fixes
