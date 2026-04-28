@@ -278,7 +278,7 @@
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
     "conventional-changelog-conventionalcommits": "^9.2.0",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.28.0",
     "eslint": "^9.39.2",
     "globals": "^15.15.0",
     "husky": "^9.1.7",
