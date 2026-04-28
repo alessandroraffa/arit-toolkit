@@ -62,9 +62,7 @@ function readIntervalMinutes() {
   assertPathExists('extension-host runner', RUNNER_PATH);
 
   const storageId = path.basename(realWorkspaceStorage);
-  const tempRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'arit-osr-')
-  );
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'arit-osr-'));
   const userDataDir = path.join(tempRoot, 'user-data');
   const extensionsDir = path.join(tempRoot, 'extensions');
   const targetWorkspaceStorage = path.join(

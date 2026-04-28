@@ -245,7 +245,8 @@ async function findCopilotSourceMatches(fragment) {
   return names
     .filter(
       (name) =>
-        name.includes(sourceFragment) && (name.endsWith('.json') || name.endsWith('.jsonl'))
+        name.includes(sourceFragment) &&
+        (name.endsWith('.json') || name.endsWith('.jsonl'))
     )
     .map((name) => path.join(COPILOT_SESSIONS_DIR, name));
 }
@@ -268,7 +269,10 @@ async function findPreferredCopilotSource(fragment) {
     preferred = pickPreferredPath(preferred, candidate);
   }
 
-  assert.ok(preferred, `Expected at least one Copilot source file containing ${fragment}.`);
+  assert.ok(
+    preferred,
+    `Expected at least one Copilot source file containing ${fragment}.`
+  );
   return preferred.filePath;
 }
 
@@ -299,7 +303,7 @@ exports.run = async function run() {
     assert.equal(
       actualUserTurns,
       expectedUserTurns,
-      `${fragment} should have exactly ${expectedUserTurns} user turns` 
+      `${fragment} should have exactly ${expectedUserTurns} user turns`
     );
 
     codexTargets.push({ archivePath, sourcePath });
@@ -325,7 +329,11 @@ exports.run = async function run() {
       continue;
     }
 
-    assert.equal(matches.length, 0, `${fragment} should be absent from archive as raw JSONL`);
+    assert.equal(
+      matches.length,
+      0,
+      `${fragment} should be absent from archive as raw JSONL`
+    );
   }
 
   if (orphanRawArchives.length > 0) {
@@ -389,7 +397,9 @@ exports.run = async function run() {
     const sourceBefore = sourceSnapshotBefore.get(target.sourcePath);
     const sourceAfter = sourceSnapshotAfter.get(target.sourcePath);
     if (sourceBefore !== sourceAfter) {
-      log(`Source changed during verification window; skipping no-loop assertion for ${path.basename(target.archivePath)}.`);
+      log(
+        `Source changed during verification window; skipping no-loop assertion for ${path.basename(target.archivePath)}.`
+      );
       continue;
     }
 
