@@ -1,3 +1,18 @@
+## [2.0.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v1.19.0...v2.0.0) (2026-04-28)
+
+### ⚠ BREAKING CHANGES
+
+* **release:** release config now maps breaking commits to major releases.
+* extension ID changed from arit-toolkit to tangyr.
+
+### Features
+
+* finalize tangyr major release ([c981bb0](https://github.com/alessandroraffa/tangyr-vscode/commit/c981bb0dabf793c347452f1b03e6b9340bcc1596))
+
+### Bug Fixes
+
+* **release:** recognize breaking changes ([c7eb1f1](https://github.com/alessandroraffa/tangyr-vscode/commit/c7eb1f18761581ca1862aba22da23b125b80d9f0))
+
 ## [1.19.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v1.18.3...v1.19.0) (2026-04-28)
 
 ### ⚠ BREAKING CHANGES
