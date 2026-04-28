@@ -44,6 +44,9 @@ updates:
     ignore:
       - dependency-name: ajv
         # pnpm cannot update transitive dependencies; ajv is pinned via pnpm.overrides
+      - dependency-name: uuid
+        # @vscode/vsce -> @azure/identity -> @azure/msal-node still resolves only to uuid 8.x;
+        # Dependabot cannot produce a non-vulnerable update until that upstream chain moves past uuid 14.
       - dependency-name: minimatch
         versions:
           - '>= 4.0.0'
