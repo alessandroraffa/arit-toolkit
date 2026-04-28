@@ -7,27 +7,49 @@ vi.mock('../../../../src/features/agentSessionsArchiving/providers', () => ({
   getDefaultProviders: vi.fn(() => []),
 }));
 
-const mockService = {
-  start: vi.fn(),
-  stop: vi.fn(),
-  reconfigure: vi.fn(),
-  runArchiveCycle: vi.fn().mockResolvedValue(undefined),
-  currentConfig: undefined as unknown,
-  dispose: vi.fn(),
-};
+const {
+  mockService,
+  mockArchiveServiceConstructor,
+  mockWatcher,
+  mockSessionFileWatcherConstructor,
+} = vi.hoisted(() => {
+  const service = {
+    start: vi.fn(),
+    stop: vi.fn(),
+    reconfigure: vi.fn(),
+    runArchiveCycle: vi.fn().mockResolvedValue(undefined),
+    currentConfig: undefined as unknown,
+    dispose: vi.fn(),
+  };
+
+  const archiveServiceConstructor = vi.fn(function MockArchiveService() {
+    return service;
+  });
+
+  const watcher = {
+    start: vi.fn(),
+    stop: vi.fn(),
+    dispose: vi.fn(),
+  };
+
+  const sessionFileWatcherConstructor = vi.fn(function MockSessionFileWatcher() {
+    return watcher;
+  });
+
+  return {
+    mockService: service,
+    mockArchiveServiceConstructor: archiveServiceConstructor,
+    mockWatcher: watcher,
+    mockSessionFileWatcherConstructor: sessionFileWatcherConstructor,
+  };
+});
 
 vi.mock('../../../../src/features/agentSessionsArchiving/archiveService', () => ({
-  AgentSessionArchiveService: vi.fn(() => mockService),
+  AgentSessionArchiveService: mockArchiveServiceConstructor,
 }));
 
-const mockWatcher = {
-  start: vi.fn(),
-  stop: vi.fn(),
-  dispose: vi.fn(),
-};
-
 vi.mock('../../../../src/features/agentSessionsArchiving/sessionFileWatcher', () => ({
-  SessionFileWatcher: vi.fn(() => mockWatcher),
+  SessionFileWatcher: mockSessionFileWatcherConstructor,
 }));
 
 function createMockContext(): FeatureRegistrationContext {
