@@ -4,7 +4,7 @@
 > If you have the old version installed, VS Code will show a Migrate button once Marketplace deprecation is processed.
 > Your settings are copied automatically on first activation of this extension.
 
-# Tangyr ▏▎▍▌▍▎▏ Workbench
+# Tangyr `▏▎▍▌▍▎▏` Workbench
 
 [![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/alessandroraffa.tangyr)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
 [![Installs](https://img.shields.io/visual-studio-marketplace/i/alessandroraffa.tangyr)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
