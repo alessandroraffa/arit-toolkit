@@ -131,7 +131,15 @@ export function registerAgentSessionsArchivingFeature(
     (newValue) => {
       const oldConfig = service.currentConfig;
       const newConfig = newValue as AgentSessionsArchivingConfig;
-      void service.reconfigure(oldConfig, newConfig);
+      void service.reconfigure(oldConfig, newConfig, async (patch) => {
+        const current = stateManager.getConfigSection(CONFIG_KEY) as
+          | AgentSessionsArchivingConfig
+          | undefined;
+        if (!current) {
+          return;
+        }
+        await stateManager.updateConfigSection(CONFIG_KEY, { ...current, ...patch });
+      });
     }
   );
   ctx.context.subscriptions.push(sectionDisposable);

@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { workspace } from '../../mocks/vscode';
+
+const { mockCheckAndPromptGitignore } = vi.hoisted(() => ({
+  mockCheckAndPromptGitignore: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../../../../src/features/agentSessionsArchiving/gitignorePrompt', () => ({
+  checkAndPromptGitignore: mockCheckAndPromptGitignore,
+}));
+
 import { AgentSessionArchiveService } from '../../../../src/features/agentSessionsArchiving/archiveService';
 import type {
   SessionProvider,
@@ -446,6 +454,11 @@ describe('AgentSessionArchiveService', () => {
   });
 
   describe('reconfigure', () => {
+    beforeEach(() => {
+      mockCheckAndPromptGitignore.mockClear();
+      mockCheckAndPromptGitignore.mockResolvedValue(undefined);
+    });
+
     it('should start when transitioning from no config to enabled', async () => {
       const provider = createMockProvider();
       const service = new AgentSessionArchiveService(
@@ -454,7 +467,7 @@ describe('AgentSessionArchiveService', () => {
         logger as any
       );
 
-      await service.reconfigure(undefined, DEFAULT_CONFIG);
+      await service.reconfigure(undefined, DEFAULT_CONFIG, vi.fn());
 
       expect(service.currentConfig).toEqual(DEFAULT_CONFIG);
 
@@ -470,7 +483,11 @@ describe('AgentSessionArchiveService', () => {
       );
       service.start(DEFAULT_CONFIG);
 
-      await service.reconfigure(DEFAULT_CONFIG, { ...DEFAULT_CONFIG, enabled: false });
+      await service.reconfigure(
+        DEFAULT_CONFIG,
+        { ...DEFAULT_CONFIG, enabled: false },
+        vi.fn()
+      );
 
       expect(logger.info).toHaveBeenCalledWith('Agent sessions archiving stopped');
 
@@ -488,7 +505,7 @@ describe('AgentSessionArchiveService', () => {
       service.start(DEFAULT_CONFIG);
 
       const newConfig = { ...DEFAULT_CONFIG, archivePath: 'new/archive/path' };
-      await service.reconfigure(DEFAULT_CONFIG, newConfig);
+      await service.reconfigure(DEFAULT_CONFIG, newConfig, vi.fn());
 
       expect(workspace.fs.copy).toHaveBeenCalled();
       expect(workspace.fs.delete).toHaveBeenCalled();
@@ -510,7 +527,7 @@ describe('AgentSessionArchiveService', () => {
       service.start(DEFAULT_CONFIG);
 
       const newConfig = { ...DEFAULT_CONFIG, archivePath: 'new/path' };
-      await service.reconfigure(DEFAULT_CONFIG, newConfig);
+      await service.reconfigure(DEFAULT_CONFIG, newConfig, vi.fn());
 
       expect(logger.debug).toHaveBeenCalledWith(
         expect.stringContaining('Old archive directory not found')
@@ -527,10 +544,106 @@ describe('AgentSessionArchiveService', () => {
         logger as any
       );
 
-      await service.reconfigure(undefined, { ...DEFAULT_CONFIG, enabled: false });
+      await service.reconfigure(
+        undefined,
+        { ...DEFAULT_CONFIG, enabled: false },
+        vi.fn()
+      );
 
       expect(service.currentConfig).toBeUndefined();
 
+      service.dispose();
+    });
+
+    it('should call checkAndPromptGitignore when archivePath changes', async () => {
+      workspace.fs.readDirectory = vi.fn().mockResolvedValue([]);
+      const provider = createMockProvider();
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.reconfigure(
+        DEFAULT_CONFIG,
+        { ...DEFAULT_CONFIG, archivePath: 'new/path' },
+        vi.fn()
+      );
+
+      expect(mockCheckAndPromptGitignore).toHaveBeenCalledTimes(1);
+      const [pathArg, rootArg] = mockCheckAndPromptGitignore.mock.calls[0]!;
+      expect(pathArg).toBe('new/path');
+      expect(rootArg).toBe(workspaceRootUri);
+
+      service.dispose();
+    });
+
+    it('should not call checkAndPromptGitignore when archivePath is unchanged', async () => {
+      const provider = createMockProvider();
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.reconfigure(DEFAULT_CONFIG, DEFAULT_CONFIG, vi.fn());
+
+      expect(mockCheckAndPromptGitignore).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should short-circuit on re-entrant reconfigure (recursion guard)', async () => {
+      workspace.fs.readDirectory = vi.fn().mockResolvedValue([]);
+      const provider = createMockProvider();
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      const startSpy = vi.spyOn(service, 'start');
+      const innerUpdateConfig = vi.fn().mockResolvedValue(undefined);
+
+      const recursiveUpdateConfig = vi.fn().mockImplementation(async () => {
+        await service.reconfigure(
+          DEFAULT_CONFIG,
+          {
+            ...DEFAULT_CONFIG,
+            archivePath: 'new/path',
+            gitignoreDecisions: { 'new/path': 'ignored' },
+          },
+          innerUpdateConfig
+        );
+      });
+
+      mockCheckAndPromptGitignore.mockImplementation(
+        async (
+          _path: string,
+          _root: unknown,
+          _config: AgentSessionsArchivingConfig,
+          _logger: unknown,
+          updateConfig: (patch: Partial<AgentSessionsArchivingConfig>) => Promise<void>
+        ) => {
+          await updateConfig({ gitignoreDecisions: { 'new/path': 'ignored' } });
+        }
+      );
+
+      await service.reconfigure(
+        DEFAULT_CONFIG,
+        { ...DEFAULT_CONFIG, archivePath: 'new/path' },
+        recursiveUpdateConfig
+      );
+
+      expect(startSpy).toHaveBeenCalledTimes(1);
+      expect(logger.debug).toHaveBeenCalledWith(
+        expect.stringContaining('Re-entrant reconfigure call detected')
+      );
+
+      startSpy.mockRestore();
       service.dispose();
     });
   });

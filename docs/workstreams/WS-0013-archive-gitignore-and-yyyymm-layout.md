@@ -303,13 +303,13 @@ Read `test/unit/core/git.test.ts` and `test/unit/features/agentSessionsArchiving
 - [x] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. If any check fails, fix the failure before proceeding — do not commit with a failing quality gate.
 - [x] Commit `src/core/git.ts`, `src/types/index.ts`, `src/features/agentSessionsArchiving/archivePathValidation.ts`, `src/features/agentSessionsArchiving/gitignorePrompt.ts`, `src/features/agentSessionsArchiving/index.ts`, `test/unit/core/git.test.ts`, `test/unit/features/agentSessionsArchiving/archivePathValidation.test.ts`, `test/unit/features/agentSessionsArchiving/gitignorePrompt.test.ts`, `docs/technical-context.md`, and this workstream file with message: `feat(archiving): prompt to gitignore archive path on first activation`.
 
-### [ ] Activity 2: Wire `checkAndPromptGitignore` into `reconfigure` for archivePath changes
+### [x] Activity 2: Wire `checkAndPromptGitignore` into `reconfigure` for archivePath changes
 
-#### [ ] Task 2.1: Extend `AgentSessionArchiveService.reconfigure` to call the prompt on path change
+#### [x] Task 2.1: Extend `AgentSessionArchiveService.reconfigure` to call the prompt on path change
 
 Read `src/features/agentSessionsArchiving/archiveService.ts` in full before making any change.
 
-- [ ] The current signature of `reconfigure` is `public async reconfigure(oldConfig: AgentSessionsArchivingConfig | undefined, newConfig: AgentSessionsArchivingConfig): Promise<void>` (line 52). Change it to add one parameter after `newConfig` (the `updateConfig` callback). Do NOT add a `workspaceRootUri` parameter: `AgentSessionArchiveService` already holds `this.workspaceRootUri` as a `private readonly` constructor field (archiveService.ts line 21) — passing it again as a parameter would shadow the field and force the caller to thread state that already lives on the receiver.
+- [x] The current signature of `reconfigure` is `public async reconfigure(oldConfig: AgentSessionsArchivingConfig | undefined, newConfig: AgentSessionsArchivingConfig): Promise<void>` (line 52). Change it to add one parameter after `newConfig` (the `updateConfig` callback). Do NOT add a `workspaceRootUri` parameter: `AgentSessionArchiveService` already holds `this.workspaceRootUri` as a `private readonly` constructor field (archiveService.ts line 21) — passing it again as a parameter would shadow the field and force the caller to thread state that already lives on the receiver.
 
   ```typescript
   public async reconfigure(
@@ -319,7 +319,7 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
   ): Promise<void>
   ```
 
-- [ ] Add a private re-entrancy guard field to `AgentSessionArchiveService`. Insert immediately after `private readonly ensuredDirectories = new Set<string>();` (the JSDoc-annotated field introduced in Task 3.1):
+- [x] Add a private re-entrancy guard field to `AgentSessionArchiveService`. Insert immediately after `private readonly ensuredDirectories = new Set<string>();` (the JSDoc-annotated field introduced in Task 3.1):
 
   ```typescript
   /**
@@ -339,7 +339,7 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
 
   Note: do NOT add Task 3.1's `ensuredDirectories` field again here — Task 3.1 already does that. This subtask only adds the new `_reconfiguring` field. The two private fields live next to each other in the class body.
 
-- [ ] Inside `reconfigure`, locate the `if (oldConfig.archivePath !== newConfig.archivePath)` branch (line 67). Wrap the entire body in a re-entrancy guard with `try/finally`. Insert the prompt call **INSIDE** the `if (oldConfig.archivePath !== newConfig.archivePath)` block, immediately after `await this.moveArchive(...)` and before the closing `}`. Placement outside the if-block would cause the prompt to fire on every reconfigure (e.g., when `intervalMinutes` changes), which violates this activity's intent. The resulting body shape (entire method, from signature to closing brace):
+- [x] Inside `reconfigure`, locate the `if (oldConfig.archivePath !== newConfig.archivePath)` branch (line 67). Wrap the entire body in a re-entrancy guard with `try/finally`. Insert the prompt call **INSIDE** the `if (oldConfig.archivePath !== newConfig.archivePath)` block, immediately after `await this.moveArchive(...)` and before the closing `}`. Placement outside the if-block would cause the prompt to fire on every reconfigure (e.g., when `intervalMinutes` changes), which violates this activity's intent. The resulting body shape (entire method, from signature to closing brace):
 
   ```typescript
   public async reconfigure(
@@ -386,13 +386,13 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
 
   Rationale: the prompt's `updateConfig` callback (when accepted) writes a new `gitignoreDecisions` entry via `stateManager.updateConfigSection`, which synchronously fires `notifySectionListeners`, which calls `service.reconfigure(...)` again on the same instance. Without the guard, the inner call runs `start()` (resetting the timer and `_needsDedup`), then control returns to the outer call which also runs `start()` — two starts in rapid sequence, two `runArchiveCycle()` invocations racing on `lastArchivedMap`. With the guard, the inner call early-returns at the `_reconfiguring` check; the outer call completes normally. The `finally` block guarantees the flag is reset even if any intermediate operation throws.
 
-- [ ] Add the import at the top of `archiveService.ts`: `import { checkAndPromptGitignore } from './gitignorePrompt';`.
+- [x] Add the import at the top of `archiveService.ts`: `import { checkAndPromptGitignore } from './gitignorePrompt';`.
 
-#### [ ] Task 2.2: Update the `onConfigSectionChanged` call site in `index.ts` to pass the new parameters
+#### [x] Task 2.2: Update the `onConfigSectionChanged` call site in `index.ts` to pass the new parameters
 
 Read `src/features/agentSessionsArchiving/index.ts` in full before making any change.
 
-- [ ] Locate the `onConfigSectionChanged` callback (lines 113–121). The current call is `void service.reconfigure(oldConfig, newConfig);`. Replace it with:
+- [x] Locate the `onConfigSectionChanged` callback (lines 113–121). The current call is `void service.reconfigure(oldConfig, newConfig);`. Replace it with:
 
   ```typescript
   void service.reconfigure(oldConfig, newConfig, async (patch) => {
@@ -406,14 +406,14 @@ Read `src/features/agentSessionsArchiving/index.ts` in full before making any ch
   });
   ```
 
-- [ ] The `updateConfig` callback re-fetches the latest persisted config via `stateManager.getConfigSection(CONFIG_KEY)` instead of closing over the `newConfig` parameter. Same rationale as the Task 1.4 callback: `updateConfigSection` writes the section as a `set`, so spreading a captured snapshot would clobber any concurrent user-driven change to unrelated fields. No `workspaceRoot` is passed — `reconfigure` now uses `this.workspaceRootUri` internally (see Task 2.1).
+- [x] The `updateConfig` callback re-fetches the latest persisted config via `stateManager.getConfigSection(CONFIG_KEY)` instead of closing over the `newConfig` parameter. Same rationale as the Task 1.4 callback: `updateConfigSection` writes the section as a `set`, so spreading a captured snapshot would clobber any concurrent user-driven change to unrelated fields. No `workspaceRoot` is passed — `reconfigure` now uses `this.workspaceRootUri` internally (see Task 2.1).
 
-#### [ ] Task 2.3: Add unit tests for the reconfigure prompt wiring
+#### [x] Task 2.3: Add unit tests for the reconfigure prompt wiring
 
 Read `test/unit/features/agentSessionsArchiving/archiveService.test.ts` in full before making any change.
 
-- [ ] In `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, the `describe('reconfigure', ...)` block currently starts at line 448. The new `reconfigure` signature requires one additional trailing parameter: `updateConfig` (a `vi.fn()`). Update each of the 5 existing `service.reconfigure` invocations in the test file (at lines 457, 473, 491, 513, 530) by appending the trailing argument: `, vi.fn()`. For example, line 457 `await service.reconfigure(undefined, DEFAULT_CONFIG);` becomes `await service.reconfigure(undefined, DEFAULT_CONFIG, vi.fn());`. Apply the same trailing-argument addition to all 5 call sites regardless of the first two argument values.
-- [ ] Add a module-level mock for `gitignorePrompt.ts` by adding this near the top of the test file (after the existing imports):
+- [x] In `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, the `describe('reconfigure', ...)` block currently starts at line 448. The new `reconfigure` signature requires one additional trailing parameter: `updateConfig` (a `vi.fn()`). Update each of the 5 existing `service.reconfigure` invocations in the test file (at lines 457, 473, 491, 513, 530) by appending the trailing argument: `, vi.fn()`. For example, line 457 `await service.reconfigure(undefined, DEFAULT_CONFIG);` becomes `await service.reconfigure(undefined, DEFAULT_CONFIG, vi.fn());`. Apply the same trailing-argument addition to all 5 call sites regardless of the first two argument values.
+- [x] Add a module-level mock for `gitignorePrompt.ts` by adding this near the top of the test file (after the existing imports):
 
   ```typescript
   const mockCheckAndPromptGitignore = vi.fn().mockResolvedValue(undefined);
@@ -422,21 +422,21 @@ Read `test/unit/features/agentSessionsArchiving/archiveService.test.ts` in full 
   }));
   ```
 
-- [ ] Inside `describe('reconfigure', ...)`, after the existing test `'should skip move when old directory does not exist'`, add two new test cases:
+- [x] Inside `describe('reconfigure', ...)`, after the existing test `'should skip move when old directory does not exist'`, add two new test cases:
   - `'should call checkAndPromptGitignore when archivePath changes'`: mocks `workspace.fs.readDirectory` to return `[]`; creates `service`; calls `service.start(DEFAULT_CONFIG)`; calls `await service.reconfigure(DEFAULT_CONFIG, { ...DEFAULT_CONFIG, archivePath: 'new/path' }, vi.fn())`; asserts `mockCheckAndPromptGitignore` was called once with `'new/path'` as the first argument and `workspaceRootUri` (the test fixture's URI) as the second argument.
   - `'should not call checkAndPromptGitignore when archivePath is unchanged'`: creates `service`; calls `service.start(DEFAULT_CONFIG)`; calls `await service.reconfigure(DEFAULT_CONFIG, DEFAULT_CONFIG, vi.fn())`; asserts `mockCheckAndPromptGitignore` was NOT called.
   - `'should short-circuit on re-entrant reconfigure (recursion guard)'`: pins F-003 closed. Creates `service`; calls `service.start(DEFAULT_CONFIG)`; spies on `service.start` (e.g., `const startSpy = vi.spyOn(service, 'start');`). Constructs an `updateConfig` callback that, when invoked, synchronously calls `service.reconfigure(...)` again on the same instance with a different `gitignoreDecisions` patch and the same `vi.fn()` as inner `updateConfig`. Sets `mockCheckAndPromptGitignore` to call its `updateConfig` argument once before resolving (simulating the user-accept path triggering the section listener re-entry). Calls `await service.reconfigure(DEFAULT_CONFIG, { ...DEFAULT_CONFIG, archivePath: 'new/path' }, recursiveUpdateConfig)`. Asserts `startSpy` was called exactly **once** (only the outer reconfigure runs `start`; the inner recursive call must short-circuit at the `_reconfiguring` guard before reaching `start`). Asserts `logger.debug` was called with a message containing `'Re-entrant reconfigure call detected'`. This test pins the re-entrancy guard semantics: a future refactor that removes the `_reconfiguring` flag will fail this test.
-- [ ] Add `beforeEach(() => { mockCheckAndPromptGitignore.mockClear(); })` inside `describe('reconfigure', ...)` to reset the mock between tests.
+- [x] Add `beforeEach(() => { mockCheckAndPromptGitignore.mockClear(); })` inside `describe('reconfigure', ...)` to reset the mock between tests.
 
-#### [ ] Task 2.4: Update impacted documentation
+#### [x] Task 2.4: Update impacted documentation
 
-- [ ] In `docs/technical-context.md`, in section 8.6, locate the "Git-aware gitignore prompt" paragraph added in Activity 1. Append the following sentences at the end of that paragraph: "When `archivePath` changes (detected in `AgentSessionArchiveService.reconfigure`), the prompt runs after the archive directory has been moved to the new path and before the archive service restarts with the new config. `reconfigure` is guarded against re-entrancy: when the prompt's `updateConfig` callback (on accept) writes the config and the section listener fires `reconfigure` again on the same instance, the inner invocation short-circuits at a `_reconfiguring` flag (set in the outer call's try-block, reset in its finally-block). Only the outer call mutates timer state and runs `start()`."
-- [ ] Mark all completed checkboxes in this activity.
+- [x] In `docs/technical-context.md`, in section 8.6, locate the "Git-aware gitignore prompt" paragraph added in Activity 1. Append the following sentences at the end of that paragraph: "When `archivePath` changes (detected in `AgentSessionArchiveService.reconfigure`), the prompt runs after the archive directory has been moved to the new path and before the archive service restarts with the new config. `reconfigure` is guarded against re-entrancy: when the prompt's `updateConfig` callback (on accept) writes the config and the section listener fires `reconfigure` again on the same instance, the inner invocation short-circuits at a `_reconfiguring` flag (set in the outer call's try-block, reset in its finally-block). Only the outer call mutates timer state and runs `start()`."
+- [x] Mark all completed checkboxes in this activity.
 
-#### [ ] Task 2.5: Commit changes
+#### [x] Task 2.5: Commit changes
 
-- [ ] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. If any check fails, fix the failure before proceeding — do not commit with a failing quality gate.
-- [ ] Commit `src/features/agentSessionsArchiving/archiveService.ts`, `src/features/agentSessionsArchiving/index.ts`, `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, `docs/technical-context.md`, and this workstream file with message: `refactor(archiving): extend reconfigure to invoke gitignore prompt on archivePath change`. Type is `refactor:` (not `feat:`) because Activity 2 extends an existing API surface (`reconfigure` signature) and wires an already-existing feature (the prompt, introduced in Activity 1) into an additional call site. No new user-facing capability is introduced standalone by this commit. Semantic-release rule mapping (per `.releaserc.json` and `technical-context.md` section 8.10): `refactor:` → patch bump. This avoids producing three consecutive minor bumps when the workstream conceptually delivers a single feature pair — see F-012 of the Phase 2 review for rationale.
+- [x] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. If any check fails, fix the failure before proceeding — do not commit with a failing quality gate.
+- [x] Commit `src/features/agentSessionsArchiving/archiveService.ts`, `src/features/agentSessionsArchiving/index.ts`, `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, `docs/technical-context.md`, and this workstream file with message: `refactor(archiving): extend reconfigure to invoke gitignore prompt on archivePath change`. Type is `refactor:` (not `feat:`) because Activity 2 extends an existing API surface (`reconfigure` signature) and wires an already-existing feature (the prompt, introduced in Activity 1) into an additional call site. No new user-facing capability is introduced standalone by this commit. Semantic-release rule mapping (per `.releaserc.json` and `technical-context.md` section 8.10): `refactor:` → patch bump. This avoids producing three consecutive minor bumps when the workstream conceptually delivers a single feature pair — see F-012 of the Phase 2 review for rationale.
 
 ### [ ] Activity 3: Introduce YYYY/MM layout in write, hydrate, and move operations
 
@@ -1103,6 +1103,11 @@ Read `test/unit/features/agentSessionsArchiving/archiveService.test.ts` in full 
 **Activity 1**
 
 - **Task 1.6 (lint scope expansion)**: the workstream-listed lint command `pnpm run lint` also runs `markdownlint-cli2 '**/*.md'`, which surfaced a pre-existing MD038 (`no-space-in-code`) violation in `docs/reports/WS-0013-review-phase2.md` line 112 (a JS template literal escaped with single backticks inside an inline code span). The report itself is a sibling untracked artifact produced during the WS-0013 review phase and the workstream-listed commit set does not include it. Without the fix the quality gate fails for reasons unrelated to the production source change. Disposition: applied a minimal in-line fix to the report (single-backtick inline code → double-backtick wrap, preserving content), and extended the Activity 1 commit set to include `docs/reports/WS-0013-review-phase2.md` so the report ships on the same branch as the code that drove it. This is a review-gap signal: the markdownlint surface of the project's lint command was not surfaced during the multi-perspective review of WS-0013. Corrective: noted; no follow-up task in this WS — the production change is unaffected and the report-fix is single-line.
+
+**Activity 2**
+
+- **Task 2.1 (field placement ordering)**: the workstream instructs to insert `_reconfiguring` "immediately after `private readonly ensuredDirectories = new Set<string>();` (the JSDoc-annotated field introduced in Task 3.1)". This forward reference is incoherent with the activity order: Activity 2 commits before Activity 3, so `ensuredDirectories` does not yet exist when `_reconfiguring` is introduced. Inserting `_reconfiguring` at the absent anchor would produce a tsc-broken Activity 2 commit. Disposition: inserted `_reconfiguring` immediately after `private _needsDedup = true;` (the last existing private state field). In Task 3.1 (Activity 3), `ensuredDirectories` will be inserted between `_needsDedup` and `_reconfiguring`, producing the final intra-class ordering `_needsDedup`, `ensuredDirectories`, `_reconfiguring`. The two fields the workstream wanted adjacent (`ensuredDirectories` and `_reconfiguring`) ARE adjacent in the post-Activity-3 state. Corrective: workstream authoring should resolve forward references — annotate `_reconfiguring` placement against the state at Activity 2 commit time, not the post-Activity-3 state.
+- **Task 2.5 (commit subject case)**: the workstream-prescribed commit subject `refactor(archiving): extend reconfigure to invoke gitignore prompt on archivePath change` contains the camelCase identifier `archivePath`, which commitlint rejects under its `subject-case: lower-case` rule (`commitlint.config.mjs`). The pre-commit hook failure cannot be bypassed (hard rule). Disposition: rewrote the subject to `refactor(archiving): extend reconfigure to invoke gitignore prompt on archive path change` (camelCase → two-word lowercase form). Semantic equivalent preserved; semantic-release mapping (`refactor:` → patch) unaffected. Corrective: workstream authoring should validate prescribed commit subjects against the project's commitlint configuration before presenting the workstream.
 
 **Pre-execution notes (from multi-perspective review gate, 2026-05-25)**
 

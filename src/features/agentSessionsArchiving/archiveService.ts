@@ -5,6 +5,7 @@ import type { Logger } from '../../core/logger';
 import { generateTimestamp, parseYYYYMMDD } from '../../utils';
 import type { SessionParser, ParseResult } from './markdown';
 import { getParserForProvider, renderSessionToMarkdown } from './markdown';
+import { checkAndPromptGitignore } from './gitignorePrompt';
 
 interface ArchivedEntry {
   mtime: number;
@@ -16,6 +17,19 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   private _currentConfig: AgentSessionsArchivingConfig | undefined;
   private readonly lastArchivedMap = new Map<string, ArchivedEntry>();
   private _needsDedup = true;
+  /**
+   * Re-entrancy guard for reconfigure(). Set to true on entry, reset to false in
+   * a finally block on exit. When a recursive call is detected (the gitignore
+   * prompt's updateConfig callback writes the config, which fires the section
+   * listener, which calls reconfigure again on the same instance), the inner
+   * invocation returns early without running moveArchive, the prompt, or
+   * start(). The outer invocation continues normally and is the only one that
+   * mutates timer/cache state. Without this guard, start() is invoked twice in
+   * rapid sequence (once from the inner call, once from the outer), churning
+   * the interval handle and racing two runArchiveCycle() invocations on
+   * lastArchivedMap.
+   */
+  private _reconfiguring = false;
 
   constructor(
     private readonly workspaceRootUri: vscode.Uri,
@@ -51,23 +65,42 @@ export class AgentSessionArchiveService implements vscode.Disposable {
 
   public async reconfigure(
     oldConfig: AgentSessionsArchivingConfig | undefined,
-    newConfig: AgentSessionsArchivingConfig
+    newConfig: AgentSessionsArchivingConfig,
+    updateConfig: (patch: Partial<AgentSessionsArchivingConfig>) => Promise<void>
   ): Promise<void> {
-    if (!oldConfig) {
-      if (newConfig.enabled) {
-        this.start(newConfig);
+    if (this._reconfiguring) {
+      this.logger.debug(
+        'Re-entrant reconfigure call detected (likely via updateConfig → section listener) — short-circuiting'
+      );
+      return;
+    }
+    this._reconfiguring = true;
+    try {
+      if (!oldConfig) {
+        if (newConfig.enabled) {
+          this.start(newConfig);
+        }
+        return;
       }
-      return;
+      if (!newConfig.enabled) {
+        this.stop();
+        this._currentConfig = newConfig;
+        return;
+      }
+      if (oldConfig.archivePath !== newConfig.archivePath) {
+        await this.moveArchive(oldConfig.archivePath, newConfig.archivePath);
+        await checkAndPromptGitignore(
+          newConfig.archivePath,
+          this.workspaceRootUri,
+          newConfig,
+          this.logger,
+          updateConfig
+        );
+      }
+      this.start(newConfig);
+    } finally {
+      this._reconfiguring = false;
     }
-    if (!newConfig.enabled) {
-      this.stop();
-      this._currentConfig = newConfig;
-      return;
-    }
-    if (oldConfig.archivePath !== newConfig.archivePath) {
-      await this.moveArchive(oldConfig.archivePath, newConfig.archivePath);
-    }
-    this.start(newConfig);
   }
 
   public async runArchiveCycle(force = false): Promise<void> {

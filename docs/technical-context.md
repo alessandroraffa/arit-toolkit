@@ -569,7 +569,16 @@ accepted as best-effort; collision probability is low for typical
 workflows. The duplicate-entry guard
 (`existing.split('\n').some(line => line.trim() === entryLine)`)
 prevents redundant appends on subsequent activations even after manual
-edits.
+edits. When `archivePath` changes (detected in
+`AgentSessionArchiveService.reconfigure`), the prompt runs after the
+archive directory has been moved to the new path and before the
+archive service restarts with the new config. `reconfigure` is guarded
+against re-entrancy: when the prompt's `updateConfig` callback (on
+accept) writes the config and the section listener fires
+`reconfigure` again on the same instance, the inner invocation
+short-circuits at a `_reconfiguring` flag (set in the outer call's
+try-block, reset in its finally-block). Only the outer call mutates
+timer state and runs `start()`.
 
 **Change detection:** When a session file's `mtime` changes, the old
 archive file is deleted and a new one (with the same ctime-based prefix)
