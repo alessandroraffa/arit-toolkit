@@ -158,47 +158,47 @@ The teardown of this smoke test routes through a throwaway branch instead of `gi
 - [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
 - [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file (plus `commitlint.config.mjs` if it was modified) with message: `chore(deps-dev): bump commitlint group to v21`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
 
-### [ ] Activity 3b: Bump eslint group to v10
+### [x] Activity 3b: Bump eslint group to v10
 
 Bump `eslint` and `@eslint/js` together from v9 to v10. The project uses ESLint flat config (`eslint.config.mjs`). `eslint-config-prettier` is not present in this project; this activity covers only `eslint` and `@eslint/js`. The current lint warning baseline is 26 (post-WS-0015 reflection). If the live baseline from `pnpm run lint` at execution time differs from 26, record the actual count as a divergence and use it as the post-bump threshold (replacing 26 in the criterion below). After the bump, if the warning count increases above the recorded baseline, document the delta as a divergence and apply the minimum config change needed to return to ≤baseline warnings before committing.
 
-#### [ ] Task 3b.1: Review eslint v10 migration notes, pre-flight overrides graph, and read the flat config
+#### [x] Task 3b.1: Review eslint v10 migration notes, pre-flight overrides graph, and read the flat config
 
-- [ ] Read `eslint.config.mjs` in full. Note all plugin imports, rule overrides, and `languageOptions` fields.
-- [ ] Verify target version resolvability: run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx eslint@10.4.0 --version` and `pnpm dlx @eslint/js@10.0.1 --version` (the second may need to be checked via `pnpm view @eslint/js@10.0.1 version`). If a specific version is not resolvable, record the highest available version under major 10 as a divergence and use it as the target in Task 3b.2 instead.
-- [ ] Capture the pre-bump `pnpm.overrides` interaction baseline: run `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, and `pnpm why markdown-it --ignore-workspace`. Record each command's output as a baseline snapshot in "Divergences and notes" (under a `Pre-bump overrides snapshot — Activity 3b` heading). This baseline is compared against the post-bump graph in Task 3b.3 to detect any transitive resolution that escapes the existing override lower bounds.
-- [ ] Pre-flight peer-dependency check: run `pnpm view typescript-eslint@8.60.0 peerDependencies` and read the `eslint` range. If the range does NOT cover `^10.0.0`, halt and escalate to PM BEFORE Activity 2 runs (or before this activity if Activity 2 already ran) — the planner-prescribed bundling decision in Task 3b.3 will be triggered. Record the peer-range output as a divergence.
-- [ ] Fetch the ESLint v10 release blog post via WebFetch at `https://eslint.org/blog/2025/01/eslint-v10.0.0-released/` (adjust URL path if the page 404s — try `https://eslint.org/docs/latest/use/migrate-to-10.0.0`). Identify any breaking changes that affect: flat config API, rule removals, rule renames, or changes to the `@eslint/js` recommended rule set that could alter the warning count.
-- [ ] Fetch the `@eslint/js@10.0.1` changelog via WebFetch at `https://github.com/eslint/eslint/blob/main/packages/js/CHANGELOG.md` to identify any rule additions to `recommended` that are not currently overridden in `eslint.config.mjs`. New rules in `recommended` will increase the warning count; if found, add explicit `"off"` overrides to `eslint.config.mjs` to preserve the current rule surface. Record each override addition as a divergence.
+- [x] Read `eslint.config.mjs` in full. Note all plugin imports, rule overrides, and `languageOptions` fields.
+- [x] Verify target version resolvability: run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx eslint@10.4.0 --version` and `pnpm dlx @eslint/js@10.0.1 --version` (the second may need to be checked via `pnpm view @eslint/js@10.0.1 version`). If a specific version is not resolvable, record the highest available version under major 10 as a divergence and use it as the target in Task 3b.2 instead.
+- [x] Capture the pre-bump `pnpm.overrides` interaction baseline: run `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, and `pnpm why markdown-it --ignore-workspace`. Record each command's output as a baseline snapshot in "Divergences and notes" (under a `Pre-bump overrides snapshot — Activity 3b` heading). This baseline is compared against the post-bump graph in Task 3b.3 to detect any transitive resolution that escapes the existing override lower bounds.
+- [x] Pre-flight peer-dependency check: run `pnpm view typescript-eslint@8.60.0 peerDependencies` and read the `eslint` range. If the range does NOT cover `^10.0.0`, halt and escalate to PM BEFORE Activity 2 runs (or before this activity if Activity 2 already ran) — the planner-prescribed bundling decision in Task 3b.3 will be triggered. Record the peer-range output as a divergence.
+- [x] Fetch the ESLint v10 release blog post via WebFetch at `https://eslint.org/blog/2025/01/eslint-v10.0.0-released/` (adjust URL path if the page 404s — try `https://eslint.org/docs/latest/use/migrate-to-10.0.0`). Identify any breaking changes that affect: flat config API, rule removals, rule renames, or changes to the `@eslint/js` recommended rule set that could alter the warning count.
+- [x] Fetch the `@eslint/js@10.0.1` changelog via WebFetch at `https://github.com/eslint/eslint/blob/main/packages/js/CHANGELOG.md` to identify any rule additions to `recommended` that are not currently overridden in `eslint.config.mjs`. New rules in `recommended` will increase the warning count; if found, add explicit `"off"` overrides to `eslint.config.mjs` to preserve the current rule surface. Record each override addition as a divergence.
 
-#### [ ] Task 3b.2: Update version specifiers in `package.json`
+#### [x] Task 3b.2: Update version specifiers in `package.json`
 
 Read `package.json` in full before making any change.
 
-- [ ] Locate `"eslint"` and `"@eslint/js"` in `devDependencies`. Record their current version strings and verify both are at `^9.39.2`. If either differs, record the actual version as a divergence.
-- [ ] Update `"eslint"` from `"^9.39.2"` to `"^10.4.0"`.
-- [ ] Update `"@eslint/js"` from `"^9.39.2"` to `"^10.0.1"`.
-- [ ] If breaking changes in `eslint.config.mjs` were identified in Task 3b.1, apply those config changes to `eslint.config.mjs` now, before the lockfile is regenerated. Record each change as a divergence note referencing Task 3b.1.
+- [x] Locate `"eslint"` and `"@eslint/js"` in `devDependencies`. Record their current version strings and verify both are at `^9.39.2`. If either differs, record the actual version as a divergence.
+- [x] Update `"eslint"` from `"^9.39.2"` to `"^10.4.0"`.
+- [x] Update `"@eslint/js"` from `"^9.39.2"` to `"^10.0.1"`.
+- [x] If breaking changes in `eslint.config.mjs` were identified in Task 3b.1, apply those config changes to `eslint.config.mjs` now, before the lockfile is regenerated. Record each change as a divergence note referencing Task 3b.1.
 
-#### [ ] Task 3b.3: Regenerate `pnpm-lock.yaml`, run audit and quality gate
+#### [x] Task 3b.3: Regenerate `pnpm-lock.yaml`, run audit and quality gate
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0. If pnpm reports a peer-dependency conflict between `eslint@10` and `typescript-eslint@8.60.0` (installed in Activity 2), halt and escalate to PM. The PM authorizes ONE of the following recovery paths (DO NOT pick unilaterally — wait for explicit selection):
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0. If pnpm reports a peer-dependency conflict between `eslint@10` and `typescript-eslint@8.60.0` (installed in Activity 2), halt and escalate to PM. The PM authorizes ONE of the following recovery paths (DO NOT pick unilaterally — wait for explicit selection):
   - **(a) Bundle eslint v10 with a typescript-eslint v9.X eslint-v10-compatible release**: keep Activity 2's typescript-eslint commit, install eslint v10 + the eslint-v10-compatible typescript-eslint version in this single commit, and update Activity 2's commit message in the workstream to reflect the bundling. No git revert needed.
   - **(b) Revert Activity 2 commit and re-bundle**: PM authorizes `git revert <activity-2-commit-sha>` (a revert, NOT a reset — `git revert` is a normal, non-destructive operation that creates a new commit). Then install typescript-eslint at the eslint-v10-compatible version alongside eslint v10 in this Activity 3b commit. Record the revert and re-bundle as a divergence.
   - **(c) Defer Activity 3b**: mark Activity 3b as `[deferred]` in the workstream and proceed to Activity 3c and 4. The PM later authorizes a follow-up workstream for the bundled eslint + typescript-eslint upgrade.
 
-- [ ] Run `git diff --stat` and verify the diff is contained to `package.json`, `pnpm-lock.yaml`, and (if config changes were needed) `eslint.config.mjs`.
-- [ ] Run `pnpm audit --ignore-workspace`. Must exit 0.
-- [ ] Re-run the overrides interaction probes captured in Task 3b.1: `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, `pnpm why markdown-it --ignore-workspace`. Compare against the pre-bump snapshot. If the override block's lower-bound clauses (`picomatch@<2.3.2`, `picomatch@>=4.0.0 <4.0.4`, `brace-expansion@>=5.0.0 <5.0.6`, `markdown-it: >=14.1.1`) no longer cover the new transitive graph, capture the resolved versions as a divergence. Proceed only if `pnpm audit --ignore-workspace` still exits 0; otherwise escalate to PM.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types`. Must pass with zero errors.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run lint 2>&1 | tee /tmp/lint-output-post-eslint-v10.txt`. Count the warning lines in `/tmp/lint-output-post-eslint-v10.txt` (warnings contain the string `warning`). The count must be ≤26 (or ≤ the live baseline recorded as a divergence in the activity introduction). If the count exceeds the baseline, identify the new warnings, add minimal `"off"` or `"warn"` overrides to `eslint.config.mjs` to return to ≤baseline, and re-run lint to confirm. Record the delta and each override as a divergence.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit`. Must pass with zero failures.
+- [x] Run `git diff --stat` and verify the diff is contained to `package.json`, `pnpm-lock.yaml`, and (if config changes were needed) `eslint.config.mjs`.
+- [x] Run `pnpm audit --ignore-workspace`. Must exit 0.
+- [x] Re-run the overrides interaction probes captured in Task 3b.1: `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, `pnpm why markdown-it --ignore-workspace`. Compare against the pre-bump snapshot. If the override block's lower-bound clauses (`picomatch@<2.3.2`, `picomatch@>=4.0.0 <4.0.4`, `brace-expansion@>=5.0.0 <5.0.6`, `markdown-it: >=14.1.1`) no longer cover the new transitive graph, capture the resolved versions as a divergence. Proceed only if `pnpm audit --ignore-workspace` still exits 0; otherwise escalate to PM.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types`. Must pass with zero errors.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run lint 2>&1 | tee /tmp/lint-output-post-eslint-v10.txt`. Count the warning lines in `/tmp/lint-output-post-eslint-v10.txt` (warnings contain the string `warning`). The count must be ≤26 (or ≤ the live baseline recorded as a divergence in the activity introduction). If the count exceeds the baseline, identify the new warnings, add minimal `"off"` or `"warn"` overrides to `eslint.config.mjs` to return to ≤baseline, and re-run lint to confirm. Record the delta and each override as a divergence.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit`. Must pass with zero failures.
 
-#### [ ] Task 3b.4: Update workstream and commit
+#### [x] Task 3b.4: Update workstream and commit
 
-- [ ] Mark all completed checkboxes in this activity in this workstream file.
-- [ ] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file (plus `eslint.config.mjs` if it was modified) with message: `chore(deps-dev): bump eslint group to v10`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
+- [x] Mark all completed checkboxes in this activity in this workstream file.
+- [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file (plus `eslint.config.mjs` if it was modified) with message: `chore(deps-dev): bump eslint group to v10`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
 
 ### [ ] Activity 3c: Bump lint-staged from v15 to v17
 
@@ -305,6 +305,26 @@ Read `.github/workflows/ci.yml` in full before making any change (even if it was
 **Impact:** The `chore/commitlint-smoke` branch (and later `chore/lint-staged-smoke`) remain as local branches after smoke testing. They contain only a single smoke-test commit, are never pushed to remote, and have no impact on the working tree or CI.
 
 **Corrective action:** Branches left in place locally. The smoke test purpose is fully achieved (hook accepted the commit). No governance escalation needed — this is a platform enforcement gap (hook does not distinguish authorized throwaway `-D` from unauthorized destructive operations). PM may clean up manually with `git branch -D chore/commitlint-smoke chore/lint-staged-smoke` after reviewing this note.
+
+### Divergence D-03 — Activity 3b: eslint v10 blog URL returned 404; fallback to migration guide
+
+**Cause:** `https://eslint.org/blog/2025/01/eslint-v10.0.0-released/` returned 404. Per WebFetch fallback policy: retried once (same result), then fell back to `https://eslint.org/docs/latest/use/migrate-to-10.0.0` which returned 200 and contained full breaking-changes documentation. The `@eslint/js@10.0.1` CHANGELOG URL at GitHub also returned 404 (raw URL format not available).
+
+**Impact:** Breaking changes identified from migration guide: three new rules added to `eslint:recommended` (`no-unassigned-vars`, `no-useless-assignment`, `preserve-caught-error`). Post-bump lint baseline remained at 26 warnings — codebase already conforms to all three new rules. No `eslint.config.mjs` changes needed. `eslint.config.mjs` not modified.
+
+**Corrective action:** Migration guide used as primary reference. No action needed — quality gate passed at 26 warnings.
+
+### Pre-bump overrides snapshot — Activity 3b
+
+Captured before the eslint v9→v10 bump. All resolved versions are at or above the override lower bounds.
+
+- `picomatch`: 2.3.2 (via micromatch chain) and 4.0.4 (via tinyglobby/fdir/vite chain). Overrides `picomatch@<2.3.2 → 2.3.2` and `picomatch@>=4.0.0 <4.0.4 → 4.0.4` cover both.
+- `brace-expansion`: 1.1.13 (via minimatch 3.x / eslint), 2.0.3 (via minimatch 5.x / mocha), 5.0.6 (via minimatch 9.x/10.x / typescript-eslint / vsce). All covered by existing overrides.
+- `markdown-it`: 14.1.1 (via `@vscode/vsce` and `markdownlint-cli2`). Covered by override `markdown-it: >=14.1.1`.
+
+Post-bump graph is identical — eslint v10 did not introduce new transitive picomatch/brace-expansion/markdown-it resolutions. All override lower-bound clauses remain sufficient.
+
+**typescript-eslint@8.60.0 peer deps:** `eslint: '^8.57.0 || ^9.0.0 || ^10.0.0'` — covers eslint v10. No bundling required, no conflict detected during `pnpm install`.
 
 ### Reflection
 
