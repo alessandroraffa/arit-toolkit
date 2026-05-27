@@ -38,6 +38,8 @@ The project has 14 outdated dev dependencies and 0 runtime dependencies. The Dep
 
 **pnpm workspace isolation (mandatory for all activities).** This repo is checked out as a git submodule under the parent oceanus pnpm workspace (`/Users/alessandroraffa/dev/oceanus/pnpm-workspace.yaml`). Always pass `--ignore-workspace` to `pnpm install` and `pnpm audit` so commands operate on the submodule's own lockfile and not the parent workspace. Without this flag, pnpm may resolve packages from sibling workspace projects and produce a lockfile that diverges from what CI sees (CI clones `tangyr-vscode` standalone).
 
+**WebFetch fallback policy (mandatory for all activities).** If a WebFetch call returns a non-success status, an empty body, or a redirect to a 404 page, the executor MUST: (a) record the URL, status, and timestamp as a divergence; (b) wait 30 seconds and retry once; (c) if still failing, fall back to reading the package's local CHANGELOG file at `node_modules/<package>/CHANGELOG.md` after a clean `pnpm install --ignore-workspace`; (d) do not block the activity on a single fetch failure. Release notes are guidance, not a gate — the gate is the post-bump quality-gate output.
+
 **When completing the last activity of this workstream** → compile the Reflection sub-block in "Divergences and notes". Update the frontmatter status to `completed`. Verify CI on a draft PR or via `act` (if available) before proposing PR and merge to the PM.
 
 ## Activities, Tasks and Subtasks
@@ -119,7 +121,7 @@ Bump `@commitlint/cli` and `@commitlint/config-conventional` together from v20 t
 #### [ ] Task 3a.1: Review the commitlint v21 changelog
 
 - [ ] Read `commitlint.config.mjs` in full. Note the four custom rules: `type-enum`, `subject-case`, `subject-empty`, `type-empty`.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx commitlint@21 --version` to confirm the v21 package is resolvable before modifying `package.json`. If the command fails (network error or package not published), record as a divergence and escalate to the PM.
+- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx commitlint@21.0.1 --version` to confirm the specific target version is resolvable before modifying `package.json`. If the specific version is not resolvable (404 or "not in registry"), retry once with `pnpm dlx commitlint@21 --version` to capture the actual highest available version under major 21 and record it as a divergence. Use the resolved version as the target in Task 3a.2 instead of `^21.0.1`.
 - [ ] Review the commitlint v21 release notes by fetching `https://github.com/conventional-changelog/commitlint/releases/tag/v21.0.0` (use the WebFetch tool). Identify any breaking changes to the `type-enum`, `subject-case`, `subject-empty`, or `type-empty` rule names or their option signatures. If breaking changes are found, record them as a divergence and apply any required config adjustments to `commitlint.config.mjs` in Task 3a.2 before committing.
 
 #### [ ] Task 3a.2: Update version specifiers in `package.json`
@@ -138,13 +140,17 @@ Read `package.json` in full before making any change.
 - [ ] Run `pnpm audit --ignore-workspace`. Must exit 0.
 - [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
 
-#### [ ] Task 3a.4: Trial-commit smoke test for the commitlint hook
+#### [ ] Task 3a.4: Trial-commit smoke test for the commitlint hook (throwaway-branch pattern)
 
-- [ ] Create a temporary file `smoke-test-commitlint.tmp` at the project root with content `smoke test`.
+The teardown of this smoke test routes through a throwaway branch instead of `git reset`, per CLAUDE.md's prohibition on destructive git commands. The throwaway branch is local-only, contains only the smoke commit, and is hard-deleted after validation; `git branch -D` on such a branch is the prescribed teardown step.
+
+- [ ] Run `git switch -c chore/commitlint-smoke` to create a throwaway branch from the current `feat/dependency-update-pass-ws-0016` HEAD.
+- [ ] Create a temporary file `smoke-test-commitlint.tmp` at the project root with content `smoke test`. The file extension `.tmp` does not match any lint-staged glob, so the pre-commit hook will no-op on it; only the commit-msg hook (commitlint) will be exercised.
 - [ ] Run `git add smoke-test-commitlint.tmp`.
-- [ ] Run `git commit -m "chore: smoke test commitlint v21 hook"`. The commit-msg hook (`pnpm exec commitlint --edit $1`) must accept the message and the commit must succeed. If the hook rejects the message with an error, record the exact error as a divergence — this indicates a breaking change in v21 not covered by Task 3a.1. Do NOT proceed until the hook accepts the message.
-- [ ] Run `git reset --soft HEAD~1` to undo the trial commit (this is NOT a destructive operation on uncommitted work — it returns the staged changes to the index without losing them).
-- [ ] Run `git rm --cached smoke-test-commitlint.tmp` and delete the file from disk.
+- [ ] Run `git commit -m "chore: smoke test commitlint v21 hook"`. The commit-msg hook (`pnpm exec commitlint --edit $1`) must accept the message and the commit must succeed. If the hook rejects the message with an error, record the exact error as a divergence — this indicates a breaking change in v21 not covered by Task 3a.1. Do NOT proceed until the hook accepts the message on the throwaway branch.
+- [ ] Run `git switch feat/dependency-update-pass-ws-0016` to return to the working branch (the smoke commit stays on the throwaway branch and is discarded with it).
+- [ ] Run `git branch -D chore/commitlint-smoke` to hard-delete the throwaway branch. This `-D` is authorized: the branch is local-only and contains no work to preserve.
+- [ ] Delete `smoke-test-commitlint.tmp` from the working tree if it still exists there.
 
 #### [ ] Task 3a.5: Update workstream and commit
 
@@ -154,11 +160,14 @@ Read `package.json` in full before making any change.
 
 ### [ ] Activity 3b: Bump eslint group to v10
 
-Bump `eslint` and `@eslint/js` together from v9 to v10. The project uses ESLint flat config (`eslint.config.mjs`). `eslint-config-prettier` is not present in this project; this activity covers only `eslint` and `@eslint/js`. The current lint warning baseline is 24 (post-WS-0014 Activity 2 extraction; WS-0015 did not alter it). After the bump, if the warning count increases above 24, document the delta as a divergence and apply the minimum config change needed to return to ≤24 warnings before committing.
+Bump `eslint` and `@eslint/js` together from v9 to v10. The project uses ESLint flat config (`eslint.config.mjs`). `eslint-config-prettier` is not present in this project; this activity covers only `eslint` and `@eslint/js`. The current lint warning baseline is 26 (post-WS-0015 reflection). If the live baseline from `pnpm run lint` at execution time differs from 26, record the actual count as a divergence and use it as the post-bump threshold (replacing 26 in the criterion below). After the bump, if the warning count increases above the recorded baseline, document the delta as a divergence and apply the minimum config change needed to return to ≤baseline warnings before committing.
 
-#### [ ] Task 3b.1: Review eslint v10 migration notes and read the flat config
+#### [ ] Task 3b.1: Review eslint v10 migration notes, pre-flight overrides graph, and read the flat config
 
 - [ ] Read `eslint.config.mjs` in full. Note all plugin imports, rule overrides, and `languageOptions` fields.
+- [ ] Verify target version resolvability: run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx eslint@10.4.0 --version` and `pnpm dlx @eslint/js@10.0.1 --version` (the second may need to be checked via `pnpm view @eslint/js@10.0.1 version`). If a specific version is not resolvable, record the highest available version under major 10 as a divergence and use it as the target in Task 3b.2 instead.
+- [ ] Capture the pre-bump `pnpm.overrides` interaction baseline: run `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, and `pnpm why markdown-it --ignore-workspace`. Record each command's output as a baseline snapshot in "Divergences and notes" (under a `Pre-bump overrides snapshot — Activity 3b` heading). This baseline is compared against the post-bump graph in Task 3b.3 to detect any transitive resolution that escapes the existing override lower bounds.
+- [ ] Pre-flight peer-dependency check: run `pnpm view typescript-eslint@8.60.0 peerDependencies` and read the `eslint` range. If the range does NOT cover `^10.0.0`, halt and escalate to PM BEFORE Activity 2 runs (or before this activity if Activity 2 already ran) — the planner-prescribed bundling decision in Task 3b.3 will be triggered. Record the peer-range output as a divergence.
 - [ ] Fetch the ESLint v10 release blog post via WebFetch at `https://eslint.org/blog/2025/01/eslint-v10.0.0-released/` (adjust URL path if the page 404s — try `https://eslint.org/docs/latest/use/migrate-to-10.0.0`). Identify any breaking changes that affect: flat config API, rule removals, rule renames, or changes to the `@eslint/js` recommended rule set that could alter the warning count.
 - [ ] Fetch the `@eslint/js@10.0.1` changelog via WebFetch at `https://github.com/eslint/eslint/blob/main/packages/js/CHANGELOG.md` to identify any rule additions to `recommended` that are not currently overridden in `eslint.config.mjs`. New rules in `recommended` will increase the warning count; if found, add explicit `"off"` overrides to `eslint.config.mjs` to preserve the current rule surface. Record each override addition as a divergence.
 
@@ -173,11 +182,16 @@ Read `package.json` in full before making any change.
 
 #### [ ] Task 3b.3: Regenerate `pnpm-lock.yaml`, run audit and quality gate
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0. If pnpm reports a peer-dependency conflict between `eslint@10` and `typescript-eslint@8.60.0` (installed in Activity 2), record the conflict message and escalate to the PM — this activity may need to be bundled with Activity 2 into a single commit.
+- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0. If pnpm reports a peer-dependency conflict between `eslint@10` and `typescript-eslint@8.60.0` (installed in Activity 2), halt and escalate to PM. The PM authorizes ONE of the following recovery paths (DO NOT pick unilaterally — wait for explicit selection):
+  - **(a) Bundle eslint v10 with a typescript-eslint v9.X eslint-v10-compatible release**: keep Activity 2's typescript-eslint commit, install eslint v10 + the eslint-v10-compatible typescript-eslint version in this single commit, and update Activity 2's commit message in the workstream to reflect the bundling. No git revert needed.
+  - **(b) Revert Activity 2 commit and re-bundle**: PM authorizes `git revert <activity-2-commit-sha>` (a revert, NOT a reset — `git revert` is a normal, non-destructive operation that creates a new commit). Then install typescript-eslint at the eslint-v10-compatible version alongside eslint v10 in this Activity 3b commit. Record the revert and re-bundle as a divergence.
+  - **(c) Defer Activity 3b**: mark Activity 3b as `[deferred]` in the workstream and proceed to Activity 3c and 4. The PM later authorizes a follow-up workstream for the bundled eslint + typescript-eslint upgrade.
+
 - [ ] Run `git diff --stat` and verify the diff is contained to `package.json`, `pnpm-lock.yaml`, and (if config changes were needed) `eslint.config.mjs`.
 - [ ] Run `pnpm audit --ignore-workspace`. Must exit 0.
+- [ ] Re-run the overrides interaction probes captured in Task 3b.1: `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, `pnpm why markdown-it --ignore-workspace`. Compare against the pre-bump snapshot. If the override block's lower-bound clauses (`picomatch@<2.3.2`, `picomatch@>=4.0.0 <4.0.4`, `brace-expansion@>=5.0.0 <5.0.6`, `markdown-it: >=14.1.1`) no longer cover the new transitive graph, capture the resolved versions as a divergence. Proceed only if `pnpm audit --ignore-workspace` still exits 0; otherwise escalate to PM.
 - [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types`. Must pass with zero errors.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run lint 2>&1 | tee /tmp/lint-output-post-eslint-v10.txt`. Count the warning lines in `/tmp/lint-output-post-eslint-v10.txt` (warnings contain the string `warning`). The count must be ≤24. If the count exceeds 24, identify the new warnings, add minimal `"off"` or `"warn"` overrides to `eslint.config.mjs` to return to ≤24, and re-run lint to confirm. Record the delta and each override as a divergence.
+- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run lint 2>&1 | tee /tmp/lint-output-post-eslint-v10.txt`. Count the warning lines in `/tmp/lint-output-post-eslint-v10.txt` (warnings contain the string `warning`). The count must be ≤26 (or ≤ the live baseline recorded as a divergence in the activity introduction). If the count exceeds the baseline, identify the new warnings, add minimal `"off"` or `"warn"` overrides to `eslint.config.mjs` to return to ≤baseline, and re-run lint to confirm. Record the delta and each override as a divergence.
 - [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit`. Must pass with zero failures.
 
 #### [ ] Task 3b.4: Update workstream and commit
@@ -190,9 +204,11 @@ Read `package.json` in full before making any change.
 
 Bump `lint-staged` from `^15.5.2` to `^17.0.5`. This is a two-major jump (v15→v17). The project's lint-staged configuration is declared inline in `package.json` under the `"lint-staged"` key (not in a separate `.lintstagedrc` file). The pre-commit hook calls `pnpm exec lint-staged`. Because lint-staged drives the pre-commit hook's file-filtering behavior, it is isolated in its own commit. Execute this activity after Activities 3a and 3b so the commitlint hook (3a) and the ESLint version (3b) are stable before the hook runner is updated.
 
-#### [ ] Task 3c.1: Review lint-staged v16 and v17 release notes
+#### [ ] Task 3c.1: Review lint-staged v16 and v17 release notes, pre-flight overrides graph, verify target resolvability
 
-- [ ] Read the `"lint-staged"` configuration block in `package.json` (lines 343–357 in the current file). Note the four glob patterns and their associated commands: `src/**/*.ts` → `eslint --fix`, `prettier --write`; `test/**/*.ts` → `eslint --fix`, `prettier --write`; `*.md` → `markdownlint-cli2 --fix`, `prettier --write`; `*.{json,yml}` → `prettier --write`.
+- [ ] Read the `"lint-staged"` configuration block in `package.json` (lines 343–359 in the current file; locate by the `"lint-staged":` JSON key rather than line number if the file has drifted). Note the four glob patterns and their associated commands: `src/**/*.ts` → `eslint --fix`, `prettier --write`; `test/**/*.ts` → `eslint --fix`, `prettier --write`; `*.md` → `markdownlint-cli2 --fix`, `prettier --write`; `*.{json,yml}` → `prettier --write`.
+- [ ] Verify target version resolvability: run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx lint-staged@17.0.5 --version`. If the specific version is not resolvable, retry with `pnpm dlx lint-staged@17 --version` to capture the actual highest available version under major 17 and record it as a divergence. Use the resolved version as the target in Task 3c.2 instead of `^17.0.5`.
+- [ ] Capture the pre-bump `pnpm.overrides` interaction baseline: run `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, and `pnpm why micromatch --ignore-workspace`. Record each command's output as a baseline snapshot in "Divergences and notes" (under a `Pre-bump overrides snapshot — Activity 3c` heading). This baseline is compared against the post-bump graph in Task 3c.3 to detect any transitive resolution that escapes the existing override lower bounds.
 - [ ] Fetch the lint-staged v16 release notes via WebFetch at `https://github.com/lint-staged/lint-staged/releases/tag/v16.0.0`. Identify any breaking changes to the configuration schema (key format, glob syntax, command array format) or CLI interface that affect the inline `package.json` config.
 - [ ] Fetch the lint-staged v17 release notes via WebFetch at `https://github.com/lint-staged/lint-staged/releases/tag/v17.0.0`. Identify any additional breaking changes between v16 and v17.
 - [ ] If config schema changes require modifications to the `"lint-staged"` block in `package.json`, note the required changes explicitly in "Divergences and notes" before proceeding to Task 3c.2. Apply those changes together with the version bump in Task 3c.2.
@@ -209,17 +225,22 @@ Read `package.json` in full before making any change.
 
 - [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0.
 - [ ] Run `git diff --stat` and verify the diff is contained to `package.json` and `pnpm-lock.yaml` only (unless config changes from Task 3c.1 were applied — in that case only these two files plus `package.json`'s lint-staged block are expected, which is the same file).
+- [ ] Re-run the overrides interaction probes captured in Task 3c.1: `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, `pnpm why micromatch --ignore-workspace`. Compare against the pre-bump snapshot. If the override block's lower-bound clauses (`picomatch@<2.3.2`, `picomatch@>=4.0.0 <4.0.4`, `brace-expansion@>=5.0.0 <5.0.6`) no longer cover the new transitive graph, capture the resolved versions as a divergence. Proceed only if `pnpm audit --ignore-workspace` still exits 0; otherwise escalate to PM.
 - [ ] Run `pnpm audit --ignore-workspace`. Must exit 0.
 - [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
 
-#### [ ] Task 3c.4: Trial-commit smoke test for the lint-staged hook
+#### [ ] Task 3c.4: Trial-commit smoke test for the lint-staged hook (throwaway-branch pattern)
 
-- [ ] Create a temporary TypeScript file `src/smoke-test-lint-staged.ts` with content `// smoke test`.
-- [ ] Create a temporary Markdown file `smoke-test-lint-staged.md` at the project root with content `# Smoke test`.
-- [ ] Run `git add src/smoke-test-lint-staged.ts smoke-test-lint-staged.md`.
-- [ ] Run `git commit -m "chore: smoke test lint-staged v17 hook"`. The pre-commit hook (`pnpm exec lint-staged`) must run and apply the configured tasks to the staged files: `eslint --fix` and `prettier --write` on the `.ts` file; `markdownlint-cli2 --fix` and `prettier --write` on the `.md` file. The commit must succeed. If the hook fails, record the exact error as a divergence — this indicates a breaking change not covered by Task 3c.1. Do NOT proceed until the hook accepts the commit.
-- [ ] Run `git reset --soft HEAD~1` to undo the trial commit.
-- [ ] Run `git rm --cached src/smoke-test-lint-staged.ts smoke-test-lint-staged.md` and delete both files from disk.
+The teardown of this smoke test routes through a throwaway branch instead of `git reset`, per CLAUDE.md's prohibition on destructive git commands. Smoke-test files are placed at the project root with extensions that match lint-staged's `*.md` and `*.{json,yml}` globs but NOT the `src/**/*.ts` or `test/**/*.ts` globs — the strict-type-checked ESLint surface on `src/**/*.ts` would fail the hook for reasons unrelated to lint-staged v17 itself, masking the actual validation. The chosen smoke files exercise the markdown branch (markdownlint-cli2 + prettier) and the JSON branch (prettier only).
+
+- [ ] Run `git switch -c chore/lint-staged-smoke` to create a throwaway branch from the current `feat/dependency-update-pass-ws-0016` HEAD.
+- [ ] Create a temporary file `smoke-test-lint-staged.json` at the project root with content `{"smoke": true}` (single line, trailing newline). This file matches the `*.{json,yml}` lint-staged glob → `prettier --write` only.
+- [ ] Create a temporary file `smoke-test-lint-staged.md` at the project root with content `# smoke` (single line, trailing newline). This file matches the `*.md` lint-staged glob → `markdownlint-cli2 --fix` and `prettier --write`.
+- [ ] Run `git add smoke-test-lint-staged.json smoke-test-lint-staged.md`.
+- [ ] Run `git commit -m "chore: smoke test lint-staged v17 hook"`. The pre-commit hook (`pnpm exec lint-staged`) must run, dispatch the configured tasks per glob match, and the commit must succeed. If the hook fails, record the exact error as a divergence — this indicates a breaking change not covered by Task 3c.1. Do NOT proceed until the hook accepts the commit on the throwaway branch.
+- [ ] Run `git switch feat/dependency-update-pass-ws-0016` to return to the working branch.
+- [ ] Run `git branch -D chore/lint-staged-smoke` to hard-delete the throwaway branch. This `-D` is authorized: the branch is local-only and contains no work to preserve.
+- [ ] Delete `smoke-test-lint-staged.json` and `smoke-test-lint-staged.md` from the working tree if they still exist there.
 
 #### [ ] Task 3c.5: Update workstream and commit
 

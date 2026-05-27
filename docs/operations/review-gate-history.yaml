@@ -13,3 +13,13 @@
   finding_count: 9
   blocking_count: 3
   produced_at: "2026-05-27"
+
+- gate: "pre-implementation"
+  artifact_type: "workstream"
+  artifact_version: "WS-0016 draft @ 2026-05-27"
+  verdict: "PASS_WITH_CONDITIONS"
+  risk_classification: "medium"
+  perspectives_activated: [white, black, green]
+  finding_count: 12
+  blocking_count: 3
+  produced_at: "2026-05-27"
