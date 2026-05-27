@@ -50,10 +50,23 @@ describe('AgentSessionArchiveService – deduplication', () => {
 
   describe('duplicate removal', () => {
     it('should remove older duplicate and keep the newer file', async () => {
-      workspace.fs.readDirectory = vi.fn().mockResolvedValue([
-        ['202501010000-claude-code-abc.md', FileType.File],
-        ['202602150930-claude-code-abc.md', FileType.File],
-      ]);
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/2025/01'))
+            return Promise.resolve([['202501010000-claude-code-abc.md', FileType.File]]);
+          if (p.endsWith('/2026/02'))
+            return Promise.resolve([['202602150930-claude-code-abc.md', FileType.File]]);
+          if (p.endsWith('/2025')) return Promise.resolve([['01', FileType.Directory]]);
+          if (p.endsWith('/2026')) return Promise.resolve([['02', FileType.Directory]]);
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([
+              ['2025', FileType.Directory],
+              ['2026', FileType.Directory],
+            ]);
+          return Promise.resolve([]);
+        });
 
       const service = createService();
       service.start(DEFAULT_CONFIG);
@@ -66,7 +79,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
       );
       expect(logger.info).toHaveBeenCalledWith(
         expect.stringContaining(
-          'Removed duplicate archive: 202501010000-claude-code-abc.md'
+          'Removed duplicate archive: 2025/01/202501010000-claude-code-abc.md'
         )
       );
 
@@ -74,11 +87,26 @@ describe('AgentSessionArchiveService – deduplication', () => {
     });
 
     it('should handle three or more duplicates keeping only the newest', async () => {
-      workspace.fs.readDirectory = vi.fn().mockResolvedValue([
-        ['202501010000-cline-task1.md', FileType.File],
-        ['202503150000-cline-task1.md', FileType.File],
-        ['202502100000-cline-task1.md', FileType.File],
-      ]);
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/2025/01'))
+            return Promise.resolve([['202501010000-cline-task1.md', FileType.File]]);
+          if (p.endsWith('/2025/02'))
+            return Promise.resolve([['202502100000-cline-task1.md', FileType.File]]);
+          if (p.endsWith('/2025/03'))
+            return Promise.resolve([['202503150000-cline-task1.md', FileType.File]]);
+          if (p.endsWith('/2025'))
+            return Promise.resolve([
+              ['01', FileType.Directory],
+              ['02', FileType.Directory],
+              ['03', FileType.Directory],
+            ]);
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([['2025', FileType.Directory]]);
+          return Promise.resolve([]);
+        });
 
       const service = createService();
       service.start(DEFAULT_CONFIG);
@@ -101,10 +129,23 @@ describe('AgentSessionArchiveService – deduplication', () => {
     });
 
     it('should not remove files with unique archiveNames', async () => {
-      workspace.fs.readDirectory = vi.fn().mockResolvedValue([
-        ['202501010000-claude-code-abc.md', FileType.File],
-        ['202502010000-cline-task1.md', FileType.File],
-      ]);
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/2025/01'))
+            return Promise.resolve([['202501010000-claude-code-abc.md', FileType.File]]);
+          if (p.endsWith('/2025/02'))
+            return Promise.resolve([['202502010000-cline-task1.md', FileType.File]]);
+          if (p.endsWith('/2025'))
+            return Promise.resolve([
+              ['01', FileType.Directory],
+              ['02', FileType.Directory],
+            ]);
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([['2025', FileType.Directory]]);
+          return Promise.resolve([]);
+        });
 
       const service = createService();
       service.start(DEFAULT_CONFIG);
@@ -140,10 +181,24 @@ describe('AgentSessionArchiveService – deduplication', () => {
     });
 
     it('should skip non-file entries', async () => {
-      workspace.fs.readDirectory = vi.fn().mockResolvedValue([
-        ['202501010000-claude-code-abc.md', FileType.File],
-        ['202602150930-claude-code-abc.md', FileType.Directory],
-      ]);
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/2025/01'))
+            return Promise.resolve([['202501010000-claude-code-abc.md', FileType.File]]);
+          if (p.endsWith('/2025'))
+            return Promise.resolve([
+              ['01', FileType.Directory],
+              ['notmonth', FileType.Directory],
+            ]);
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([
+              ['2025', FileType.Directory],
+              ['notayear', FileType.Directory],
+            ]);
+          return Promise.resolve([]);
+        });
 
       const service = createService();
       service.start(DEFAULT_CONFIG);
@@ -155,11 +210,21 @@ describe('AgentSessionArchiveService – deduplication', () => {
     });
 
     it('should skip files not matching the archive name pattern', async () => {
-      workspace.fs.readDirectory = vi.fn().mockResolvedValue([
-        ['README.md', FileType.File],
-        ['no-timestamp-prefix.md', FileType.File],
-        ['202501010000-claude-code-abc.md', FileType.File],
-      ]);
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/2025/01'))
+            return Promise.resolve([
+              ['README.md', FileType.File],
+              ['no-timestamp-prefix.md', FileType.File],
+              ['202501010000-claude-code-abc.md', FileType.File],
+            ]);
+          if (p.endsWith('/2025')) return Promise.resolve([['01', FileType.Directory]]);
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([['2025', FileType.Directory]]);
+          return Promise.resolve([]);
+        });
 
       const service = createService();
       service.start(DEFAULT_CONFIG);
@@ -173,10 +238,18 @@ describe('AgentSessionArchiveService – deduplication', () => {
 
   describe('map hydration', () => {
     it('should hydrate lastArchivedMap so archiveSession deletes old file', async () => {
-      // Archive directory has an existing file from a previous run
+      // Archive directory has an existing file from a previous run, already under 2025/01/
       workspace.fs.readDirectory = vi
         .fn()
-        .mockResolvedValue([['202501010000-test-session.json', FileType.File]]);
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/2025/01'))
+            return Promise.resolve([['202501010000-test-session.json', FileType.File]]);
+          if (p.endsWith('/2025')) return Promise.resolve([['01', FileType.Directory]]);
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([['2025', FileType.Directory]]);
+          return Promise.resolve([]);
+        });
 
       const service = createService();
       service.start(DEFAULT_CONFIG);
@@ -214,10 +287,29 @@ describe('AgentSessionArchiveService – deduplication', () => {
 
   describe('dedup flag', () => {
     it('should run dedup only on first cycle after start', async () => {
-      workspace.fs.readDirectory = vi.fn().mockResolvedValue([
-        ['202501010000-claude-code-abc.md', FileType.File],
-        ['202602150930-claude-code-abc.md', FileType.File],
-      ]);
+      // `start()` fires a runArchiveCycle as a microtask before the test awaits the
+      // second one, so two dedup invocations can race on the readDirectory mock.
+      // Use mockImplementation keyed on fsPath to return consistent values across
+      // any number of calls, then rely on _needsDedup to suppress the second-cycle
+      // re-entry on dedup.
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const path = uri.fsPath;
+          if (path.endsWith('/2025/01')) {
+            return Promise.resolve([
+              ['202501010000-claude-code-abc.md', FileType.File],
+              ['202602150930-claude-code-abc.md', FileType.File],
+            ]);
+          }
+          if (path.endsWith('/2025')) {
+            return Promise.resolve([['01', FileType.Directory]]);
+          }
+          if (path.endsWith('/agent-sessions')) {
+            return Promise.resolve([['2025', FileType.Directory]]);
+          }
+          return Promise.resolve([]);
+        });
 
       const service = createService();
       service.start(DEFAULT_CONFIG);
@@ -227,22 +319,34 @@ describe('AgentSessionArchiveService – deduplication', () => {
       expect(workspace.fs.delete).toHaveBeenCalled();
 
       vi.mocked(workspace.fs.delete).mockClear();
-      workspace.fs.readDirectory = vi
-        .fn()
-        .mockResolvedValue([['202602150930-claude-code-abc.md', FileType.File]]);
-
-      // Second cycle — dedup does not run
+      vi.mocked(workspace.fs.readDirectory).mockClear();
+      // Second cycle: dedup is skipped (_needsDedup is false). No further readDirectory calls.
       await service.runArchiveCycle();
       expect(workspace.fs.delete).not.toHaveBeenCalled();
+      expect(workspace.fs.readDirectory).not.toHaveBeenCalled();
 
       service.dispose();
     });
 
     it('should reset dedup flag on each start call', async () => {
-      workspace.fs.readDirectory = vi.fn().mockResolvedValue([
-        ['202501010000-claude-code-abc.md', FileType.File],
-        ['202602150930-claude-code-abc.md', FileType.File],
-      ]);
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const path = uri.fsPath;
+          if (path.endsWith('/2025/01')) {
+            return Promise.resolve([
+              ['202501010000-claude-code-abc.md', FileType.File],
+              ['202602150930-claude-code-abc.md', FileType.File],
+            ]);
+          }
+          if (path.endsWith('/2025')) {
+            return Promise.resolve([['01', FileType.Directory]]);
+          }
+          if (path.endsWith('/agent-sessions')) {
+            return Promise.resolve([['2025', FileType.Directory]]);
+          }
+          return Promise.resolve([]);
+        });
 
       const service = createService();
       service.start(DEFAULT_CONFIG);

@@ -168,6 +168,26 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
 
+    it('should write archive file into YYYY/MM subdirectory', async () => {
+      // ctime 1_609_459_200_000 = 2021-01-01T00:00:00.000Z → timestamp 202101010000
+      const session = createMockSession({ ctime: 1_609_459_200_000, mtime: 1500 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.runArchiveCycle();
+
+      const copyCall = vi.mocked(workspace.fs.copy).mock.calls[0]!;
+      const destPath = (copyCall[1] as { fsPath: string }).fsPath;
+      expect(destPath).toContain('2021/01/202101010000-test-session.json');
+
+      service.dispose();
+    });
+
     it('should skip files with unchanged mtime', async () => {
       const session = createMockSession({ mtime: 1000 });
       const provider = createMockProvider([session]);
@@ -379,17 +399,36 @@ describe('AgentSessionArchiveService', () => {
     });
 
     it('should reprocess a session whose archive was hydrated from disk with mtime 0, then skip it on the second cycle', async () => {
-      // Simulate an existing archive file on disk for 'copilot-chat-test-session'.
-      // deduplicateAndHydrate will store { mtime: 0 } for this archiveName.
+      // Source session fixture: ctime is the file's CREATION time; mtime is the file's MODIFICATION time.
+      // Both belong to March 2026 — same year/month as the hydrated archive — so the new write
+      // produced by archiveSession lands in the same '2026/03/' subdirectory as the deleted hydrated file.
+      const SESSION_CTIME = Date.UTC(2026, 2, 9, 5, 13, 0); // 2026-03-09T05:13:00Z → timestamp 202603090513
+      const SESSION_MTIME = Date.UTC(2026, 2, 9, 6, 0, 0); // 2026-03-09T06:00:00Z (newer than hydrated mtime=0)
+      const HYDRATED_ARCHIVE_RELATIVE =
+        '2026/03/202603090513-copilot-chat-test-session.md';
+
+      // Hydrated archive lives at /workspace/docs/archive/agent-sessions/2026/03/...md
       workspace.fs.readDirectory = vi
         .fn()
-        .mockResolvedValue([['202603090513-copilot-chat-test-session.md', 1]]);
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/2026/03'))
+            return Promise.resolve([
+              ['202603090513-copilot-chat-test-session.md', 1 /* File */],
+            ]);
+          if (p.endsWith('/2026')) return Promise.resolve([['03', 2 /* Directory */]]);
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([['2026', 2 /* Directory */]]);
+          return Promise.resolve([]);
+        });
 
       const session = createMockSession({
         archiveName: 'copilot-chat-test-session',
-        mtime: 1000,
         providerName: 'test-provider',
-        extension: '.json',
+        displayName: 'Copilot Chat Test Session',
+        ctime: SESSION_CTIME,
+        mtime: SESSION_MTIME,
+        extension: '.md',
       });
       const provider = createMockProvider([session]);
       workspace.fs.copy = vi.fn().mockResolvedValue(undefined);
@@ -401,15 +440,24 @@ describe('AgentSessionArchiveService', () => {
       );
       service.start(DEFAULT_CONFIG);
 
-      // First cycle: deduplicateAndHydrate stored mtime: 0, source mtime is 1000.
-      // Guard (entry?.mtime === session.mtime) → 0 !== 1000 → re-processes.
+      // First cycle: hydration stores mtime: 0, source mtime is SESSION_MTIME → re-processes.
       await service.runArchiveCycle();
-      expect(workspace.fs.copy).toHaveBeenCalled();
 
-      // Second cycle: lastArchivedMap now stores mtime: 1000, source mtime is still 1000.
-      // Guard (entry?.mtime === session.mtime) → 1000 === 1000 → skips.
+      // Hydrated archive was deleted (full relative path).
+      const deleteCalls = vi.mocked(workspace.fs.delete).mock.calls;
+      const deletedPaths = deleteCalls.map((c) => (c[0] as { fsPath: string }).fsPath);
+      expect(deletedPaths.some((p) => p.endsWith(HYDRATED_ARCHIVE_RELATIVE))).toBe(true);
+
+      // New archive written to the same year/month via copyRawArchive (no parser for 'test-provider').
+      const copyCalls = vi.mocked(workspace.fs.copy).mock.calls;
+      const copyDests = copyCalls.map((c) => (c[1] as { fsPath: string }).fsPath);
+      expect(copyDests.some((p) => p.endsWith(HYDRATED_ARCHIVE_RELATIVE))).toBe(true);
+
+      // Second cycle: mtime matches → skips, no delete and no copy.
+      vi.mocked(workspace.fs.delete).mockClear();
       vi.mocked(workspace.fs.copy).mockClear();
       await service.runArchiveCycle();
+      expect(workspace.fs.delete).not.toHaveBeenCalled();
       expect(workspace.fs.copy).not.toHaveBeenCalled();
 
       service.dispose();
@@ -448,6 +496,46 @@ describe('AgentSessionArchiveService', () => {
       await service.runArchiveCycle();
 
       expect(workspace.fs.writeFile).toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should ensure each YYYY/MM directory only once across multiple sessions in the same month', async () => {
+      // Both sessions resolve to 2021/01 (ctime 2021-01-01T00:00:00Z → 202101010000).
+      const sessionA = createMockSession({
+        archiveName: 'session-a',
+        displayName: 'Session A',
+        ctime: 1_609_459_200_000,
+        mtime: 1000,
+      });
+      const sessionB = createMockSession({
+        archiveName: 'session-b',
+        displayName: 'Session B',
+        ctime: 1_609_459_200_000,
+        mtime: 2000,
+      });
+      const provider = createMockProvider([sessionA, sessionB]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      // Bypass start() to avoid the fire-and-forget cycle that would race the
+      // awaited cycle through ensureDirectory and double-count createDirectory calls.
+      // The test exercises the per-cycle cache behavior on a single sequential cycle.
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+      (service as unknown as { _needsDedup: boolean })._needsDedup = false;
+
+      await service.runArchiveCycle();
+
+      const monthDirCalls = vi
+        .mocked(workspace.fs.createDirectory)
+        .mock.calls.filter(([u]) =>
+          (u as { fsPath: string }).fsPath.endsWith('/2021/01')
+        );
+      expect(monthDirCalls.length).toBe(1);
 
       service.dispose();
     });
@@ -495,7 +583,21 @@ describe('AgentSessionArchiveService', () => {
     });
 
     it('should move archive when path changes', async () => {
-      workspace.fs.readDirectory = vi.fn().mockResolvedValue([['file1.json', 1]]);
+      // moveArchive walks two levels (YYYY/MM/file). Use mockImplementation keyed on
+      // fsPath so the fire-and-forget cycle from start() and moveArchive's traversal
+      // (which both read the same paths) get consistent results regardless of order.
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/docs/archive/agent-sessions/2026/05'))
+            return Promise.resolve([['202605010000-file.md', 1 /* File */]]);
+          if (p.endsWith('/docs/archive/agent-sessions/2026'))
+            return Promise.resolve([['05', 2 /* Directory */]]);
+          if (p.endsWith('/docs/archive/agent-sessions'))
+            return Promise.resolve([['2026', 2 /* Directory */]]);
+          return Promise.resolve([]);
+        });
       const provider = createMockProvider();
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
@@ -508,6 +610,12 @@ describe('AgentSessionArchiveService', () => {
       await service.reconfigure(DEFAULT_CONFIG, newConfig, vi.fn());
 
       expect(workspace.fs.copy).toHaveBeenCalled();
+      const copyDests = vi
+        .mocked(workspace.fs.copy)
+        .mock.calls.map((c) => (c[1] as { fsPath: string }).fsPath);
+      expect(copyDests.some((p) => p.endsWith('2026/05/202605010000-file.md'))).toBe(
+        true
+      );
       expect(workspace.fs.delete).toHaveBeenCalled();
       expect(logger.info).toHaveBeenCalledWith(
         expect.stringContaining('Moved archive from')
@@ -644,6 +752,61 @@ describe('AgentSessionArchiveService', () => {
       );
 
       startSpy.mockRestore();
+      service.dispose();
+    });
+
+    it('should leave the source archive in place when any copy fails during moveArchive', async () => {
+      // moveArchive walks two levels of oldUri. Use mockImplementation keyed on
+      // fsPath so the fire-and-forget cycle from start() and moveArchive's traversal
+      // both get consistent results regardless of interleaving.
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/docs/archive/agent-sessions/2026/05'))
+            return Promise.resolve([
+              ['file-a.md', 1 /* File */],
+              ['file-b.md', 1 /* File */],
+            ]);
+          if (p.endsWith('/docs/archive/agent-sessions/2026'))
+            return Promise.resolve([['05', 2 /* Directory */]]);
+          if (p.endsWith('/docs/archive/agent-sessions'))
+            return Promise.resolve([['2026', 2 /* Directory */]]);
+          return Promise.resolve([]);
+        });
+      // First moveArchive copy fails; subsequent copies succeed. The bare archiving
+      // copies (Cycle A/Cycle B archiveFromProviders) won't run because provider is empty.
+      workspace.fs.copy = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('disk full'))
+        .mockResolvedValue(undefined);
+      workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
+      workspace.fs.createDirectory = vi.fn().mockResolvedValue(undefined);
+
+      const provider = createMockProvider();
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      service.start(DEFAULT_CONFIG);
+
+      await service.reconfigure(
+        DEFAULT_CONFIG,
+        { ...DEFAULT_CONFIG, archivePath: 'new/path' },
+        vi.fn()
+      );
+
+      // The source-root delete (the moveArchive recursive cleanup) must NOT happen.
+      const deleteCalls = vi.mocked(workspace.fs.delete).mock.calls;
+      const sourceRootDelete = deleteCalls.find(([u]) =>
+        (u as { fsPath: string }).fsPath.endsWith('/docs/archive/agent-sessions')
+      );
+      expect(sourceRootDelete).toBeUndefined();
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('left source archive in place')
+      );
+
       service.dispose();
     });
   });

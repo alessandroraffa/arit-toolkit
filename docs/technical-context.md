@@ -427,6 +427,7 @@ flags are never modified by the global toggle.
   +-----------------------+
 
   lastArchivedMap: Map<archiveName, { mtime, archiveFileName }>
+  (archiveFileName is YYYY/MM/YYYYMMDDHHmm-name.ext relative to archiveUri)
 ```
 
 **Workspace filtering:** Each provider filters discovered sessions to
@@ -501,9 +502,16 @@ patched extension automatically re-archives previously affected sessions
 on its first cycle without requiring any persistent flag or manual
 intervention.
 
-**Archive file naming:** `{YYYYMMDDHHmm}-{archiveName}{extension}`,
+**Archive file naming:** `{YYYY}/{MM}/{YYYYMMDDHHmm}-{archiveName}{extension}`,
 where the timestamp is derived from the session file's creation time
-(`ctime`), not the modification time or the current time.
+(`ctime`), not the modification time or the current time. `YYYY` and
+`MM` are extracted as `timestamp.substring(0,4)` and
+`timestamp.substring(4,6)` from the `generateTimestamp('YYYYMMDDHHmm',
+...)` result. The `archiveFileName` stored in `lastArchivedMap` is the
+full path relative to `archiveUri` (e.g.,
+`2026/05/202605251830-foo.md`) so that delete and replace operations
+resolve correctly via
+`vscode.Uri.joinPath(archiveUri, entry.archiveFileName)`.
 
 **Cycle observability:** `runArchiveCycle()` emits `debug`-level log
 entries at cycle start and end. `archiveSession()` emits a `debug`-level

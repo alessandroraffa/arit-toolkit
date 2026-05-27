@@ -438,15 +438,15 @@ Read `test/unit/features/agentSessionsArchiving/archiveService.test.ts` in full 
 - [x] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. If any check fails, fix the failure before proceeding — do not commit with a failing quality gate.
 - [x] Commit `src/features/agentSessionsArchiving/archiveService.ts`, `src/features/agentSessionsArchiving/index.ts`, `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, `docs/technical-context.md`, and this workstream file with message: `refactor(archiving): extend reconfigure to invoke gitignore prompt on archivePath change`. Type is `refactor:` (not `feat:`) because Activity 2 extends an existing API surface (`reconfigure` signature) and wires an already-existing feature (the prompt, introduced in Activity 1) into an additional call site. No new user-facing capability is introduced standalone by this commit. Semantic-release rule mapping (per `.releaserc.json` and `technical-context.md` section 8.10): `refactor:` → patch bump. This avoids producing three consecutive minor bumps when the workstream conceptually delivers a single feature pair — see F-012 of the Phase 2 review for rationale.
 
-### [ ] Activity 3: Introduce YYYY/MM layout in write, hydrate, and move operations
+### [x] Activity 3: Introduce YYYY/MM layout in write, hydrate, and move operations
 
-#### [ ] Task 3.1: Add `runArchiveCycle` validation guard and update `writeArchiveFile`/`copyRawArchive` to write into `archivePath/YYYY/MM/`
+#### [x] Task 3.1: Add `runArchiveCycle` validation guard and update `writeArchiveFile`/`copyRawArchive` to write into `archivePath/YYYY/MM/`
 
 Read `src/features/agentSessionsArchiving/archiveService.ts` in full before making any change.
 
-- [ ] Add the import at the top of `src/features/agentSessionsArchiving/archiveService.ts`: `import { validateArchivePath } from './archivePathValidation';`.
+- [x] Add the import at the top of `src/features/agentSessionsArchiving/archiveService.ts`: `import { validateArchivePath } from './archivePathValidation';`.
 
-- [ ] In `runArchiveCycle` (line 73), insert a validation guard immediately after the `if (!this._currentConfig) { return; }` guard and before `this.logger.debug('Archive cycle starting');`:
+- [x] In `runArchiveCycle` (line 73), insert a validation guard immediately after the `if (!this._currentConfig) { return; }` guard and before `this.logger.debug('Archive cycle starting');`:
 
   ```typescript
   const validation = validateArchivePath(this._currentConfig.archivePath);
@@ -460,7 +460,7 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
 
   This guard runs once per cycle (every `intervalMinutes` minutes) and once on `start()`. If the path is invalid, the entire cycle is a no-op: no migration, no dedup/hydrate, no write to `archiveUri`. The timer continues to fire but each iteration short-circuits at the guard. The user-visible effect is the `warn` log; the user fixes their `.tangyr.jsonc` and the next cycle succeeds.
 
-- [ ] In `writeArchiveFile` (line 157), the `timestamp` parameter already contains the 12-char `YYYYMMDDHHmm` string. Before computing `mdFileName`, add:
+- [x] In `writeArchiveFile` (line 157), the `timestamp` parameter already contains the 12-char `YYYYMMDDHHmm` string. Before computing `mdFileName`, add:
 
   ```typescript
   const yyyy = timestamp.substring(0, 4);
@@ -472,7 +472,7 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
 
   Replace the existing `const mdFileName = \`${timestamp}-${session.archiveName}.md\`;`(line 191) with the above block. Replace`const mdUri = vscode.Uri.joinPath(archiveUri, mdFileName);`(line 192) with`const mdUri = vscode.Uri.joinPath(archiveUri, yyyy, mm, \`${timestamp}-${session.archiveName}.md\`);`.
 
-- [ ] In `copyRawArchive` (line 213), add the same year/month derivation and subdirectory creation before computing `rawFileName`:
+- [x] In `copyRawArchive` (line 213), add the same year/month derivation and subdirectory creation before computing `rawFileName`:
 
   ```typescript
   const yyyy = timestamp.substring(0, 4);
@@ -490,11 +490,11 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
 
   Replace the existing `const rawFileName = ...` (line 218) and `const destUri = vscode.Uri.joinPath(archiveUri, rawFileName);` (line 219) with the above block.
 
-- [ ] The `lastArchivedMap.set(session.archiveName, { mtime: session.mtime, archiveFileName })` calls in `archiveSession` (lines 144 and 151) store the value returned from `writeArchiveFile`. Because `writeArchiveFile` now returns `'YYYY/MM/YYYYMMDDHHmm-name.ext'` or `undefined`, and `copyRawArchive` also returns the relative path, the `lastArchivedMap` will automatically store the correct relative path. No change is needed in `archiveSession` itself.
+- [x] The `lastArchivedMap.set(session.archiveName, { mtime: session.mtime, archiveFileName })` calls in `archiveSession` (lines 144 and 151) store the value returned from `writeArchiveFile`. Because `writeArchiveFile` now returns `'YYYY/MM/YYYYMMDDHHmm-name.ext'` or `undefined`, and `copyRawArchive` also returns the relative path, the `lastArchivedMap` will automatically store the correct relative path. No change is needed in `archiveSession` itself.
 
-- [ ] The delete call `await this.deleteFile(vscode.Uri.joinPath(archiveUri, entry.archiveFileName))` in `archiveSession` (line 139) continues to work because `vscode.Uri.joinPath` resolves path segments including `/` separators in a string. Verify: `vscode.Uri.joinPath(base, '2026/05/file.md')` is equivalent to `vscode.Uri.joinPath(base, '2026', '05', 'file.md')`. This is confirmed by the VS Code API. No change needed.
+- [x] The delete call `await this.deleteFile(vscode.Uri.joinPath(archiveUri, entry.archiveFileName))` in `archiveSession` (line 139) continues to work because `vscode.Uri.joinPath` resolves path segments including `/` separators in a string. Verify: `vscode.Uri.joinPath(base, '2026/05/file.md')` is equivalent to `vscode.Uri.joinPath(base, '2026', '05', 'file.md')`. This is confirmed by the VS Code API. No change needed.
 
-- [ ] Add a private field for the ensured-directory cache on `AgentSessionArchiveService`. Insert the following block immediately after `private _needsDedup = true;` (line 18):
+- [x] Add a private field for the ensured-directory cache on `AgentSessionArchiveService`. Insert the following block immediately after `private _needsDedup = true;` (line 18):
 
   ```typescript
   /**
@@ -508,7 +508,7 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
 
   Rationale: the new `await this.ensureDirectory(monthUri)` call introduced in `writeArchiveFile` and `copyRawArchive` fires on every session write. Without a cache, the same YYYY/MM directory is re-ensured for every session archived in that month, producing N redundant `vscode.workspace.fs.createDirectory` calls and N "already exists" errors swallowed by the existing `ensureDirectory` catch. The cache reduces this to one `createDirectory` per distinct directory URI per service lifetime.
 
-- [ ] Replace the body of `ensureDirectory` (lines 309–315) with the cache-aware version:
+- [x] Replace the body of `ensureDirectory` (lines 309–315) with the cache-aware version:
 
   ```typescript
   private async ensureDirectory(uri: vscode.Uri): Promise<void> {
@@ -527,7 +527,7 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
 
   Caching is keyed on `uri.fsPath` (not `uri.toString()`): `fsPath` is the canonical local-filesystem path form for `vscode.Uri`, equally unique in production and consistent with the test mock at `test/unit/mocks/vscode.ts` (which exposes URIs as `{ fsPath: ... }` plain objects without a `toString()` override). Using `toString()` here would silently mis-key under tests (all URIs would collapse to the literal `'[object Object]'` string). The cache is populated only on successful `createDirectory` so that a transient failure (e.g., permission error) does not poison the cache; the next call retries.
 
-- [ ] Clear the cache at the start of `start()` so reconfigure cycles begin with a fresh view of the filesystem. Insert `this.ensuredDirectories.clear();` as the second statement of `start()` (immediately after `this.stop();` at line 31). The resulting prefix of `start()` is:
+- [x] Clear the cache at the start of `start()` so reconfigure cycles begin with a fresh view of the filesystem. Insert `this.ensuredDirectories.clear();` as the second statement of `start()` (immediately after `this.stop();` at line 31). The resulting prefix of `start()` is:
 
   ```typescript
   public start(config: AgentSessionsArchivingConfig): void {
@@ -540,13 +540,13 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
 
   Rationale: `reconfigure` calls `start()` after `moveArchive`, so any URIs cached during the move (under the new path) are intentionally discarded; the first cycle after start re-ensures and re-populates the cache. This keeps `moveArchive` and `migrateFlatLayout` free of bespoke cache-invalidation logic.
 
-#### [ ] Task 3.2: Add `migrateFlatLayout` method, then update `deduplicateAndHydrate` and `groupArchiveFiles` to scan year/month subdirectories
+#### [x] Task 3.2: Add `migrateFlatLayout` method, then update `deduplicateAndHydrate` and `groupArchiveFiles` to scan year/month subdirectories
 
 Read `src/features/agentSessionsArchiving/archiveService.ts` in full before making any change.
 
 The `migrateFlatLayout` method MUST be added before the `deduplicateAndHydrate` rewrite, because the new body of `deduplicateAndHydrate` calls it. Adding the call site without the method would fail TypeScript compilation and break the Activity 3 commit's quality gate.
 
-- [ ] Add the following private method to `AgentSessionArchiveService` immediately before `deduplicateAndHydrate` in the file (insert at line 256, pushing the existing `deduplicateAndHydrate` definition downward). The method body is final — do not modify it when test coverage is added in Activity 4.
+- [x] Add the following private method to `AgentSessionArchiveService` immediately before `deduplicateAndHydrate` in the file (insert at line 256, pushing the existing `deduplicateAndHydrate` definition downward). The method body is final — do not modify it when test coverage is added in Activity 4.
 
   ```typescript
   private async migrateFlatLayout(
@@ -583,7 +583,7 @@ The `migrateFlatLayout` method MUST be added before the `deduplicateAndHydrate` 
   }
   ```
 
-- [ ] Replace the body of `deduplicateAndHydrate` (lines 256–273) with a new implementation that: (a) reads the top-level entries of `archiveUri`; (b) for each entry that is a `FileType.Directory` and whose name matches `/^\d{4}$/` (a four-digit year), reads that directory's entries and for each sub-entry that is a `FileType.Directory` and whose name matches `/^\d{2}$/` (a two-digit month), reads that directory's entries and appends each file entry as a tuple `[${year}/${month}/${name}`, type]`to a combined files list; (c) calls`this.groupArchiveFiles(combinedEntries)`where`combinedEntries`contains only file-type entries with paths relative to`archiveUri`(e.g.,`'2026/05/202605251830-foo.md'`). The rest of the dedup/hydrate logic (grouping, removeDuplicates, lastArchivedMap set) remains unchanged.`ReadDirectory`errors at any level are caught and logged at`debug` level; failures reading a single year or month directory do not abort the whole hydration.
+- [x] Replace the body of `deduplicateAndHydrate` (lines 256–273) with a new implementation that: (a) reads the top-level entries of `archiveUri`; (b) for each entry that is a `FileType.Directory` and whose name matches `/^\d{4}$/` (a four-digit year), reads that directory's entries and for each sub-entry that is a `FileType.Directory` and whose name matches `/^\d{2}$/` (a two-digit month), reads that directory's entries and appends each file entry as a tuple `[${year}/${month}/${name}`, type]`to a combined files list; (c) calls`this.groupArchiveFiles(combinedEntries)`where`combinedEntries`contains only file-type entries with paths relative to`archiveUri`(e.g.,`'2026/05/202605251830-foo.md'`). The rest of the dedup/hydrate logic (grouping, removeDuplicates, lastArchivedMap set) remains unchanged.`ReadDirectory`errors at any level are caught and logged at`debug` level; failures reading a single year or month directory do not abort the whole hydration.
 
   The new body is:
 
@@ -648,7 +648,7 @@ The `migrateFlatLayout` method MUST be added before the `deduplicateAndHydrate` 
   }
   ```
 
-- [ ] Update `groupArchiveFiles` (lines 275–293) so that `PATTERN` matches paths including the year/month prefix. Replace the existing `const PATTERN = /^(\d{12})-(.+)\.\w+$/;` with the following block (the leading comment is mandatory — it documents that the optional prefix is defensive, not currently exercised after a successful migration sweep, and explains the conditions for safe removal):
+- [x] Update `groupArchiveFiles` (lines 275–293) so that `PATTERN` matches paths including the year/month prefix. Replace the existing `const PATTERN = /^(\d{12})-(.+)\.\w+$/;` with the following block (the leading comment is mandatory — it documents that the optional prefix is defensive, not currently exercised after a successful migration sweep, and explains the conditions for safe removal):
 
   ```typescript
   // Optional YYYY/MM/ prefix retained as defense-in-depth: it covers the
@@ -663,11 +663,11 @@ The `migrateFlatLayout` method MUST be added before the `deduplicateAndHydrate` 
 
   This allows both `2026/05/202605251830-foo.md` and the legacy flat form `202605251830-foo.md` to be grouped. The `name` in the returned group entry must be the full relative path (including `YYYY/MM/` prefix) so that `removeDuplicates` and `lastArchivedMap` entries reference the correct path. Update the `list.push({ ts: m[1], name });` line to push `{ ts: m[1] as string, name }` where `name` is the first element of the `[name, type]` tuple (unchanged — it is already the relative path in `combined`).
 
-#### [ ] Task 3.3: Update `moveArchive` to recurse into YYYY subdirectories
+#### [x] Task 3.3: Update `moveArchive` to recurse into YYYY subdirectories
 
 Read `src/features/agentSessionsArchiving/archiveService.ts` in full before making any change.
 
-- [ ] Replace the body of `moveArchive` (lines 230–253) with a new implementation that: (a) validates `oldPath` and `newPath` with `validateArchivePath` — on failure of either, logs at `warn` and returns without touching the filesystem; (b) reads the top-level entries of `oldUri`; (c) tracks a local `let allCopiesSucceeded = true;` flag that any per-file copy or year/month directory read failure sets to `false`; (d) for each entry that is a `FileType.File`, copies it directly to `newUri/filename` with `{ overwrite: true }` (existing flat layout fallback); (e) for each entry that is a `FileType.Directory` and whose name matches `/^\d{4}$/`, reads that directory's entries and for each sub-entry that is a `FileType.Directory` and whose name matches `/^\d{2}$/`, reads that month directory's entries and for each `FileType.File` entry, copies it to `vscode.Uri.joinPath(newUri, yyyy, mm, fileName)` with `{ overwrite: true }` (ensuring the target `YYYY/MM/` directory is created via `ensureDirectory` before the first copy in each month). After all copies are attempted, **deletes `oldUri` recursively only when `allCopiesSucceeded` is `true`**; otherwise logs a single explicit warn message instructing the user to manually verify the target tree before cleaning up the source. If `readDirectory(oldUri)` throws (directory not found), logs at `debug` and returns. Individual file copy failures and individual year/month read failures are logged at `warn`, flip `allCopiesSucceeded` to `false`, and do not abort the move loop — every reachable file is given a chance to be copied. The `{ overwrite: true }` option matches the migration semantics (Task 3.2's `migrateFlatLayout`) and lets a re-run of the reconfigure recover from a previously failed partial move without colliding on existing destinations. The conditional source delete addresses the data-loss vector identified by the review gate (F-001 / BK-001 / GR-001) and aligns the failure semantics of `moveArchive` with `migrateFlatLayout` (both: copy failure → leave source in place).
+- [x] Replace the body of `moveArchive` (lines 230–253) with a new implementation that: (a) validates `oldPath` and `newPath` with `validateArchivePath` — on failure of either, logs at `warn` and returns without touching the filesystem; (b) reads the top-level entries of `oldUri`; (c) tracks a local `let allCopiesSucceeded = true;` flag that any per-file copy or year/month directory read failure sets to `false`; (d) for each entry that is a `FileType.File`, copies it directly to `newUri/filename` with `{ overwrite: true }` (existing flat layout fallback); (e) for each entry that is a `FileType.Directory` and whose name matches `/^\d{4}$/`, reads that directory's entries and for each sub-entry that is a `FileType.Directory` and whose name matches `/^\d{2}$/`, reads that month directory's entries and for each `FileType.File` entry, copies it to `vscode.Uri.joinPath(newUri, yyyy, mm, fileName)` with `{ overwrite: true }` (ensuring the target `YYYY/MM/` directory is created via `ensureDirectory` before the first copy in each month). After all copies are attempted, **deletes `oldUri` recursively only when `allCopiesSucceeded` is `true`**; otherwise logs a single explicit warn message instructing the user to manually verify the target tree before cleaning up the source. If `readDirectory(oldUri)` throws (directory not found), logs at `debug` and returns. Individual file copy failures and individual year/month read failures are logged at `warn`, flip `allCopiesSucceeded` to `false`, and do not abort the move loop — every reachable file is given a chance to be copied. The `{ overwrite: true }` option matches the migration semantics (Task 3.2's `migrateFlatLayout`) and lets a re-run of the reconfigure recover from a previously failed partial move without colliding on existing destinations. The conditional source delete addresses the data-loss vector identified by the review gate (F-001 / BK-001 / GR-001) and aligns the failure semantics of `moveArchive` with `migrateFlatLayout` (both: copy failure → leave source in place).
 
   The new body is:
 
@@ -776,15 +776,15 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
   }
   ```
 
-#### [ ] Task 3.4: Add unit tests for YYYY/MM layout writes, hydration, and recursive move
+#### [x] Task 3.4: Add unit tests for YYYY/MM layout writes, hydration, and recursive move
 
 Read `test/unit/features/agentSessionsArchiving/archiveService.test.ts` in full before making any change.
 
-- [ ] Inside `describe('runArchiveCycle', ...)`, add the following test after the existing `'should use session ctime for archive filename timestamp'` test:
+- [x] Inside `describe('runArchiveCycle', ...)`, add the following test after the existing `'should use session ctime for archive filename timestamp'` test:
 
   `'should write archive file into YYYY/MM subdirectory'`: uses `ctime: 1_609_459_200_000` (2021-01-01T00:00:00Z → timestamp `202101010000`); calls `service.start(DEFAULT_CONFIG)` and `await service.runArchiveCycle()`; retrieves the `workspace.fs.copy` call's destination path; asserts the path contains `'2021/01/202101010000-test-session.json'`.
 
-- [ ] Inside `describe('runArchiveCycle', ...)`, **redesign** the existing test `'should reprocess a session whose archive was hydrated from disk with mtime 0, then skip it on the second cycle'`. The redesign aligns the source session's `ctime` to the same year/month as the hydrated archive path, so both the old (hydrated) path and the new (rewritten) path resolve to the same `YYYY/MM/` subdirectory. This eliminates the "path mismatch by accident" property of the previous fixture and makes the test exercise the intended `archiveSession` replacement flow end-to-end. Replace the test body with the following structure (preserving the test name and surrounding `describe` block):
+- [x] Inside `describe('runArchiveCycle', ...)`, **redesign** the existing test `'should reprocess a session whose archive was hydrated from disk with mtime 0, then skip it on the second cycle'`. The redesign aligns the source session's `ctime` to the same year/month as the hydrated archive path, so both the old (hydrated) path and the new (rewritten) path resolve to the same `YYYY/MM/` subdirectory. This eliminates the "path mismatch by accident" property of the previous fixture and makes the test exercise the intended `archiveSession` replacement flow end-to-end. Replace the test body with the following structure (preserving the test name and surrounding `describe` block):
   - **Constants at the top of the test body** (clarifies the choreography):
 
     ```typescript
@@ -841,7 +841,7 @@ Read `test/unit/features/agentSessionsArchiving/archiveService.test.ts` in full 
 
   This redesign produces a test that passes by design — every path the test references (hydrated `2026/03/…`, new write to the same `2026/03/…`, second-cycle skip) is computed from the constants at the top and is self-consistent with the new code under test.
 
-- [ ] Inside `describe('reconfigure', ...)`, update the existing `'should move archive when path changes'` test to verify the new two-level walk. `reconfigure` calls `moveArchive` (three sequential `readDirectory` calls on the old path) and then `start(newConfig)`, which immediately fires `runArchiveCycle` → `deduplicateAndHydrate` against the new path (two further `readDirectory` calls on the new top-level). Replace the `workspace.fs.readDirectory` mock with a chain that covers all five calls:
+- [x] Inside `describe('reconfigure', ...)`, update the existing `'should move archive when path changes'` test to verify the new two-level walk. `reconfigure` calls `moveArchive` (three sequential `readDirectory` calls on the old path) and then `start(newConfig)`, which immediately fires `runArchiveCycle` → `deduplicateAndHydrate` against the new path (two further `readDirectory` calls on the new top-level). Replace the `workspace.fs.readDirectory` mock with a chain that covers all five calls:
 
   ```typescript
   workspace.fs.readDirectory = vi
@@ -854,11 +854,11 @@ Read `test/unit/features/agentSessionsArchiving/archiveService.test.ts` in full 
 
   Assert that `workspace.fs.copy` was called with a destination path containing `'2026/05/202605010000-file.md'`.
 
-- [ ] Inside `describe('runArchiveCycle', ...)`, add a test verifying the ensured-directory cache: `'should ensure each YYYY/MM directory only once across multiple sessions in the same month'`. The test: creates two `SessionFile` entries with distinct `archiveName` values but identical `ctime: 1_609_459_200_000` (2021-01-01T00:00:00Z → both map to `2021/01/`) and distinct `mtime` values; configures the provider mock to return both sessions; spies on `workspace.fs.createDirectory`; calls `service.start(DEFAULT_CONFIG)` and `await service.runArchiveCycle()`. Then count the spy calls whose URI argument has `fsPath` ending with `/2021/01` (use `vi.mocked(workspace.fs.createDirectory).mock.calls.filter(([u]) => (u as { fsPath: string }).fsPath.endsWith('/2021/01')).length`) and assert the count is exactly `1`. The cache key is `uri.fsPath` (see Task 3.1), so two distinct `ensureDirectory` calls for the same `archiveUri/2021/01` URI produce one `createDirectory` invocation; the second is satisfied by the cache. Calls for other directories (e.g., the root `archiveUri` if ever ensured separately) are not counted by this filter and do not affect the assertion.
+- [x] Inside `describe('runArchiveCycle', ...)`, add a test verifying the ensured-directory cache: `'should ensure each YYYY/MM directory only once across multiple sessions in the same month'`. The test: creates two `SessionFile` entries with distinct `archiveName` values but identical `ctime: 1_609_459_200_000` (2021-01-01T00:00:00Z → both map to `2021/01/`) and distinct `mtime` values; configures the provider mock to return both sessions; spies on `workspace.fs.createDirectory`; calls `service.start(DEFAULT_CONFIG)` and `await service.runArchiveCycle()`. Then count the spy calls whose URI argument has `fsPath` ending with `/2021/01` (use `vi.mocked(workspace.fs.createDirectory).mock.calls.filter(([u]) => (u as { fsPath: string }).fsPath.endsWith('/2021/01')).length`) and assert the count is exactly `1`. The cache key is `uri.fsPath` (see Task 3.1), so two distinct `ensureDirectory` calls for the same `archiveUri/2021/01` URI produce one `createDirectory` invocation; the second is satisfied by the cache. Calls for other directories (e.g., the root `archiveUri` if ever ensured separately) are not counted by this filter and do not affect the assertion.
 
-- [ ] Inside `describe('reconfigure', ...)`, add a test verifying the F-001 mitigation (source survives partial copy failure): `'should leave the source archive in place when any copy fails during moveArchive'`. The test: chains `workspace.fs.readDirectory` for the new two-level walk so the source has two files in `2026/05/` (`mockResolvedValueOnce([['2026', FileType.Directory]])` for `oldUri` top, `mockResolvedValueOnce([['05', FileType.Directory]])` for the year dir, `mockResolvedValueOnce([['file-a.md', FileType.File], ['file-b.md', FileType.File]])` for the month dir, then `mockResolvedValue([])` for any further reads after `start(newConfig)`). Mock `workspace.fs.copy` to `mockRejectedValueOnce(new Error('disk full'))` (the first file copy fails) then `mockResolvedValue(undefined)` (subsequent copies succeed). Mock `workspace.fs.delete` to resolve. Configure `workspace.fs.createDirectory` to resolve. Create the service, `service.start(DEFAULT_CONFIG)`, then `await service.reconfigure(DEFAULT_CONFIG, { ...DEFAULT_CONFIG, archivePath: 'new/path' }, vi.fn())`. Assert: `workspace.fs.delete` was **NOT** called with a URI whose `fsPath` ends with `'docs/archive/agent-sessions'` (the old archive root must remain on disk because `allCopiesSucceeded === false`); `workspace.fs.delete` may still be called for individual archive replacements in unrelated paths but the source-root delete is the specific path the assertion targets. Assert `logger.warn` was called with a message containing `'left source archive in place'`. This test pins F-001 closed: a future refactor that removes the `allCopiesSucceeded` gate will fail this test.
+- [x] Inside `describe('reconfigure', ...)`, add a test verifying the F-001 mitigation (source survives partial copy failure): `'should leave the source archive in place when any copy fails during moveArchive'`. The test: chains `workspace.fs.readDirectory` for the new two-level walk so the source has two files in `2026/05/` (`mockResolvedValueOnce([['2026', FileType.Directory]])` for `oldUri` top, `mockResolvedValueOnce([['05', FileType.Directory]])` for the year dir, `mockResolvedValueOnce([['file-a.md', FileType.File], ['file-b.md', FileType.File]])` for the month dir, then `mockResolvedValue([])` for any further reads after `start(newConfig)`). Mock `workspace.fs.copy` to `mockRejectedValueOnce(new Error('disk full'))` (the first file copy fails) then `mockResolvedValue(undefined)` (subsequent copies succeed). Mock `workspace.fs.delete` to resolve. Configure `workspace.fs.createDirectory` to resolve. Create the service, `service.start(DEFAULT_CONFIG)`, then `await service.reconfigure(DEFAULT_CONFIG, { ...DEFAULT_CONFIG, archivePath: 'new/path' }, vi.fn())`. Assert: `workspace.fs.delete` was **NOT** called with a URI whose `fsPath` ends with `'docs/archive/agent-sessions'` (the old archive root must remain on disk because `allCopiesSucceeded === false`); `workspace.fs.delete` may still be called for individual archive replacements in unrelated paths but the source-root delete is the specific path the assertion targets. Assert `logger.warn` was called with a message containing `'left source archive in place'`. This test pins F-001 closed: a future refactor that removes the `allCopiesSucceeded` gate will fail this test.
 
-#### [ ] Task 3.5: Update `archiveService.dedup.test.ts` for YYYY/MM layout
+#### [x] Task 3.5: Update `archiveService.dedup.test.ts` for YYYY/MM layout
 
 Read `test/unit/features/agentSessionsArchiving/archiveService.dedup.test.ts` in full before making any change.
 
@@ -877,7 +877,7 @@ This task rewrites each test's mock so that archive files live inside `YYYY/MM/`
 
 Apply per-test rewrites:
 
-- [ ] **Test 1 — `'should remove older duplicate and keep the newer file'`**: replace the mock with:
+- [x] **Test 1 — `'should remove older duplicate and keep the newer file'`**: replace the mock with:
 
   ```typescript
   workspace.fs.readDirectory = vi
@@ -898,7 +898,7 @@ Apply per-test rewrites:
 
   Update the log assertion to expect `'Removed duplicate archive: 2025/01/202501010000-claude-code-abc.md'` (the full relative path). The `delete` path assertion (`stringContaining '202501010000-claude-code-abc.md'`) remains valid.
 
-- [ ] **Test 2 — `'should handle three or more duplicates keeping only the newest'`**: replace the mock with:
+- [x] **Test 2 — `'should handle three or more duplicates keeping only the newest'`**: replace the mock with:
 
   ```typescript
   workspace.fs.readDirectory = vi
@@ -917,7 +917,7 @@ Apply per-test rewrites:
 
   The `deletedPaths` assertions remain valid: the timestamp-only substrings are unique within each path.
 
-- [ ] **Test 3 — `'should not remove files with unique archiveNames'`**: replace the mock with:
+- [x] **Test 3 — `'should not remove files with unique archiveNames'`**: replace the mock with:
 
   ```typescript
   workspace.fs.readDirectory = vi
@@ -934,11 +934,11 @@ Apply per-test rewrites:
 
   Assertion `delete not called` remains.
 
-- [ ] **Test 4 — `'should handle empty archive directory'`**: replace the mock with `vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([])` (two empty returns covering pre-migrate and post-migrate). Assertion `delete not called` remains.
+- [x] **Test 4 — `'should handle empty archive directory'`**: replace the mock with `vi.fn().mockResolvedValueOnce([]).mockResolvedValueOnce([])` (two empty returns covering pre-migrate and post-migrate). Assertion `delete not called` remains.
 
-- [ ] **Test 5 — `'should handle missing archive directory gracefully'`**: keep the existing `vi.fn().mockRejectedValue(new Error('not found'))`. The first `readDirectory` call rejects, `deduplicateAndHydrate` returns early without invoking `migrateFlatLayout` or scanning year directories. Assertion `delete not called` remains.
+- [x] **Test 5 — `'should handle missing archive directory gracefully'`**: keep the existing `vi.fn().mockRejectedValue(new Error('not found'))`. The first `readDirectory` call rejects, `deduplicateAndHydrate` returns early without invoking `migrateFlatLayout` or scanning year directories. Assertion `delete not called` remains.
 
-- [ ] **Test 6 — `'should skip non-file entries'`**: rewrite the test intent as "skip non-year directories at top level and non-month entries inside year directories". Replace the mock with:
+- [x] **Test 6 — `'should skip non-file entries'`**: rewrite the test intent as "skip non-year directories at top level and non-month entries inside year directories". Replace the mock with:
 
   ```typescript
   workspace.fs.readDirectory = vi
@@ -960,7 +960,7 @@ Apply per-test rewrites:
 
   `'notayear'` is skipped at top-level (regex `^\d{4}$` does not match), `'notmonth'` is skipped inside year 2025 (regex `^\d{2}$` does not match). The single matching file has a unique archiveName, so no duplicates. Assertion `delete not called` remains.
 
-- [ ] **Test 7 — `'should skip files not matching the archive name pattern'`**: rewrite the test intent as "skip files inside `YYYY/MM/` that do not match the `groupArchiveFiles` PATTERN". Replace the mock with:
+- [x] **Test 7 — `'should skip files not matching the archive name pattern'`**: rewrite the test intent as "skip files inside `YYYY/MM/` that do not match the `groupArchiveFiles` PATTERN". Replace the mock with:
 
   ```typescript
   workspace.fs.readDirectory = vi
@@ -977,7 +977,7 @@ Apply per-test rewrites:
 
   The updated `groupArchiveFiles` PATTERN (Task 3.2) requires a 12-digit timestamp + `-` + name after the optional `YYYY/MM/` prefix; the first two files do not match and are skipped. The third is the only matching file (unique archiveName). Assertion `delete not called` remains.
 
-- [ ] **Test 8 — `'should hydrate lastArchivedMap so archiveSession deletes old file'`**: place the existing archive file directly inside `2025/01/` so `migrateFlatLayout` is a no-op and hydration stores the full year/month-prefixed path. Replace the mock with:
+- [x] **Test 8 — `'should hydrate lastArchivedMap so archiveSession deletes old file'`**: place the existing archive file directly inside `2025/01/` so `migrateFlatLayout` is a no-op and hydration stores the full year/month-prefixed path. Replace the mock with:
 
   ```typescript
   workspace.fs.readDirectory = vi
@@ -990,7 +990,7 @@ Apply per-test rewrites:
 
   Hydration sets `lastArchivedMap.set('test-session', { mtime: 0, archiveFileName: '2025/01/202501010000-test-session.json' })`. Then `archiveSession` for the source session (ctime `1_609_459_200_000` → resolves to `2021/01/`, mtime `5000`) sees `entry.mtime === 0 !== 5000`, calls `deleteFile(archiveUri/2025/01/202501010000-test-session.json)`, and writes the new archive into `2021/01/`. The `deletedPaths` assertion (`stringContaining '202501010000-test-session.json'`) remains valid: the deleted path now includes the `2025/01/` prefix but still contains the timestamp-name substring.
 
-- [ ] **Test 9 — `'should run dedup only on first cycle after start'`**: the test runs two cycles; the second must NOT trigger dedup. Place duplicates inside `2025/01/` to exercise `removeDuplicates` on the first cycle, then verify the second cycle invokes no further `readDirectory` calls (the previous between-cycles re-mock is dropped — it is no longer consulted). Replace the mock setup with:
+- [x] **Test 9 — `'should run dedup only on first cycle after start'`**: the test runs two cycles; the second must NOT trigger dedup. Place duplicates inside `2025/01/` to exercise `removeDuplicates` on the first cycle, then verify the second cycle invokes no further `readDirectory` calls (the previous between-cycles re-mock is dropped — it is no longer consulted). Replace the mock setup with:
 
   ```typescript
   workspace.fs.readDirectory = vi
@@ -1016,7 +1016,7 @@ Apply per-test rewrites:
 
   Drop the test's previous re-assignment of `workspace.fs.readDirectory` between cycles.
 
-- [ ] **Test 10 — `'should reset dedup flag on each start call'`**: both cycles must trigger dedup. Use `vi.fn().mockImplementation(...)` keyed on `uri.fsPath` so each cycle's identical traversal returns the same values without exhausting an ordered chain:
+- [x] **Test 10 — `'should reset dedup flag on each start call'`**: both cycles must trigger dedup. Use `vi.fn().mockImplementation(...)` keyed on `uri.fsPath` so each cycle's identical traversal returns the same values without exhausting an ordered chain:
 
   ```typescript
   workspace.fs.readDirectory = vi.fn().mockImplementation((uri: { fsPath: string }) => {
@@ -1039,15 +1039,15 @@ Apply per-test rewrites:
 
   The implementation returns consistent values across both `service.start(DEFAULT_CONFIG)` cycles. Both cycles invoke `removeDuplicates` and call `delete`. The existing assertions on `delete` having been called twice remain unchanged.
 
-- [ ] Mark all completed checkboxes in this task.
+- [x] Mark all completed checkboxes in this task.
 
-#### [ ] Task 3.6: Update impacted documentation
+#### [x] Task 3.6: Update impacted documentation
 
-- [ ] In `docs/technical-context.md`, locate section 8.6 "Agent Session Archiving Model". Replace the "Archive file naming" paragraph (`**Archive file naming:** ...`) with:
+- [x] In `docs/technical-context.md`, locate section 8.6 "Agent Session Archiving Model". Replace the "Archive file naming" paragraph (`**Archive file naming:** ...`) with:
 
   **Archive file naming:** `{YYYY}/{MM}/{YYYYMMDDHHmm}-{archiveName}{extension}`, where the timestamp is derived from the session file's creation time (`ctime`), not the modification time or the current time. `YYYY` and `MM` are extracted as `timestamp.substring(0,4)` and `timestamp.substring(4,6)` from the `generateTimestamp('YYYYMMDDHHmm', ...)` result. The `archiveFileName` stored in `lastArchivedMap` is the full path relative to `archiveUri` (e.g., `2026/05/202605251830-foo.md`) so that delete and replace operations resolve correctly via `vscode.Uri.joinPath(archiveUri, entry.archiveFileName)`.
 
-- [ ] Also update the `lastArchivedMap` diagram label in section 8.6 to reflect that `archiveFileName` is now a relative path:
+- [x] Also update the `lastArchivedMap` diagram label in section 8.6 to reflect that `archiveFileName` is now a relative path:
 
   ```text
   lastArchivedMap: Map<archiveName, { mtime, archiveFileName }>
@@ -1055,12 +1055,12 @@ Apply per-test rewrites:
 
   Add a parenthetical: `(archiveFileName is YYYY/MM/YYYYMMDDHHmm-name.ext relative to archiveUri)`.
 
-- [ ] Mark all completed checkboxes in this activity.
+- [x] Mark all completed checkboxes in this activity.
 
-#### [ ] Task 3.7: Commit changes
+#### [x] Task 3.7: Commit changes
 
-- [ ] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. If any check fails, fix the failure before proceeding — do not commit with a failing quality gate.
-- [ ] Commit `src/features/agentSessionsArchiving/archiveService.ts`, `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, `test/unit/features/agentSessionsArchiving/archiveService.dedup.test.ts`, `docs/technical-context.md`, and this workstream file with message: `feat(archiving): organize archive into year/month subdirectories with idempotent flat-layout migration sweep`.
+- [x] Run the quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. If any check fails, fix the failure before proceeding — do not commit with a failing quality gate.
+- [x] Commit `src/features/agentSessionsArchiving/archiveService.ts`, `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, `test/unit/features/agentSessionsArchiving/archiveService.dedup.test.ts`, `docs/technical-context.md`, and this workstream file with message: `feat(archiving): organize archive into year/month subdirectories with idempotent flat-layout migration sweep`.
 
 ### [ ] Activity 4: Add coverage and documentation for the idempotent flat-layout migration sweep
 
@@ -1108,6 +1108,12 @@ Read `test/unit/features/agentSessionsArchiving/archiveService.test.ts` in full 
 
 - **Task 2.1 (field placement ordering)**: the workstream instructs to insert `_reconfiguring` "immediately after `private readonly ensuredDirectories = new Set<string>();` (the JSDoc-annotated field introduced in Task 3.1)". This forward reference is incoherent with the activity order: Activity 2 commits before Activity 3, so `ensuredDirectories` does not yet exist when `_reconfiguring` is introduced. Inserting `_reconfiguring` at the absent anchor would produce a tsc-broken Activity 2 commit. Disposition: inserted `_reconfiguring` immediately after `private _needsDedup = true;` (the last existing private state field). In Task 3.1 (Activity 3), `ensuredDirectories` will be inserted between `_needsDedup` and `_reconfiguring`, producing the final intra-class ordering `_needsDedup`, `ensuredDirectories`, `_reconfiguring`. The two fields the workstream wanted adjacent (`ensuredDirectories` and `_reconfiguring`) ARE adjacent in the post-Activity-3 state. Corrective: workstream authoring should resolve forward references — annotate `_reconfiguring` placement against the state at Activity 2 commit time, not the post-Activity-3 state.
 - **Task 2.5 (commit subject case)**: the workstream-prescribed commit subject `refactor(archiving): extend reconfigure to invoke gitignore prompt on archivePath change` contains the camelCase identifier `archivePath`, which commitlint rejects under its `subject-case: lower-case` rule (`commitlint.config.mjs`). The pre-commit hook failure cannot be bypassed (hard rule). Disposition: rewrote the subject to `refactor(archiving): extend reconfigure to invoke gitignore prompt on archive path change` (camelCase → two-word lowercase form). Semantic equivalent preserved; semantic-release mapping (`refactor:` → patch) unaffected. Corrective: workstream authoring should validate prescribed commit subjects against the project's commitlint configuration before presenting the workstream.
+
+**Activity 3**
+
+- **Task 3.5 (mock chain pattern unsound under start() fire-and-forget race)**: the workstream prescribed `mockResolvedValueOnce(...)` chains for Tests 1, 2, 3, 4, 6, 7, 8, 9 of `archiveService.dedup.test.ts`. Each test calls `service.start(DEFAULT_CONFIG)` followed by `await service.runArchiveCycle()`. `start()` itself fires a fire-and-forget `void this.runArchiveCycle()` (line 38 of `archiveService.ts`) before returning. The two cycles run concurrently in the microtask queue; both enter `deduplicateAndHydrate` with `_needsDedup === true` (because the flag is only reset AFTER each cycle's awaited dedup completes). Under the new multi-call dedup body (pre-migrate read + post-migrate re-read + per-year + per-month), each cycle interleaves N `readDirectory` calls against the shared mock. A `mockResolvedValueOnce` chain assumes a single ordered consumer; with two concurrent consumers, calls cross-consume each other's intended responses, producing `undefined` returns that crash `for...of` iteration. Disposition: rewrote Tests 1, 2, 3, 6, 7, 8 to use `vi.fn().mockImplementation((uri) => Promise.resolve(...))` keyed on `uri.fsPath`, returning consistent values for any traversal order. Test 4 (empty archive) collapsed to `mockResolvedValue([])` (default). Test 5 (rejecting mock) unchanged. Test 9 also switched to `mockImplementation` plus an explicit `mockClear()` between cycles to verify second-cycle dedup suppression. Test 10 was already prescribed with `mockImplementation`. Corrective: workstream authoring should account for the `start()`-then-`runArchiveCycle()` race when prescribing mock chains; the `mockImplementation`-keyed-on-fsPath pattern (already used in Test 10) is the safer default for tests that interleave with `start()`.
+- **Task 3.4 (race-resilient redesign of Activity 3 tests)**: the new tests `'should write archive file into YYYY/MM subdirectory'`, `'should move archive when path changes'` (existing test updated), `'should ensure each YYYY/MM directory only once across multiple sessions in the same month'`, `'should reprocess a session whose archive was hydrated...'` (existing test redesigned), and `'should leave the source archive in place when any copy fails during moveArchive'` all faced the same `start()` fire-and-forget race as Task 3.5. Disposition: applied `mockImplementation` keyed on `uri.fsPath` for the readDirectory mocks. The ensured-directory cache test additionally bypasses `start()` (sets `_currentConfig` and `_needsDedup = false` directly on the service instance via a typed cast) to exercise a single sequential cycle and prove the per-cycle cache prevents redundant `createDirectory` calls. Without the bypass, the concurrent cycles A and B both pass the cache `has()` check before either's `add()` completes, doubling the `createDirectory` count. The bypass is the cleanest expression of the test's intent (per-cycle cache behavior); a multi-cycle assertion would conflate the intra-cycle cache with the production cache-invalidation behavior at `start()` (cleared via `this.ensuredDirectories.clear()`). Corrective: workstream authoring should annotate ensure-cache assertions with explicit single-cycle scope, and tests that exercise per-cycle invariants should bypass the start() fire-and-forget rather than fight it.
+- **Task 3.7 (commit subject length)**: the workstream-prescribed commit subject `feat(archiving): organize archive into year/month subdirectories with idempotent flat-layout migration sweep` is 108 characters, exceeding the commitlint `header-max-length: 100` rule (default from `@commitlint/config-conventional`). The pre-commit hook failure cannot be bypassed (hard rule). Disposition: rewrote the subject to `feat(archiving): organize archive into year/month subdirs with flat-layout migration sweep` (86 characters). Semantic equivalent preserved (`subdirectories` → `subdirs`, dropped `idempotent` from the headline — the idempotency is documented in the body and the source code). Semantic-release mapping (`feat:` → minor) unaffected. Corrective: workstream authoring should validate commit subject length against the project's commitlint configuration before presenting the workstream.
 
 **Pre-execution notes (from multi-perspective review gate, 2026-05-25)**
 
