@@ -2,7 +2,7 @@
 title: 'Legacy config verify on startup — defensive backstop for missing .tangyr.jsonc migration'
 objective: Add a defensive backstop to ExtensionStateManager.initialize() that detects and resolves workspaces where .arit-toolkit.jsonc persists but .tangyr.jsonc was never created by the normal migration flow.
 workstream: WS-0015
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: []
 created: 2026-05-27
@@ -324,11 +324,11 @@ No additional documentation change is required for this activity: the new test f
 - [x] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
 - [x] Commit `test/unit/core/extensionStateManager.legacyVerify.test.ts` and this workstream file with message: `test(core): add unit tests for verifylegacyconfigmigration backstop`. Subject must be lowercase, type `test` ∈ commitlint type-enum.
 
-### [ ] Activity 3: Document `verifyLegacyConfigMigration` behaviour in `docs/technical-context.md`
+### [x] Activity 3: Document `verifyLegacyConfigMigration` behaviour in `docs/technical-context.md`
 
 This activity adds a dedicated subsection under section 8 of `docs/technical-context.md` describing the legacy-config backstop. After this activity commits, the document is internally consistent and every cross-reference resolves.
 
-#### [ ] Task 3.1: Read `docs/technical-context.md` before making any change
+#### [x] Task 3.1: Read `docs/technical-context.md` before making any change
 
 Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/docs/technical-context.md` in full. Confirm the following before writing:
 
@@ -337,7 +337,7 @@ Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/docs/tech
 - The last numbered subsection before the glossary and appendices is `### 8.12 Text Stats Architecture`.
 - The document does not already contain a subsection titled `8.13` or any reference to `verifyLegacyConfigMigration`.
 
-#### [ ] Task 3.2: Insert `### 8.13 Legacy Config Verify on Startup` into `docs/technical-context.md`
+#### [x] Task 3.2: Insert `### 8.13 Legacy Config Verify on Startup` into `docs/technical-context.md`
 
 Insert the new subsection immediately after the closing paragraph of `### 8.12 Text Stats Architecture` and before whatever follows it (glossary or horizontal rule). The body is:
 
@@ -359,14 +359,14 @@ Insert the new subsection immediately after the closing paragraph of `### 8.12 T
 
 After inserting, verify that no heading level is skipped (the new `### 8.13` follows `### 8.12`) and that the markdown is free of unintended fence-block nesting.
 
-#### [ ] Task 3.3: Update impacted documentation
+#### [x] Task 3.3: Update impacted documentation
 
 Run `pnpm run lint` (which includes `markdownlint-cli2`). Must pass with zero errors and zero new warnings on `docs/technical-context.md`. If `markdownlint` reports a heading-increment or list-syntax warning, correct the formatting inline and re-run. Mark all completed subtasks and tasks in this activity.
 
-#### [ ] Task 3.4: Commit changes
+#### [x] Task 3.4: Commit changes
 
-- [ ] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
-- [ ] Commit `docs/technical-context.md` and this workstream file with message: `docs(technical-context): document verifylegacyconfigmigration backstop in section 8.13`. Subject must be lowercase, type `docs` ∈ commitlint type-enum.
+- [x] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
+- [x] Commit `docs/technical-context.md` and this workstream file with message: `docs(technical-context): document verifylegacyconfigmigration backstop in section 8.13`. Subject must be lowercase, type `docs` ∈ commitlint type-enum.
 
 ## Divergences and notes
 
@@ -374,4 +374,12 @@ Run `pnpm run lint` (which includes `markdownlint-cli2`). Must pass with zero er
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergence count by cause:** 1 total.
+
+- **Workstream prescription error (1):** D-1 — Test 7's `onDidChangeState` assertion was unreachable given the prescribed production implementation. `applyConfig()` fires `notifySectionListeners` but not `_onDidChangeState`; neither does `runMigration()`. The assertion was removed from the test; the underlying question of whether `verifyLegacyConfigMigration` should fire `_onDidChangeState` is flagged for PM awareness.
+
+**Recurring patterns:** The single divergence follows a familiar pattern in workstream test prescriptions: state-event assertions are written against an idealized mental model of what "should" fire, not against the actual call graph of the production code. This is the second occurrence in the tangyr-vscode project (the same pattern appeared in WS-0014's test prescriptions).
+
+**Proposed improvement:** When workstream test prescriptions include event-assertion cases (`onDidChangeState`, `onConfigSectionChanged`), cross-reference the assertion against the production code's call graph during workstream review. A checklist item in the workstream-authoring skill could prompt: "for each event assertion, trace the call path from the method under test to confirm the event emitter is reached."
+
+**Assessment:** Execution was clean. All three activities completed in sequence with no production code defects surfaced. The backstop implementation matches the prescribed behavior exactly. Coverage on `extensionStateManager.ts` improved from 81.51% to 95.37% (statements). Test count increased from 779 to 786 (7 new tests, all passing). Lint warning count remained stable at 26 throughout (3 new warnings for `verifyLegacyConfigMigration` itself were offset by no regressions elsewhere).
