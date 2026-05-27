@@ -2,7 +2,7 @@
 title: 'Legacy config verify on startup — defensive backstop for missing .tangyr.jsonc migration'
 objective: Add a defensive backstop to ExtensionStateManager.initialize() that detects and resolves workspaces where .arit-toolkit.jsonc persists but .tangyr.jsonc was never created by the normal migration flow.
 workstream: WS-0015
-status: 'idle'
+status: 'in-progress'
 workspaces: []
 dependencies: []
 created: 2026-05-27
