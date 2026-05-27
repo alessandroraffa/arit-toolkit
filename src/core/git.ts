@@ -29,6 +29,19 @@ export async function isGitIgnored(filePath: string, cwd: string): Promise<boole
 }
 
 /**
+ * Returns true if the given directory is inside a git repository.
+ * Returns false when git is unavailable or the directory is not a git repo.
+ */
+export async function isGitRepository(cwd: string): Promise<boolean> {
+  try {
+    await execFileAsync('git', ['rev-parse', '--git-dir'], { cwd });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Returns true if the given file has uncommitted changes (staged, unstaged, or untracked).
  * Returns false when there are no changes or when git is unavailable.
  */

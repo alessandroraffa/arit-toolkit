@@ -427,6 +427,7 @@ flags are never modified by the global toggle.
   +-----------------------+
 
   lastArchivedMap: Map<archiveName, { mtime, archiveFileName }>
+  (archiveFileName is YYYY/MM/YYYYMMDDHHmm-name.ext relative to archiveUri)
 ```
 
 **Workspace filtering:** Each provider filters discovered sessions to
@@ -501,9 +502,33 @@ patched extension automatically re-archives previously affected sessions
 on its first cycle without requiring any persistent flag or manual
 intervention.
 
-**Archive file naming:** `{YYYYMMDDHHmm}-{archiveName}{extension}`,
+**Idempotent flat-layout migration sweep:** On every cold start and
+after every `reconfigure` (any time `_needsDedup` is reset to `true`),
+`deduplicateAndHydrate` runs `migrateFlatLayout` before scanning
+year/month subdirectories. `migrateFlatLayout` reads the top-level
+entries of `archiveUri`; for each file whose name matches
+`^(\d{4})(0[1-9]|1[0-2])\d{6}-.+\.\w+$` (a flat-layout archive file
+with a valid month), it extracts `YYYY` and `MM` from the first four
+and next two characters of the filename, creates the target
+`YYYY/MM/` subdirectory, and moves the file there (`copy` with
+`overwrite: true` followed by `delete` of the source). A failed copy
+is logged at `warn` level; the source file is left in place and the
+migration continues with the next file. The sweep is idempotent: once
+the tree is fully migrated, no files at the top level match the flat
+pattern, so subsequent invocations are no-ops. After the sweep,
+`deduplicateAndHydrate` re-reads the top-level entries before scanning
+year/month subdirectories.
+
+**Archive file naming:** `{YYYY}/{MM}/{YYYYMMDDHHmm}-{archiveName}{extension}`,
 where the timestamp is derived from the session file's creation time
-(`ctime`), not the modification time or the current time.
+(`ctime`), not the modification time or the current time. `YYYY` and
+`MM` are extracted as `timestamp.substring(0,4)` and
+`timestamp.substring(4,6)` from the `generateTimestamp('YYYYMMDDHHmm',
+...)` result. The `archiveFileName` stored in `lastArchivedMap` is the
+full path relative to `archiveUri` (e.g.,
+`2026/05/202605251830-foo.md`) so that delete and replace operations
+resolve correctly via
+`vscode.Uri.joinPath(archiveUri, entry.archiveFileName)`.
 
 **Cycle observability:** `runArchiveCycle()` emits `debug`-level log
 entries at cycle start and end. `archiveSession()` emits a `debug`-level
@@ -515,6 +540,70 @@ is bypassed, causing all sessions to be reprocessed regardless of their
 cached `mtime`. The "Archive Now" command passes `force = true`; the
 automatic timer and file-watcher callbacks use the default
 `force = false`.
+
+**`archivePath` validation:** The `archivePath` field of
+`AgentSessionsArchivingConfig` is validated by `validateArchivePath()`
+(`src/features/agentSessionsArchiving/archivePathValidation.ts`) at every
+site that consumes it: `checkAndPromptGitignore` (Step 0),
+`writeGitignoreEntry` (defense-in-depth), `runArchiveCycle` (entry
+guard), and `moveArchive` (oldPath and newPath guards). The validator
+rejects: empty or whitespace-only paths, leading or trailing whitespace,
+strings exceeding 1024 characters, control characters (`\n`, `\r`,
+`\0`, `\t`, etc.), leading `#` or `!` (which would alter `.gitignore`
+interpretation), glob metacharacters (`*`, `?`, `[`, `]`), absolute
+paths (Unix `/…` or Windows `C:\…`), and `..` path-traversal segments.
+On validation failure, the calling method logs at `warn` level (or in
+the case of `writeGitignoreEntry`, throws an error that the enclosing
+`try/catch` in `checkAndPromptGitignore` translates to a warn log) and
+skips the operation without performing any filesystem or `.gitignore`
+mutation.
+
+**Git-aware gitignore prompt:** When the archive feature transitions to
+the running state (global enabled + feature enabled) or when
+`archivePath` changes, the extension checks whether the workspace is a
+git repository using `isGitRepository(workspaceRootUri.fsPath)`. If it
+is a repository and `archivePath` is not already git-ignored, and no
+previous decision exists for that path, the extension presents a VS
+Code information message asking the user to add the path to
+`.gitignore`. Accepting appends a two-line block to `.gitignore` — a
+provenance comment `# Managed by Tangyr Workbench (agent sessions
+archive)` followed by `{archivePath}/` and a trailing newline; a single
+leading newline is inserted only when the existing file does not
+already end with one. The file is created if absent. The provenance
+comment makes the entry self-describing so a user reading the file
+later understands its origin and does not remove it as an apparent
+orphan (which would silently lose gitignore protection because the
+stored `'ignored'` decision blocks the prompt from re-appearing for
+that path). Declining (explicit click on the `Skip` button) stores
+`'declined'` in the `gitignoreDecisions` field of
+`AgentSessionsArchivingConfig`, keyed by `archivePath`, so the prompt
+does not re-appear for that path. Dismissing the dialog without
+choosing a button (X-close, ESC, focus loss — VS Code returns
+`undefined`) is intentionally treated as "no decision yet": no entry
+is written to `gitignoreDecisions`, and the prompt re-appears on the
+next activation. This separation prevents an accidental dismissal from
+silently binding the user to a sticky decline. A new `archivePath`
+value produces a new key and triggers a fresh evaluation; an unchanged
+path with a recorded decision is never re-prompted. A failed
+`.gitignore` write is logged at `warn` level and the decision is not
+stored, so the prompt re-appears on the next activation. The write is
+a non-atomic read-modify-write — concurrent writes by other VS Code
+extensions or external processes between the read and the write can
+result in last-write-wins behavior on the `.gitignore` file. This is
+accepted as best-effort; collision probability is low for typical
+workflows. The duplicate-entry guard
+(`existing.split('\n').some(line => line.trim() === entryLine)`)
+prevents redundant appends on subsequent activations even after manual
+edits. When `archivePath` changes (detected in
+`AgentSessionArchiveService.reconfigure`), the prompt runs after the
+archive directory has been moved to the new path and before the
+archive service restarts with the new config. `reconfigure` is guarded
+against re-entrancy: when the prompt's `updateConfig` callback (on
+accept) writes the config and the section listener fires
+`reconfigure` again on the same instance, the inner invocation
+short-circuits at a `_reconfiguring` flag (set in the outer call's
+try-block, reset in its finally-block). Only the outer call mutates
+timer state and runs `start()`.
 
 **Change detection:** When a session file's `mtime` changes, the old
 archive file is deleted and a new one (with the same ctime-based prefix)

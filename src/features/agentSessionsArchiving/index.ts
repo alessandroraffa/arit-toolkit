@@ -5,6 +5,7 @@ import type { ExtensionStateManager } from '../../core';
 import { AgentSessionArchiveService } from './archiveService';
 import { SessionFileWatcher } from './sessionFileWatcher';
 import { getDefaultProviders } from './providers';
+import { checkAndPromptGitignore } from './gitignorePrompt';
 import * as vscode from 'vscode';
 import {
   CONFIG_KEY,
@@ -104,6 +105,21 @@ export function registerAgentSessionsArchivingFeature(
     if (globalEnabled && config?.enabled) {
       service.start(config);
       watcher.start(workspaceRoot.fsPath);
+      void checkAndPromptGitignore(
+        config.archivePath,
+        workspaceRoot,
+        config,
+        ctx.logger,
+        async (patch) => {
+          const current = stateManager.getConfigSection(CONFIG_KEY) as
+            | AgentSessionsArchivingConfig
+            | undefined;
+          if (!current) {
+            return;
+          }
+          await stateManager.updateConfigSection(CONFIG_KEY, { ...current, ...patch });
+        }
+      );
     } else {
       service.stop();
       watcher.stop();
@@ -115,7 +131,15 @@ export function registerAgentSessionsArchivingFeature(
     (newValue) => {
       const oldConfig = service.currentConfig;
       const newConfig = newValue as AgentSessionsArchivingConfig;
-      void service.reconfigure(oldConfig, newConfig);
+      void service.reconfigure(oldConfig, newConfig, async (patch) => {
+        const current = stateManager.getConfigSection(CONFIG_KEY) as
+          | AgentSessionsArchivingConfig
+          | undefined;
+        if (!current) {
+          return;
+        }
+        await stateManager.updateConfigSection(CONFIG_KEY, { ...current, ...patch });
+      });
     }
   );
   ctx.context.subscriptions.push(sectionDisposable);

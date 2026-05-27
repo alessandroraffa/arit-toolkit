@@ -20,7 +20,7 @@ vi.mock('node:util', () => ({
 }));
 
 // Must import after mocks are set up
-const { isGitIgnored, gitStageAndCommit, gitUnstage, hasGitChanges } =
+const { isGitIgnored, isGitRepository, gitStageAndCommit, gitUnstage, hasGitChanges } =
   await import('../../../src/core/git');
 
 describe('isGitIgnored', () => {
@@ -350,6 +350,83 @@ describe('hasGitChanges', () => {
     );
 
     const result = await hasGitChanges('.tangyr.jsonc', '/workspace');
+    expect(result).toBe(false);
+  });
+});
+
+describe('isGitRepository', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return true when workspace is a git repository (exit code 0)', async () => {
+    const capturedArgs: string[][] = [];
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        capturedArgs.push(args);
+        cb(null, '.git\n', '');
+      }
+    );
+
+    const result = await isGitRepository('/workspace');
+    expect(result).toBe(true);
+    expect(capturedArgs[0]).toEqual(['rev-parse', '--git-dir']);
+  });
+
+  it('should return false when not a git repository (exit code 128)', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        const err = new Error('not a git repo');
+        (err as any).code = 128;
+        cb(err, '', '');
+      }
+    );
+
+    const result = await isGitRepository('/workspace');
+    expect(result).toBe(false);
+  });
+
+  it('should return false when git is not installed (ENOENT)', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        const err = new Error('not found');
+        (err as any).code = 'ENOENT';
+        cb(err, '', '');
+      }
+    );
+
+    const result = await isGitRepository('/workspace');
+    expect(result).toBe(false);
+  });
+
+  it('should return false on any other error', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        cb(new Error('unknown'), '', '');
+      }
+    );
+
+    const result = await isGitRepository('/workspace');
     expect(result).toBe(false);
   });
 });

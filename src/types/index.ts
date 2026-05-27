@@ -29,6 +29,7 @@ export interface AgentSessionsArchivingConfig {
   archivePath: string;
   intervalMinutes: number;
   ignoreSessionsBefore?: string;
+  gitignoreDecisions?: Record<string, 'ignored' | 'declined'>;
 }
 
 export type TokenizerModel = 'cl100k' | 'o200k' | 'claude';

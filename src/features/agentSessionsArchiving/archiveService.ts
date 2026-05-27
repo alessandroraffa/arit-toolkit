@@ -5,6 +5,8 @@ import type { Logger } from '../../core/logger';
 import { generateTimestamp, parseYYYYMMDD } from '../../utils';
 import type { SessionParser, ParseResult } from './markdown';
 import { getParserForProvider, renderSessionToMarkdown } from './markdown';
+import { checkAndPromptGitignore } from './gitignorePrompt';
+import { validateArchivePath } from './archivePathValidation';
 
 interface ArchivedEntry {
   mtime: number;
@@ -16,6 +18,26 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   private _currentConfig: AgentSessionsArchivingConfig | undefined;
   private readonly lastArchivedMap = new Map<string, ArchivedEntry>();
   private _needsDedup = true;
+  /**
+   * Cache of URIs already ensured via ensureDirectory(), keyed by uri.fsPath.
+   * Keys are raw fsPath strings — do not introduce relative-segment normalization
+   * (e.g., './2026/05' vs '2026/05') without invalidating the cache, otherwise
+   * the same logical directory may be cached under multiple keys.
+   */
+  private readonly ensuredDirectories = new Set<string>();
+  /**
+   * Re-entrancy guard for reconfigure(). Set to true on entry, reset to false in
+   * a finally block on exit. When a recursive call is detected (the gitignore
+   * prompt's updateConfig callback writes the config, which fires the section
+   * listener, which calls reconfigure again on the same instance), the inner
+   * invocation returns early without running moveArchive, the prompt, or
+   * start(). The outer invocation continues normally and is the only one that
+   * mutates timer/cache state. Without this guard, start() is invoked twice in
+   * rapid sequence (once from the inner call, once from the outer), churning
+   * the interval handle and racing two runArchiveCycle() invocations on
+   * lastArchivedMap.
+   */
+  private _reconfiguring = false;
 
   constructor(
     private readonly workspaceRootUri: vscode.Uri,
@@ -29,6 +51,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
 
   public start(config: AgentSessionsArchivingConfig): void {
     this.stop();
+    this.ensuredDirectories.clear();
     this._currentConfig = config;
     const intervalMs = config.intervalMinutes * 60_000;
     this._needsDedup = true;
@@ -51,27 +74,53 @@ export class AgentSessionArchiveService implements vscode.Disposable {
 
   public async reconfigure(
     oldConfig: AgentSessionsArchivingConfig | undefined,
-    newConfig: AgentSessionsArchivingConfig
+    newConfig: AgentSessionsArchivingConfig,
+    updateConfig: (patch: Partial<AgentSessionsArchivingConfig>) => Promise<void>
   ): Promise<void> {
-    if (!oldConfig) {
-      if (newConfig.enabled) {
-        this.start(newConfig);
+    if (this._reconfiguring) {
+      this.logger.debug(
+        'Re-entrant reconfigure call detected (likely via updateConfig → section listener) — short-circuiting'
+      );
+      return;
+    }
+    this._reconfiguring = true;
+    try {
+      if (!oldConfig) {
+        if (newConfig.enabled) {
+          this.start(newConfig);
+        }
+        return;
       }
-      return;
+      if (!newConfig.enabled) {
+        this.stop();
+        this._currentConfig = newConfig;
+        return;
+      }
+      if (oldConfig.archivePath !== newConfig.archivePath) {
+        await this.moveArchive(oldConfig.archivePath, newConfig.archivePath);
+        await checkAndPromptGitignore(
+          newConfig.archivePath,
+          this.workspaceRootUri,
+          newConfig,
+          this.logger,
+          updateConfig
+        );
+      }
+      this.start(newConfig);
+    } finally {
+      this._reconfiguring = false;
     }
-    if (!newConfig.enabled) {
-      this.stop();
-      this._currentConfig = newConfig;
-      return;
-    }
-    if (oldConfig.archivePath !== newConfig.archivePath) {
-      await this.moveArchive(oldConfig.archivePath, newConfig.archivePath);
-    }
-    this.start(newConfig);
   }
 
   public async runArchiveCycle(force = false): Promise<void> {
     if (!this._currentConfig) {
+      return;
+    }
+    const validation = validateArchivePath(this._currentConfig.archivePath);
+    if (!validation.valid) {
+      this.logger.warn(
+        `Skipping archive cycle: invalid archivePath "${this._currentConfig.archivePath}" — ${validation.reason ?? 'unknown'}`
+      );
       return;
     }
     this.logger.debug('Archive cycle starting');
@@ -188,8 +237,17 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         return undefined;
       }
 
-      const mdFileName = `${timestamp}-${session.archiveName}.md`;
-      const mdUri = vscode.Uri.joinPath(archiveUri, mdFileName);
+      const yyyy = timestamp.substring(0, 4);
+      const mm = timestamp.substring(4, 6);
+      const monthUri = vscode.Uri.joinPath(archiveUri, yyyy, mm);
+      await this.ensureDirectory(monthUri);
+      const mdFileName = `${yyyy}/${mm}/${timestamp}-${session.archiveName}.md`;
+      const mdUri = vscode.Uri.joinPath(
+        archiveUri,
+        yyyy,
+        mm,
+        `${timestamp}-${session.archiveName}.md`
+      );
       const markdown = renderSessionToMarkdown(result.session);
       await vscode.workspace.fs.writeFile(mdUri, new TextEncoder().encode(markdown));
       return mdFileName;
@@ -215,8 +273,17 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     archiveUri: vscode.Uri,
     timestamp: string
   ): Promise<string | undefined> {
-    const rawFileName = `${timestamp}-${session.archiveName}${session.extension}`;
-    const destUri = vscode.Uri.joinPath(archiveUri, rawFileName);
+    const yyyy = timestamp.substring(0, 4);
+    const mm = timestamp.substring(4, 6);
+    const monthUri = vscode.Uri.joinPath(archiveUri, yyyy, mm);
+    await this.ensureDirectory(monthUri);
+    const rawFileName = `${yyyy}/${mm}/${timestamp}-${session.archiveName}${session.extension}`;
+    const destUri = vscode.Uri.joinPath(
+      archiveUri,
+      yyyy,
+      mm,
+      `${timestamp}-${session.archiveName}${session.extension}`
+    );
 
     try {
       await vscode.workspace.fs.copy(session.uri, destUri, { overwrite: true });
@@ -228,9 +295,22 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   }
 
   private async moveArchive(oldPath: string, newPath: string): Promise<void> {
+    const oldValidation = validateArchivePath(oldPath);
+    if (!oldValidation.valid) {
+      this.logger.warn(
+        `Skipping moveArchive: invalid oldPath "${oldPath}" — ${oldValidation.reason ?? 'unknown'}`
+      );
+      return;
+    }
+    const newValidation = validateArchivePath(newPath);
+    if (!newValidation.valid) {
+      this.logger.warn(
+        `Skipping moveArchive: invalid newPath "${newPath}" — ${newValidation.reason ?? 'unknown'}`
+      );
+      return;
+    }
     const oldUri = vscode.Uri.joinPath(this.workspaceRootUri, oldPath);
     const newUri = vscode.Uri.joinPath(this.workspaceRootUri, newPath);
-
     let entries: [string, vscode.FileType][];
     try {
       entries = await vscode.workspace.fs.readDirectory(oldUri);
@@ -238,29 +318,167 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this.logger.debug(`Old archive directory not found, skipping move: ${oldPath}`);
       return;
     }
-
     await this.ensureDirectory(newUri);
+    let allCopiesSucceeded = true;
     for (const [name, type] of entries) {
+      if (type === vscode.FileType.File) {
+        try {
+          await vscode.workspace.fs.copy(
+            vscode.Uri.joinPath(oldUri, name),
+            vscode.Uri.joinPath(newUri, name),
+            { overwrite: true }
+          );
+        } catch (err) {
+          allCopiesSucceeded = false;
+          this.logger.warn(`Failed to move file ${name}: ${String(err)}`);
+        }
+      } else if (type === vscode.FileType.Directory && /^\d{4}$/.test(name)) {
+        const yyyy = name;
+        let monthEntries: [string, vscode.FileType][];
+        try {
+          monthEntries = await vscode.workspace.fs.readDirectory(
+            vscode.Uri.joinPath(oldUri, yyyy)
+          );
+        } catch (err) {
+          allCopiesSucceeded = false;
+          this.logger.warn(`Failed to read year dir ${yyyy} during move: ${String(err)}`);
+          continue;
+        }
+        for (const [mmName, mmType] of monthEntries) {
+          if (mmType !== vscode.FileType.Directory || !/^\d{2}$/.test(mmName)) {
+            continue;
+          }
+          let fileEntries: [string, vscode.FileType][];
+          try {
+            fileEntries = await vscode.workspace.fs.readDirectory(
+              vscode.Uri.joinPath(oldUri, yyyy, mmName)
+            );
+          } catch (err) {
+            allCopiesSucceeded = false;
+            this.logger.warn(
+              `Failed to read month dir ${yyyy}/${mmName} during move: ${String(err)}`
+            );
+            continue;
+          }
+          await this.ensureDirectory(vscode.Uri.joinPath(newUri, yyyy, mmName));
+          for (const [fileName, fileType] of fileEntries) {
+            if (fileType !== vscode.FileType.File) {
+              continue;
+            }
+            try {
+              await vscode.workspace.fs.copy(
+                vscode.Uri.joinPath(oldUri, yyyy, mmName, fileName),
+                vscode.Uri.joinPath(newUri, yyyy, mmName, fileName),
+                { overwrite: true }
+              );
+            } catch (err) {
+              allCopiesSucceeded = false;
+              this.logger.warn(
+                `Failed to move file ${yyyy}/${mmName}/${fileName}: ${String(err)}`
+              );
+            }
+          }
+        }
+      }
+    }
+    if (allCopiesSucceeded) {
+      try {
+        await vscode.workspace.fs.delete(oldUri, { recursive: true });
+      } catch (err) {
+        this.logger.warn(
+          `Failed to delete old archive directory ${oldPath} after move: ${String(err)} — left in place`
+        );
+      }
+      this.logger.info(`Moved archive from ${oldPath} to ${newPath}`);
+    } else {
+      this.logger.warn(
+        `moveArchive completed with copy failures — left source archive in place at "${oldPath}" for manual cleanup after verifying "${newPath}" is complete. Do NOT delete "${oldPath}" until verifying the target tree is intact.`
+      );
+    }
+  }
+
+  private async migrateFlatLayout(
+    archiveUri: vscode.Uri,
+    topEntries: [string, vscode.FileType][]
+  ): Promise<void> {
+    // Month constrained to 01-12 to prevent migration of files with invalid month components
+    // (e.g., a manually-placed '202099310000-foo.md' would otherwise be moved into '2020/99/').
+    // Total 12 digits before the '-': YYYY(4) + MM(2) + DDHHmm(6).
+    const FLAT_PATTERN = /^(\d{4})(0[1-9]|1[0-2])\d{6}-.+\.\w+$/;
+    for (const [name, type] of topEntries) {
       if (type !== vscode.FileType.File) {
         continue;
       }
-      await vscode.workspace.fs.copy(
-        vscode.Uri.joinPath(oldUri, name),
-        vscode.Uri.joinPath(newUri, name)
-      );
+      const m = FLAT_PATTERN.exec(name);
+      if (!m?.[1] || !m[2]) {
+        continue;
+      }
+      const yyyy = m[1];
+      const mm = m[2];
+      const targetDirUri = vscode.Uri.joinPath(archiveUri, yyyy, mm);
+      await this.ensureDirectory(targetDirUri);
+      const srcUri = vscode.Uri.joinPath(archiveUri, name);
+      const destUri = vscode.Uri.joinPath(archiveUri, yyyy, mm, name);
+      try {
+        await vscode.workspace.fs.copy(srcUri, destUri, { overwrite: true });
+        await this.deleteFile(srcUri);
+        this.logger.info(`Migrated flat archive file ${name} → ${yyyy}/${mm}/${name}`);
+      } catch (err) {
+        this.logger.warn(
+          `Failed to migrate flat archive file ${name}: ${String(err)} — left in place`
+        );
+      }
     }
-    await vscode.workspace.fs.delete(oldUri, { recursive: true });
-    this.logger.info(`Moved archive from ${oldPath} to ${newPath}`);
   }
 
   private async deduplicateAndHydrate(archiveUri: vscode.Uri): Promise<void> {
-    let entries: [string, vscode.FileType][];
+    let topEntries: [string, vscode.FileType][];
     try {
-      entries = await vscode.workspace.fs.readDirectory(archiveUri);
+      topEntries = await vscode.workspace.fs.readDirectory(archiveUri);
     } catch {
       return;
     }
-    const grouped = this.groupArchiveFiles(entries);
+    // Idempotent flat-layout migration sweep (see migrateFlatLayout)
+    await this.migrateFlatLayout(archiveUri, topEntries);
+    // Re-read after migration
+    try {
+      topEntries = await vscode.workspace.fs.readDirectory(archiveUri);
+    } catch {
+      return;
+    }
+    const combined: [string, vscode.FileType][] = [];
+    for (const [name, type] of topEntries) {
+      if (type === vscode.FileType.Directory && /^\d{4}$/.test(name)) {
+        let monthEntries: [string, vscode.FileType][];
+        try {
+          monthEntries = await vscode.workspace.fs.readDirectory(
+            vscode.Uri.joinPath(archiveUri, name)
+          );
+        } catch (err) {
+          this.logger.debug(`Failed to read year directory ${name}: ${String(err)}`);
+          continue;
+        }
+        for (const [mmName, mmType] of monthEntries) {
+          if (mmType === vscode.FileType.Directory && /^\d{2}$/.test(mmName)) {
+            let fileEntries: [string, vscode.FileType][];
+            try {
+              fileEntries = await vscode.workspace.fs.readDirectory(
+                vscode.Uri.joinPath(archiveUri, name, mmName)
+              );
+            } catch (err) {
+              this.logger.debug(
+                `Failed to read month directory ${name}/${mmName}: ${String(err)}`
+              );
+              continue;
+            }
+            for (const [fileName, fileType] of fileEntries) {
+              combined.push([`${name}/${mmName}/${fileName}`, fileType]);
+            }
+          }
+        }
+      }
+    }
+    const grouped = this.groupArchiveFiles(combined);
     for (const [archiveName, files] of grouped) {
       if (files.length > 1) {
         await this.removeDuplicates(archiveUri, files);
@@ -275,7 +493,14 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   private groupArchiveFiles(
     entries: [string, vscode.FileType][]
   ): Map<string, { ts: string; name: string }[]> {
-    const PATTERN = /^(\d{12})-(.+)\.\w+$/;
+    // Optional YYYY/MM/ prefix retained as defense-in-depth: it covers the
+    // transitional state where migrateFlatLayout fails on some files and the
+    // post-migrate readDirectory still returns flat-form entries. Currently
+    // `combined` is built only from entries under YYYY/MM/ subdirectories, so
+    // the optional branch is unreachable for combined entries. Remove only after
+    // confirming (via the migration tests and at least one release cycle) that
+    // no code path can surface flat-form entries to groupArchiveFiles.
+    const PATTERN = /^(?:\d{4}\/\d{2}\/)?(\d{12})-(.+)\.\w+$/;
     const groups = new Map<string, { ts: string; name: string }[]>();
     for (const [name, type] of entries) {
       if (type !== vscode.FileType.File) {
@@ -307,8 +532,13 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   }
 
   private async ensureDirectory(uri: vscode.Uri): Promise<void> {
+    const key = uri.fsPath;
+    if (this.ensuredDirectories.has(key)) {
+      return;
+    }
     try {
       await vscode.workspace.fs.createDirectory(uri);
+      this.ensuredDirectories.add(key);
     } catch (err) {
       this.logger.debug(`ensureDirectory: ${String(err)}`);
     }
