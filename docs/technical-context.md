@@ -297,6 +297,7 @@ activate(context)
         +-- if not initialised:
               +-- showOnboardingNotification()
               +-- if accepted: runMigration()
+        +-- verifyLegacyConfigMigration()  [backstop: no-op if .tangyr.jsonc present]
 
 stateManager.checkup()  [async, triggered by "Checkup" button]
   |

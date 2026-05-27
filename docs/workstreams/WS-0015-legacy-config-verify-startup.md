@@ -30,11 +30,11 @@ The scope is single-root only, matching the upstream guard in `initialize()`. Mu
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Add `verifyLegacyConfigMigration` and `findAvailableBackupPath` to `ExtensionStateManager`
+### [x] Activity 1: Add `verifyLegacyConfigMigration` and `findAvailableBackupPath` to `ExtensionStateManager`
 
 This activity extends `src/core/extensionStateManager.ts` with two new private methods and hooks `verifyLegacyConfigMigration()` into the tail of `initialize()`. After this activity commits, `initialize()` runs the backstop on every activation and the project builds, lints, and tests cleanly — even though no test cases for the new methods exist yet (those come in Activity 2).
 
-#### [ ] Task 1.1: Read `src/core/extensionStateManager.ts` in full before making any change
+#### [x] Task 1.1: Read `src/core/extensionStateManager.ts` in full before making any change
 
 Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/src/core/extensionStateManager.ts` in full. Confirm the following reference points that the subsequent tasks use:
 
@@ -50,7 +50,7 @@ Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/src/core/
 
 If any line numbers differ from the values listed above, note the actual lines as a divergence and continue — the insertion targets are identified by their surrounding context, not by line number alone.
 
-#### [ ] Task 1.2: Insert `findAvailableBackupPath` into `extensionStateManager.ts`
+#### [x] Task 1.2: Insert `findAvailableBackupPath` into `extensionStateManager.ts`
 
 Insert the method body shown below immediately BEFORE `notifySectionListeners()` (currently opening at line 358), so it appears after `ensureCurrentConfigFile()` and before `notifySectionListeners()`. The method probes for an available `.bak` path: if the `targetUri` does not exist it returns `targetUri` unchanged; if it exists it appends `.YYYYMMDDHHmm` (UTC, zero-padded) before the final `.bak` segment and returns that URI. The probe uses `vscode.workspace.fs.stat` — a `FileSystemError` means the path is free; any other throw is re-thrown.
 
@@ -76,7 +76,7 @@ private async findAvailableBackupPath(targetUri: vscode.Uri): Promise<vscode.Uri
 
 After insertion, run `pnpm run check-types`. If it exits non-zero, the insertion introduced a syntax or type error — read the compiler output, correct the code at the insertion site, and re-run before proceeding.
 
-#### [ ] Task 1.3: Insert `verifyLegacyConfigMigration` into `extensionStateManager.ts`
+#### [x] Task 1.3: Insert `verifyLegacyConfigMigration` into `extensionStateManager.ts`
 
 Insert the method body shown below immediately AFTER `findAvailableBackupPath()` and BEFORE `notifySectionListeners()`. The method:
 
@@ -177,7 +177,7 @@ private async verifyLegacyConfigMigration(): Promise<void> {
 
 After insertion, run `pnpm run check-types`. It must exit 0. If it exits non-zero, correct the error at the insertion site and re-run.
 
-#### [ ] Task 1.4: Hook `verifyLegacyConfigMigration()` into `initialize()`
+#### [x] Task 1.4: Hook `verifyLegacyConfigMigration()` into `initialize()`
 
 In `src/core/extensionStateManager.ts`, locate `initialize()` (lines 119–140). Insert one line — `await this.verifyLegacyConfigMigration();` — immediately BEFORE the closing `}` of `initialize()`, after the existing `if/else` block that contains `showOnboardingNotification` and `runMigration`. The resulting tail of `initialize()` must look exactly like this:
 
@@ -194,7 +194,7 @@ In `src/core/extensionStateManager.ts`, locate `initialize()` (lines 119–140).
 
 After the insertion, run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. The existing test count must not decrease. If `check-types` fails, a type error was introduced at the insertion site — read the error, correct the code, and re-run. If `lint` fails with a new complexity or statement-count warning on `initialize()`, the insertion itself is a single `await` expression and adds one statement; if the lint limit is breached, escalate to the PM before proceeding. If `test:unit` reports a regression, a previously passing test now exercises a new code path — read the failing test output, identify which test name failed and why, and record as a divergence with a corrective action before committing.
 
-#### [ ] Task 1.5: Update impacted documentation
+#### [x] Task 1.5: Update impacted documentation
 
 `docs/technical-context.md` section 4.4 (Activation and Initialisation Sequence, lines 251–313) contains a `text` code block describing the `stateManager.initialize()` call tree. Insert one line at the end of the `stateManager.initialize(extensionVersion)` block, AFTER the `+-- if not initialised:` sub-block (and after `+-- if accepted: runMigration()`) and before the closing code-fence boundary. The inserted line is:
 
@@ -220,10 +220,10 @@ The updated tail of the `initialize` block in the code fence must look exactly l
 
 Mark all completed subtasks and tasks in this activity.
 
-#### [ ] Task 1.6: Commit changes
+#### [x] Task 1.6: Commit changes
 
-- [ ] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
-- [ ] Commit `src/core/extensionStateManager.ts`, `docs/technical-context.md`, and this workstream file with message: `feat(core): add verifylegacyconfigmigration backstop to initialize`. Subject must be lowercase, type `feat` ∈ commitlint type-enum.
+- [x] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
+- [x] Commit `src/core/extensionStateManager.ts`, `docs/technical-context.md`, and this workstream file with message: `feat(core): add verifylegacyconfigmigration backstop to initialize`. Subject must be lowercase, type `feat` ∈ commitlint type-enum.
 
 ### [ ] Activity 2: Add vitest unit tests for `verifyLegacyConfigMigration`
 
