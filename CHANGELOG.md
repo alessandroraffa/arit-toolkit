@@ -1,3 +1,18 @@
+## [2.1.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.0.0...v2.1.0) (2026-05-27)
+
+### Features
+
+* **archiving:** organize archive into year/month subdirs with flat-layout migration sweep ([6e7e348](https://github.com/alessandroraffa/tangyr-vscode/commit/6e7e348b2e0bbdfe448400d9aa99c396a20ded6c))
+* **archiving:** prompt to gitignore archive path on first activation ([da84c39](https://github.com/alessandroraffa/tangyr-vscode/commit/da84c39b2d13ca436c30d8665233bebb1d84f435))
+
+### Bug Fixes
+
+* **archiving:** correct flat-layout migration regex and cover migration paths ([c169f18](https://github.com/alessandroraffa/tangyr-vscode/commit/c169f18e3308cf0e18764a4b1db8c80051e7c9a1))
+
+### Code Refactoring
+
+* **archiving:** extend reconfigure to invoke gitignore prompt on archive path change ([0983c8f](https://github.com/alessandroraffa/tangyr-vscode/commit/0983c8f589dc5c8f31e5a9da5d78219b769279b5))
+
 ## [2.0.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v1.19.0...v2.0.0) (2026-04-28)
 
 ### ⚠ BREAKING CHANGES

@@ -2,8 +2,8 @@
   "name": "tangyr",
   "displayName": "Tangyr Workbench",
   "description": "Archive AI coding sessions (Claude Code, Cline, Aider, Copilot, Roo Code, Continue) into your workspace. Real-time token counting, text stats, and timestamped file management for agentic coding.",
-  "version": "2.0.0",
-  "versionCode": 1002000000,
+  "version": "2.1.0",
+  "versionCode": 1002001000,
   "publisher": "alessandroraffa",
   "license": "MIT",
   "repository": {
