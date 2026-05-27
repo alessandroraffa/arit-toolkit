@@ -2,7 +2,7 @@
 title: 'Dependency update pass — patch, minor, and safe-major dev dependencies'
 objective: Coordinated bump of patch-, minor-, and safe-major-level dev dependencies in a single workstream, isolating each tier and each major group into its own commit for granular rollback. Excludes typescript 5→6 and @types/node 20→25, which require dedicated workstreams. Closes the open Dependabot PR backlog after merge.
 workstream: WS-0016
-status: 'idle'
+status: 'in-progress'
 workspaces: []
 dependencies: []
 created: 2026-05-27
