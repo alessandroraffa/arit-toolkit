@@ -103,15 +103,15 @@ Read `package.json` in full before making any change.
 - [x] Run the full quality gate one more time: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass. Run `pnpm audit` and verify exit 0.
 - [x] Commit `package.json`, `pnpm-lock.yaml`, `docs/technical-context.md`, and this workstream file with message: `fix(deps): override transitive vulnerable packages to resolve audit failures`. Subject length 76 chars, lowercase, type `fix` ∈ commitlint type-enum.
 
-### [ ] Activity 2: Extract `moveArchive` helpers to satisfy ESLint statement and complexity limits
+### [x] Activity 2: Extract `moveArchive` helpers to satisfy ESLint statement and complexity limits
 
 `moveArchive` (`src/features/agentSessionsArchiving/archiveService.ts#297`) currently has 53 statements (ESLint `max-statements` limit 15) and cyclomatic complexity 21 (ESLint `complexity` limit 10). These were introduced by WS-0013 Activity 3 when the two-level YYYY/MM walk and the `allCopiesSucceeded` gating were added. This activity extracts three private helpers and rewrites `moveArchive` as a thin orchestrator, eliminating both warnings without changing the externally observable behavior or the test surface.
 
-#### [ ] Task 2.1: Add the three private helpers
+#### [x] Task 2.1: Add the three private helpers
 
 Read `src/features/agentSessionsArchiving/archiveService.ts` in full before making any change. The helpers MUST be inserted IMMEDIATELY BEFORE the `moveArchive` method (currently at line 297). Each helper returns `Promise<boolean>` where `true` means "every copy in this scope succeeded" and `false` means "at least one failure was logged".
 
-- [ ] Insert `moveTopLevelFile` as a `private async` method. The helper copies a single top-level file from `oldUri` to `newUri` with `{ overwrite: true }`, returning `false` on copy failure (and logging the same warn message currently emitted inline by `moveArchive`). Body:
+- [x] Insert `moveTopLevelFile` as a `private async` method. The helper copies a single top-level file from `oldUri` to `newUri` with `{ overwrite: true }`, returning `false` on copy failure (and logging the same warn message currently emitted inline by `moveArchive`). Body:
 
   ```typescript
   private async moveTopLevelFile(
@@ -133,7 +133,7 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
   }
   ```
 
-- [ ] Insert `moveMonthDirectory` as a `private async` method. The helper reads the `oldUri/yyyy/mmName` directory, ensures the destination subdirectory exists, and copies each `FileType.File` entry to the corresponding destination path with `{ overwrite: true }`. Returns `false` if the readDirectory call fails OR any individual file copy fails. Body:
+- [x] Insert `moveMonthDirectory` as a `private async` method. The helper reads the `oldUri/yyyy/mmName` directory, ensures the destination subdirectory exists, and copies each `FileType.File` entry to the corresponding destination path with `{ overwrite: true }`. Returns `false` if the readDirectory call fails OR any individual file copy fails. Body:
 
   ```typescript
   private async moveMonthDirectory(
@@ -176,7 +176,7 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
   }
   ```
 
-- [ ] Insert `moveYearDirectory` as a `private async` method. The helper reads the `oldUri/yyyy` directory, filters entries to those whose name matches `/^\d{2}$/` AND whose type is `FileType.Directory` (i.e., valid month subdirectories), and delegates each to `moveMonthDirectory`. Returns `false` if the readDirectory call fails OR any month-directory delegation returns `false`. Body:
+- [x] Insert `moveYearDirectory` as a `private async` method. The helper reads the `oldUri/yyyy` directory, filters entries to those whose name matches `/^\d{2}$/` AND whose type is `FileType.Directory` (i.e., valid month subdirectories), and delegates each to `moveMonthDirectory`. Returns `false` if the readDirectory call fails OR any month-directory delegation returns `false`. Body:
 
   ```typescript
   private async moveYearDirectory(
@@ -209,11 +209,11 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` in full before maki
   }
   ```
 
-#### [ ] Task 2.2: Rewrite `moveArchive` body to orchestrate the helpers
+#### [x] Task 2.2: Rewrite `moveArchive` body to orchestrate the helpers
 
 Read `src/features/agentSessionsArchiving/archiveService.ts` again before making the change (its line numbers shifted after Task 2.1's insertions).
 
-- [ ] Replace the body of `moveArchive` (from the opening `{` after the parameter list to the closing `}`) with the orchestrator version. The validation prologue, the URI computation, the top-level `readDirectory`, the `ensureDirectory(newUri)` call, the `allCopiesSucceeded` accumulation, and the post-loop delete/warn block all remain — only the inner double-nested for-loop body is replaced by helper delegations.
+- [x] Replace the body of `moveArchive` (from the opening `{` after the parameter list to the closing `}`) with the orchestrator version. The validation prologue, the URI computation, the top-level `readDirectory`, the `ensureDirectory(newUri)` call, the `allCopiesSucceeded` accumulation, and the post-loop delete/warn block all remain — only the inner double-nested for-loop body is replaced by helper delegations.
 
   ```typescript
   private async moveArchive(oldPath: string, newPath: string): Promise<void> {
@@ -272,21 +272,21 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` again before making
   }
   ```
 
-#### [ ] Task 2.3: Verify quality gate and lint warning elimination
+#### [x] Task 2.3: Verify quality gate and lint warning elimination
 
-- [ ] Run `pnpm run check-types`. Must pass.
-- [ ] Run `pnpm run lint`. Must pass. Crucially, the two `moveArchive` warnings (`max-statements 53/15` and `complexity 21/10`) MUST be absent from the output. The total warning count should drop by 2. If either warning persists, the refactor did not fully extract the offending statements/branches — verify each helper has its OWN budget and revisit the extraction.
-- [ ] Run `pnpm run test:unit`. Must pass with the same test count as before Activity 2 (no test rewrites are part of this activity — externally observable behavior is preserved). Pay particular attention to: `'should move archive when path changes'`, `'should skip move when old directory does not exist'`, `'should leave the source archive in place when any copy fails during moveArchive'`. All three exercise `moveArchive` and must continue to pass without modification. If any test fails, the refactor did not preserve behavior — locate the discrepancy between the new helper boundaries and the original inline logic (typical sources: `allCopiesSucceeded` accumulation lost in a helper returning `void` instead of `boolean`; year-or-month regex moved into the wrong helper; missing `await` on a helper call), fix the production code (NOT the test), and re-run the gate.
+- [x] Run `pnpm run check-types`. Must pass.
+- [x] Run `pnpm run lint`. Must pass. Crucially, the two `moveArchive` warnings (`max-statements 53/15` and `complexity 21/10`) MUST be absent from the output. The total warning count should drop by 2. If either warning persists, the refactor did not fully extract the offending statements/branches — verify each helper has its OWN budget and revisit the extraction.
+- [x] Run `pnpm run test:unit`. Must pass with the same test count as before Activity 2 (no test rewrites are part of this activity — externally observable behavior is preserved). Pay particular attention to: `'should move archive when path changes'`, `'should skip move when old directory does not exist'`, `'should leave the source archive in place when any copy fails during moveArchive'`. All three exercise `moveArchive` and must continue to pass without modification. If any test fails, the refactor did not preserve behavior — locate the discrepancy between the new helper boundaries and the original inline logic (typical sources: `allCopiesSucceeded` accumulation lost in a helper returning `void` instead of `boolean`; year-or-month regex moved into the wrong helper; missing `await` on a helper call), fix the production code (NOT the test), and re-run the gate.
 
-#### [ ] Task 2.4: Update impacted documentation
+#### [x] Task 2.4: Update impacted documentation
 
-- [ ] Documentation impact pre-verified at workstream authoring time: `docs/technical-context.md` references `moveArchive` only once (line 549 of the live document, as one of the validator's consumer sites — no description of its internal implementation). The refactor is internal structure with no observable behavior change. No documentation change required. Note "No documentation impact" against this checkbox in execution and proceed.
-- [ ] Mark all completed checkboxes in this activity.
+- [x] Documentation impact pre-verified at workstream authoring time: `docs/technical-context.md` references `moveArchive` only once (line 549 of the live document, as one of the validator's consumer sites — no description of its internal implementation). The refactor is internal structure with no observable behavior change. No documentation change required. Note "No documentation impact" against this checkbox in execution and proceed.
+- [x] Mark all completed checkboxes in this activity.
 
-#### [ ] Task 2.5: Commit changes
+#### [x] Task 2.5: Commit changes
 
-- [ ] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. Total lint warning count MUST equal `pre-Activity-2 count − 2`.
-- [ ] Commit `src/features/agentSessionsArchiving/archiveService.ts` and this workstream file with message: `refactor(archiving): extract movearchive helpers to satisfy lint complexity limits`. Subject length 82 chars, lowercase, type `refactor` ∈ commitlint type-enum.
+- [x] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. Total lint warning count MUST equal `pre-Activity-2 count − 2`.
+- [x] Commit `src/features/agentSessionsArchiving/archiveService.ts` and this workstream file with message: `refactor(archiving): extract movearchive helpers to satisfy lint complexity limits`. Subject length 82 chars, lowercase, type `refactor` ∈ commitlint type-enum.
 
 ### [ ] Activity 3: Bump GitHub Actions to Node-24-compatible majors
 
@@ -333,6 +333,10 @@ Read `.github/workflows/release.yml` in full before making any change.
 - **Task 1.2 (additional overrides beyond prescription)**: the workstream prescribed 9 single-package overrides + 4 multi-range overrides covering the 11 packages identified in audit. Execution-time audit surfaced two more requiring action: `tmp` (HIGH path traversal, no existing override) and `qs` (existing override `">=6.14.2"` was below the new patched threshold `>=6.15.2`). Added `"tmp": ">=0.2.6"` and updated `"qs": ">=6.15.2"`. Authorized by the workstream's own clause: "If the executor's local `pnpm audit` returns advisories NOT covered by the prescribed overrides ... the executor MUST extend the override block".
 - **Task 1.3 (workspace resolution clash, IMPORTANT)**: `pnpm install` from inside `tangyr-vscode/` walks UP and finds the parent oceanus's `pnpm-workspace.yaml` at `/Users/alessandroraffa/dev/oceanus/pnpm-workspace.yaml`. pnpm treats `tangyr-vscode` as one of multiple workspace projects and behaves accordingly: it can ignore overrides changes in the inner package.json (relying on the workspace lockfile), AND its audit reports advisories from sibling workspace packages (`tools/tempra` was the most prominent source of false-positives in the initial baseline). The CI environment is unaffected — CI clones `tangyr-vscode` standalone with no parent workspace — but the local execution flow MUST use `--ignore-workspace` on every pnpm command (`pnpm install --ignore-workspace --no-frozen-lockfile` to regenerate the lockfile; `pnpm audit --ignore-workspace` to verify). Without this flag the local audit reports 29 advisories (CI scope: ~3); with it, the local audit matches CI behavior. Corrective: extend Task 1.3 prescription to include `--ignore-workspace` when the repo is checked out as a git submodule under another pnpm workspace. Reported to PM as a lesson for the workstream-authoring discipline (potential 6th item for the WS-0013 refinement report — "monorepo/workspace context detection").
 - **Task 1.4 (final audit state)**: after applying all overrides + regenerating the lockfile, `pnpm audit --ignore-workspace` reports `1 vulnerabilities found. Severity: 1 moderate (1 ignored)`. The single remaining advisory is the one already declared in `pnpm.auditConfig.ignoreCves` (`CVE-2026-26996` / `GHSA-w5hq-g745-h8pq`); exit code is 0. Quality gate clean: check-types ✓, lint ✓ (0 errors, pre-existing warnings unchanged), test:unit ✓ (779/779).
+
+**Activity 2**
+
+- **Task 2.1/2.2 (deeper extraction than prescribed)**: the workstream prescribed 3 helpers (`moveTopLevelFile`, `moveMonthDirectory`, `moveYearDirectory`). After applying them, `moveArchive` still had 3 ESLint warnings (max-lines-per-function 54/50, complexity 14/10, max-statements 31/15) and `moveMonthDirectory` had a new max-params 4/3 warning. Extracted 3 additional helpers to fully eliminate every move-related warning: `validateMovePaths` (collapses the two if-validation blocks at the top), `finalizeMoveArchive` (collapses the post-loop delete/warn dispatch), `moveEntry` (dispatches a single entry to file/year/skip), and `copyAllMoveEntries` (iterates entries + accumulates `allOK`). Refactored `moveMonthDirectory` signature from 4 params (`oldUri, newUri, yyyy, mmName`) to 3 (`monthOldUri, monthNewUri, label`); the caller (`moveYearDirectory`) now precomputes the Uris and the warn-message label string. Final `moveArchive` body is 14 statements / complexity ≤10 / 28 lines, well under all limits. Total lint warning count: 31 → 24 (delta -7, far exceeds the workstream's -2 criterion). Quality gate clean. Corrective: the workstream's prescribed 3-helper extraction was insufficient by ESLint's metrics; future workstream-authoring should estimate post-refactor statement budgets against the validation prologue + URI computation + readDirectory + ensureDirectory + loop + finalization, not just the loop body.
 
 ### Reflection
 
