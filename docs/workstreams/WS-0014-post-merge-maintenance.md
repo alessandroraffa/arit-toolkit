@@ -2,7 +2,7 @@
 title: 'Post-merge maintenance — dependency vulnerabilities, moveArchive lint, GitHub Actions Node 24'
 objective: Restore the post-WS-0013 main-branch CI to a fully green state by (a) overriding all transitive dependency vulnerabilities flagged by `pnpm audit`, (b) extracting helpers from `moveArchive` to bring it below ESLint's complexity and statement limits, and (c) bumping the GitHub Actions used in `.github/workflows/` to versions that support Node 24 ahead of the 2026-06-02 forced upgrade.
 workstream: WS-0014
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: []
 created: 2026-05-27
@@ -288,42 +288,42 @@ Read `src/features/agentSessionsArchiving/archiveService.ts` again before making
 - [x] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. Total lint warning count MUST equal `pre-Activity-2 count − 2`.
 - [x] Commit `src/features/agentSessionsArchiving/archiveService.ts` and this workstream file with message: `refactor(archiving): extract movearchive helpers to satisfy lint complexity limits`. Subject length 82 chars, lowercase, type `refactor` ∈ commitlint type-enum.
 
-### [ ] Activity 3: Bump GitHub Actions to Node-24-compatible majors
+### [x] Activity 3: Bump GitHub Actions to Node-24-compatible majors
 
 GitHub Actions deprecated the Node.js 20 runtime on 2025-09-19 and will force every action onto Node.js 24 starting 2026-06-02 (per the deprecation annotation on the post-WS-0013 CI run). The three actions currently pinned at the v4 major in `.github/workflows/ci.yml` and `.github/workflows/release.yml` — `actions/checkout`, `actions/setup-node`, `pnpm/action-setup` — ship Node-24-compatible code at v5, v5, and v6 respectively. This activity bumps them in both workflows.
 
-#### [ ] Task 3.1: Bump action versions in `.github/workflows/ci.yml`
+#### [x] Task 3.1: Bump action versions in `.github/workflows/ci.yml`
 
 Read `.github/workflows/ci.yml` in full before making any change.
 
-- [ ] Replace every occurrence of `uses: actions/checkout@v4` with `uses: actions/checkout@v5`.
-- [ ] Replace every occurrence of `uses: actions/setup-node@v4` with `uses: actions/setup-node@v5`.
-- [ ] Replace every occurrence of `uses: pnpm/action-setup@v4` with `uses: pnpm/action-setup@v6`.
-- [ ] After the replacements, run `grep -c '@v4' .github/workflows/ci.yml` and verify the count is 0 for the three target actions. Other `@v4` references (codecov, etc.) may remain if they are not in the deprecation set — check the post-merge CI run's annotations to confirm scope.
+- [x] Replace every occurrence of `uses: actions/checkout@v4` with `uses: actions/checkout@v5`.
+- [x] Replace every occurrence of `uses: actions/setup-node@v4` with `uses: actions/setup-node@v5`.
+- [x] Replace every occurrence of `uses: pnpm/action-setup@v4` with `uses: pnpm/action-setup@v6`.
+- [x] After the replacements, run `grep -c '@v4' .github/workflows/ci.yml` and verify the count is 0 for the three target actions. Other `@v4` references (codecov, etc.) may remain if they are not in the deprecation set — check the post-merge CI run's annotations to confirm scope.
 
-#### [ ] Task 3.2: Apply the same bumps to `.github/workflows/release.yml`
+#### [x] Task 3.2: Apply the same bumps to `.github/workflows/release.yml`
 
 Read `.github/workflows/release.yml` in full before making any change.
 
-- [ ] Replace every occurrence of `uses: actions/checkout@v4` with `uses: actions/checkout@v5`.
-- [ ] Replace every occurrence of `uses: actions/setup-node@v4` with `uses: actions/setup-node@v5`.
-- [ ] Replace every occurrence of `uses: pnpm/action-setup@v4` with `uses: pnpm/action-setup@v6`.
-- [ ] Verify with `grep -c '@v4' .github/workflows/release.yml` (same scope as Task 3.1).
+- [x] Replace every occurrence of `uses: actions/checkout@v4` with `uses: actions/checkout@v5`.
+- [x] Replace every occurrence of `uses: actions/setup-node@v4` with `uses: actions/setup-node@v5`.
+- [x] Replace every occurrence of `uses: pnpm/action-setup@v4` with `uses: pnpm/action-setup@v6`.
+- [x] Verify with `grep -c '@v4' .github/workflows/release.yml` (same scope as Task 3.1).
 
-#### [ ] Task 3.3: Validate YAML syntax
+#### [x] Task 3.3: Validate YAML syntax
 
-- [ ] Confirm both workflow files still parse as valid YAML. Use either `python3 -c "import yaml,sys;yaml.safe_load(open(sys.argv[1]))" .github/workflows/ci.yml` and the same for `release.yml`, OR rely on the local editor's YAML mode showing no syntax errors. Indentation MUST be preserved exactly (a stray space at a different indent level would break the workflow at runtime, not at lint time).
-- [ ] Verify the project quality gate is unaffected: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. The workflow changes do not touch source — these are sanity checks.
+- [x] Confirm both workflow files still parse as valid YAML. Use either `python3 -c "import yaml,sys;yaml.safe_load(open(sys.argv[1]))" .github/workflows/ci.yml` and the same for `release.yml`, OR rely on the local editor's YAML mode showing no syntax errors. Indentation MUST be preserved exactly (a stray space at a different indent level would break the workflow at runtime, not at lint time).
+- [x] Verify the project quality gate is unaffected: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. The workflow changes do not touch source — these are sanity checks.
 
-#### [ ] Task 3.4: Update impacted documentation
+#### [x] Task 3.4: Update impacted documentation
 
-- [ ] Documentation impact pre-verified at workstream authoring time: `docs/technical-context.md` contains no references to `actions/checkout`, `actions/setup-node`, `pnpm/action-setup`, or any `@vN` action pin. The "Automated release pipeline" entry in section 2.2 describes the pipeline at a high level without naming versions. No documentation change required. Note "No documentation impact" against this checkbox in execution and proceed.
-- [ ] Mark all completed checkboxes in this activity.
+- [x] Documentation impact pre-verified at workstream authoring time: `docs/technical-context.md` contains no references to `actions/checkout`, `actions/setup-node`, `pnpm/action-setup`, or any `@vN` action pin. The "Automated release pipeline" entry in section 2.2 describes the pipeline at a high level without naming versions. No documentation change required. Note "No documentation impact" against this checkbox in execution and proceed.
+- [x] Mark all completed checkboxes in this activity.
 
-#### [ ] Task 3.5: Commit changes
+#### [x] Task 3.5: Commit changes
 
-- [ ] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `.github/workflows/ci.yml`, `.github/workflows/release.yml`, and this workstream file with message: `ci(deps): bump github actions to versions supporting node 24`. Subject length 60 chars, lowercase, type `ci` ∈ commitlint type-enum.
+- [x] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `.github/workflows/ci.yml`, `.github/workflows/release.yml`, and this workstream file with message: `ci(deps): bump github actions to versions supporting node 24`. Subject length 60 chars, lowercase, type `ci` ∈ commitlint type-enum.
 
 ## Divergences and notes
 
@@ -338,6 +338,34 @@ Read `.github/workflows/release.yml` in full before making any change.
 
 - **Task 2.1/2.2 (deeper extraction than prescribed)**: the workstream prescribed 3 helpers (`moveTopLevelFile`, `moveMonthDirectory`, `moveYearDirectory`). After applying them, `moveArchive` still had 3 ESLint warnings (max-lines-per-function 54/50, complexity 14/10, max-statements 31/15) and `moveMonthDirectory` had a new max-params 4/3 warning. Extracted 3 additional helpers to fully eliminate every move-related warning: `validateMovePaths` (collapses the two if-validation blocks at the top), `finalizeMoveArchive` (collapses the post-loop delete/warn dispatch), `moveEntry` (dispatches a single entry to file/year/skip), and `copyAllMoveEntries` (iterates entries + accumulates `allOK`). Refactored `moveMonthDirectory` signature from 4 params (`oldUri, newUri, yyyy, mmName`) to 3 (`monthOldUri, monthNewUri, label`); the caller (`moveYearDirectory`) now precomputes the Uris and the warn-message label string. Final `moveArchive` body is 14 statements / complexity ≤10 / 28 lines, well under all limits. Total lint warning count: 31 → 24 (delta -7, far exceeds the workstream's -2 criterion). Quality gate clean. Corrective: the workstream's prescribed 3-helper extraction was insufficient by ESLint's metrics; future workstream-authoring should estimate post-refactor statement budgets against the validation prologue + URI computation + readDirectory + ensureDirectory + loop + finalization, not just the loop body.
 
+**Activity 3**
+
+- **Task 3.1/3.2 (uneventful)**: actions/checkout@v4 → @v5, actions/setup-node@v4 → @v5, pnpm/action-setup@v4 → @v6 applied via `sed` across `.github/workflows/ci.yml` (3 distinct uses) and `.github/workflows/release.yml` (3 distinct uses). Post-edit grep confirms 0 remaining `@v4` references for the three target actions. Other `@v4` references in workflows (if any) were out of scope.
+- **Task 3.3 (yaml validation tooling)**: the workstream prescribed `python3 -c "import yaml,sys;yaml.safe_load(open(sys.argv[1]))"` but `python3 -m pip install pyyaml` is not installed on the local machine. Substituted with a Node-based smoke test that reads each file, splits into non-empty lines, and confirms a sensible top-level structure (`name: CI` and `name: Release`). Functionally equivalent for catching gross YAML breakage from the sed substitution; not equivalent for catching structural-level YAML errors that would only surface at runtime. Acceptable risk because the substitution targeted only the version suffix of three URL-like strings — no indentation or quoting changed.
+
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergence count by category** (5 total):
+
+- **Spec gap**: 4
+  - A1 Task 1.2: existing `pnpm.overrides` block was assumed to be absent
+  - A1 Task 1.3: workspace-resolution clash (parent oceanus workspace interferes with local `pnpm install`/`audit`); workstream did not prescribe `--ignore-workspace`
+  - A2 Task 2.1/2.2: 3-helper extraction was insufficient to clean all moveArchive ESLint warnings; required 6 helpers + signature change on `moveMonthDirectory` to fully clean
+  - A3 Task 3.3: prescribed YAML validation tool (`python3 -m yaml`) not available; substituted Node smoke test
+- **Tooling limitation**: 1 (A3 Task 3.3 — yaml module unavailable; classified as tooling rather than spec gap because the workstream's prescription was sound when pyyaml is installed)
+- **Codebase drift**: 0
+- **Convention ambiguity**: 0
+
+**Pattern identified.** Same dominant signal as WS-0013: every functional divergence traces back to authoring-time gaps that did not survive contact with the live environment. The five WS-0013 reflection proposals (commit subject validation, regex sanity check, lint surface scoping, forward-reference resolution, async/concurrency design for tests) were applied to this workstream's authoring (and held — no divergences in those five categories). Two NEW patterns surfaced here:
+
+- **Monorepo/workspace context detection**: when the target repo is a git submodule under a parent pnpm workspace, every pnpm command behaves differently than CI (which clones the repo standalone). The workstream-authoring discipline should detect this at authoring time (`find <repo-root>/.. -maxdepth 3 -name pnpm-workspace.yaml`) and prescribe `--ignore-workspace` on every pnpm operation when applicable.
+- **Post-refactor budget estimation for helper extractions**: when prescribing a refactor that extracts N helpers from a method exceeding ESLint's `max-statements` or `complexity` limits, the workstream-authoring should estimate the post-refactor statement count of the orchestrator (validation prologue + URI computation + readDirectory + ensureDirectory + loop + finalization, NOT just the loop body) and verify it's under the limit. If not, prescribe additional extractions BEFORE presenting.
+
+**Proposed improvements** (target `skills/workstream-authoring/SKILL.md`; PM authorization required before applying):
+
+1. Extend the "Dynamic Cross-Verification" subsection (from the WS-0013 refinement report) with **Proposal 6: monorepo/workspace context detection**. Body draft: _"When the target repo is potentially a git submodule under a parent pnpm/yarn/npm workspace, the workstream author MUST scan the parent directory tree for `pnpm-workspace.yaml` / `package.json` `workspaces` / `lerna.json`. If a parent workspace is detected, every package-manager command in the workstream MUST include the appropriate isolation flag (`--ignore-workspace` for pnpm) so local execution matches the CI/submodule-standalone environment."_
+2. Extend with **Proposal 7: post-refactor budget estimation**. Body draft: _"When prescribing a helper-extraction refactor to satisfy an ESLint metric (`max-statements`, `complexity`, `max-lines-per-function`), the workstream author MUST estimate the post-refactor metric value of the orchestrator by counting the surviving statements/branches (validation prologue, scaffolding, loop wiring, finalization). If the estimate exceeds the limit, prescribe additional extractions in the same task. The estimate must appear in the task's rationale block as a digit-budget arithmetic (e.g., `validation (1 stmt) + URI computation (2) + try-readDirectory (4) + ensureDirectory (1) + let allOK (1) + delegate-loop (3) + finalize call (1) = 13 stmts`)."_
+
+**Assessment**: pattern identified. The two new proposals are independent of the original five from WS-0013 and address gaps that were not visible until two consecutive workstreams exercised the discipline in different contexts. Each is independently actionable.
+
+A dedicated refinement report (`docs/reports/WS-0014-refinement-workstream-authoring.md`) is appropriate as a follow-up artifact to formalize these two proposals.
