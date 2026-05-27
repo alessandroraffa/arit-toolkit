@@ -297,6 +297,7 @@ activate(context)
         +-- if not initialised:
               +-- showOnboardingNotification()
               +-- if accepted: runMigration()
+        +-- verifyLegacyConfigMigration()  [backstop: no-op if .tangyr.jsonc present]
 
 stateManager.checkup()  [async, triggered by "Checkup" button]
   |
@@ -773,6 +774,20 @@ to `Buffer.byteLength()` on the selection text.
 (Claude tokenizer) are dev dependencies bundled by esbuild into the
 extension. The bundled vocabularies increase the extension size from
 ~72 KB to ~6 MB. No runtime network calls are made.
+
+### 8.13 Legacy Config Verify on Startup
+
+`verifyLegacyConfigMigration()` is a private method on `ExtensionStateManager` invoked at the end of `initialize()`, after the normal `readStateFromFile` / `runMigration` / `ensureCurrentConfigFile` / `showOnboardingNotification` flow. It is a defensive backstop that fires only when `.tangyr.jsonc` is still absent at the end of activation.
+
+**Detection:** the method probes `.tangyr.jsonc` via `vscode.workspace.fs.stat`. If the file is present, the method returns immediately (no-op). If absent, it probes `.arit-toolkit.jsonc` by the same mechanism. If the legacy file is also absent, the method returns immediately (no-op).
+
+**Path A — parseable legacy:** `readConfigFile(LEGACY_CONFIG_FILENAME)` succeeds. The parsed content is written to `.tangyr.jsonc` via `writeFullConfig`. The legacy file is renamed to `.arit-toolkit.jsonc.bak`. Internal state (`_fullConfig`, `_isInitialized`, `_isEnabled`, `_loadedLegacyConfigFile`) is updated and `_onDidChangeState` is fired. An information message is shown to the user.
+
+**Path B — malformed legacy:** `readConfigFile(LEGACY_CONFIG_FILENAME)` throws (JSON/JSONC parse failure). `.tangyr.jsonc` is NOT created. The legacy file is renamed to `.arit-toolkit.jsonc.malformed.bak`. A warning message is shown to the user, prompting them to create `.tangyr.jsonc` via the onboarding prompt.
+
+**Backup collision:** if the target `.bak` (or `.malformed.bak`) path already exists, `findAvailableBackupPath()` appends a UTC timestamp suffix `YYYYMMDDHHmm` before returning the path (e.g., `.arit-toolkit.jsonc.bak.202605271045`).
+
+**Scope:** single-root workspaces only. Multi-root and no-workspace modes are skipped by the upstream guard in `initialize()` and by a `_workspaceRoot` null-check inside the method itself. The check fires once per activation — no file-watcher-based re-check is performed.
 
 ---
 

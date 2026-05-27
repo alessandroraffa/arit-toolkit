@@ -137,6 +137,7 @@ export class ExtensionStateManager {
         await this.runMigration();
       }
     }
+    await this.verifyLegacyConfigMigration();
   }
 
   public async checkup(): Promise<CheckupResult> {
@@ -353,6 +354,118 @@ export class ExtensionStateManager {
       `Workspace config copied from ${LEGACY_CONFIG_FILENAME} to ${CONFIG_FILENAME}`
     );
     return true;
+  }
+
+  private async findAvailableBackupPath(targetUri: vscode.Uri): Promise<vscode.Uri> {
+    try {
+      await vscode.workspace.fs.stat(targetUri);
+    } catch {
+      return targetUri;
+    }
+    const now = new Date();
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    const suffix =
+      String(now.getUTCFullYear()) +
+      pad(now.getUTCMonth() + 1) +
+      pad(now.getUTCDate()) +
+      pad(now.getUTCHours()) +
+      pad(now.getUTCMinutes());
+    const originalFsPath = targetUri.fsPath;
+    return vscode.Uri.file(`${originalFsPath}.${suffix}`);
+  }
+
+  private async verifyLegacyConfigMigration(): Promise<void> {
+    if (!this._workspaceRoot) {
+      return;
+    }
+    const newConfigUri = this.getConfigUri();
+    if (!newConfigUri) {
+      return;
+    }
+    try {
+      await vscode.workspace.fs.stat(newConfigUri);
+      this.logger.info(
+        `verifyLegacyConfigMigration: ${CONFIG_FILENAME} already present — no action needed`
+      );
+      return;
+    } catch {
+      // .tangyr.jsonc absent — continue check
+    }
+    const legacyUri = this.getConfigUri(LEGACY_CONFIG_FILENAME);
+    if (!legacyUri) {
+      return;
+    }
+    try {
+      await vscode.workspace.fs.stat(legacyUri);
+    } catch {
+      this.logger.info(
+        `verifyLegacyConfigMigration: neither ${CONFIG_FILENAME} nor ${LEGACY_CONFIG_FILENAME} found — no action needed`
+      );
+      return;
+    }
+    this.logger.info(
+      `verifyLegacyConfigMigration: ${CONFIG_FILENAME} absent, ${LEGACY_CONFIG_FILENAME} present — attempting migration`
+    );
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = await this.readConfigFile(LEGACY_CONFIG_FILENAME);
+    } catch {
+      // Path B: malformed legacy
+      const malformedBackupUri = await this.findAvailableBackupPath(
+        vscode.Uri.joinPath(
+          this._workspaceRoot,
+          `${LEGACY_CONFIG_FILENAME}.malformed.bak`
+        )
+      );
+      try {
+        await vscode.workspace.fs.rename(legacyUri, malformedBackupUri, {
+          overwrite: false,
+        });
+        this.logger.warn(
+          `verifyLegacyConfigMigration: renamed malformed ${LEGACY_CONFIG_FILENAME} to ${malformedBackupUri.fsPath}`
+        );
+      } catch (renameErr) {
+        this.logger.warn(
+          `verifyLegacyConfigMigration: could not rename malformed legacy file: ${String(renameErr)}`
+        );
+      }
+      void vscode.window.showWarningMessage(
+        `Tangyr: found legacy .arit-toolkit.jsonc but could not parse it. Renamed to .arit-toolkit.jsonc.malformed.bak for review. Please create a new .tangyr.jsonc via the onboarding prompt.`
+      );
+      return;
+    }
+    // Path A: parseable legacy
+    this.applyConfig(parsed); // sets _fullConfig, _isInitialized,
+    // _isEnabled, _configVersionCode,
+    // calls notifySectionListeners
+    this._loadedLegacyConfigFile = true; // signal that we loaded from legacy
+    this._onDidChangeState.fire(this._isEnabled); // mirror initialize() upstream
+    // transition so feature services
+    // see the enable/disable signal
+    this.logger.info(
+      `verifyLegacyConfigMigration: applied legacy config to in-memory state`
+    );
+    await this.runMigration(); // brings config to current
+    // extension version AND writes
+    // .tangyr.jsonc via writeFullConfig
+    // OR via ensureCurrentConfigFile
+    this.logger.info(`verifyLegacyConfigMigration: ran migration after Path A apply`);
+    const bakUri = await this.findAvailableBackupPath(
+      vscode.Uri.joinPath(this._workspaceRoot, `${LEGACY_CONFIG_FILENAME}.bak`)
+    );
+    try {
+      await vscode.workspace.fs.rename(legacyUri, bakUri, { overwrite: false });
+      this.logger.info(
+        `verifyLegacyConfigMigration: renamed ${LEGACY_CONFIG_FILENAME} to ${bakUri.fsPath}`
+      );
+    } catch (renameErr) {
+      this.logger.warn(
+        `verifyLegacyConfigMigration: could not rename legacy file after migration: ${String(renameErr)}`
+      );
+    }
+    void vscode.window.showInformationMessage(
+      `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy file renamed to .arit-toolkit.jsonc.bak.`
+    );
   }
 
   private notifySectionListeners(
