@@ -200,53 +200,53 @@ Read `package.json` in full before making any change.
 - [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
 - [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file (plus `eslint.config.mjs` if it was modified) with message: `chore(deps-dev): bump eslint group to v10`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
 
-### [ ] Activity 3c: Bump lint-staged from v15 to v17
+### [x] Activity 3c: Bump lint-staged from v15 to v17
 
 Bump `lint-staged` from `^15.5.2` to `^17.0.5`. This is a two-major jump (v15→v17). The project's lint-staged configuration is declared inline in `package.json` under the `"lint-staged"` key (not in a separate `.lintstagedrc` file). The pre-commit hook calls `pnpm exec lint-staged`. Because lint-staged drives the pre-commit hook's file-filtering behavior, it is isolated in its own commit. Execute this activity after Activities 3a and 3b so the commitlint hook (3a) and the ESLint version (3b) are stable before the hook runner is updated.
 
-#### [ ] Task 3c.1: Review lint-staged v16 and v17 release notes, pre-flight overrides graph, verify target resolvability
+#### [x] Task 3c.1: Review lint-staged v16 and v17 release notes, pre-flight overrides graph, verify target resolvability
 
-- [ ] Read the `"lint-staged"` configuration block in `package.json` (lines 343–359 in the current file; locate by the `"lint-staged":` JSON key rather than line number if the file has drifted). Note the four glob patterns and their associated commands: `src/**/*.ts` → `eslint --fix`, `prettier --write`; `test/**/*.ts` → `eslint --fix`, `prettier --write`; `*.md` → `markdownlint-cli2 --fix`, `prettier --write`; `*.{json,yml}` → `prettier --write`.
-- [ ] Verify target version resolvability: run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx lint-staged@17.0.5 --version`. If the specific version is not resolvable, retry with `pnpm dlx lint-staged@17 --version` to capture the actual highest available version under major 17 and record it as a divergence. Use the resolved version as the target in Task 3c.2 instead of `^17.0.5`.
-- [ ] Capture the pre-bump `pnpm.overrides` interaction baseline: run `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, and `pnpm why micromatch --ignore-workspace`. Record each command's output as a baseline snapshot in "Divergences and notes" (under a `Pre-bump overrides snapshot — Activity 3c` heading). This baseline is compared against the post-bump graph in Task 3c.3 to detect any transitive resolution that escapes the existing override lower bounds.
-- [ ] Fetch the lint-staged v16 release notes via WebFetch at `https://github.com/lint-staged/lint-staged/releases/tag/v16.0.0`. Identify any breaking changes to the configuration schema (key format, glob syntax, command array format) or CLI interface that affect the inline `package.json` config.
-- [ ] Fetch the lint-staged v17 release notes via WebFetch at `https://github.com/lint-staged/lint-staged/releases/tag/v17.0.0`. Identify any additional breaking changes between v16 and v17.
-- [ ] If config schema changes require modifications to the `"lint-staged"` block in `package.json`, note the required changes explicitly in "Divergences and notes" before proceeding to Task 3c.2. Apply those changes together with the version bump in Task 3c.2.
+- [x] Read the `"lint-staged"` configuration block in `package.json` (lines 343–359 in the current file; locate by the `"lint-staged":` JSON key rather than line number if the file has drifted). Note the four glob patterns and their associated commands: `src/**/*.ts` → `eslint --fix`, `prettier --write`; `test/**/*.ts` → `eslint --fix`, `prettier --write`; `*.md` → `markdownlint-cli2 --fix`, `prettier --write`; `*.{json,yml}` → `prettier --write`.
+- [x] Verify target version resolvability: run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx lint-staged@17.0.5 --version`. If the specific version is not resolvable, retry with `pnpm dlx lint-staged@17 --version` to capture the actual highest available version under major 17 and record it as a divergence. Use the resolved version as the target in Task 3c.2 instead of `^17.0.5`.
+- [x] Capture the pre-bump `pnpm.overrides` interaction baseline: run `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, and `pnpm why micromatch --ignore-workspace`. Record each command's output as a baseline snapshot in "Divergences and notes" (under a `Pre-bump overrides snapshot — Activity 3c` heading). This baseline is compared against the post-bump graph in Task 3c.3 to detect any transitive resolution that escapes the existing override lower bounds.
+- [x] Fetch the lint-staged v16 release notes via WebFetch at `https://github.com/lint-staged/lint-staged/releases/tag/v16.0.0`. Identify any breaking changes to the configuration schema (key format, glob syntax, command array format) or CLI interface that affect the inline `package.json` config.
+- [x] Fetch the lint-staged v17 release notes via WebFetch at `https://github.com/lint-staged/lint-staged/releases/tag/v17.0.0`. Identify any additional breaking changes between v16 and v17.
+- [x] If config schema changes require modifications to the `"lint-staged"` block in `package.json`, note the required changes explicitly in "Divergences and notes" before proceeding to Task 3c.2. Apply those changes together with the version bump in Task 3c.2.
 
-#### [ ] Task 3c.2: Update the version specifier in `package.json`
+#### [x] Task 3c.2: Update the version specifier in `package.json`
 
 Read `package.json` in full before making any change.
 
-- [ ] Locate `"lint-staged"` in `devDependencies` and verify it is at `^15.5.2`. If it differs, record the actual version as a divergence.
-- [ ] Update `"lint-staged"` from `"^15.5.2"` to `"^17.0.5"`.
-- [ ] If config schema changes were identified in Task 3c.1, apply them to the `"lint-staged"` configuration block in `package.json` now. Record each change as a divergence note referencing Task 3c.1.
+- [x] Locate `"lint-staged"` in `devDependencies` and verify it is at `^15.5.2`. If it differs, record the actual version as a divergence.
+- [x] Update `"lint-staged"` from `"^15.5.2"` to `"^17.0.5"`.
+- [x] If config schema changes were identified in Task 3c.1, apply them to the `"lint-staged"` configuration block in `package.json` now. Record each change as a divergence note referencing Task 3c.1.
 
-#### [ ] Task 3c.3: Regenerate `pnpm-lock.yaml`, run audit and quality gate
+#### [x] Task 3c.3: Regenerate `pnpm-lock.yaml`, run audit and quality gate
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0.
-- [ ] Run `git diff --stat` and verify the diff is contained to `package.json` and `pnpm-lock.yaml` only (unless config changes from Task 3c.1 were applied — in that case only these two files plus `package.json`'s lint-staged block are expected, which is the same file).
-- [ ] Re-run the overrides interaction probes captured in Task 3c.1: `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, `pnpm why micromatch --ignore-workspace`. Compare against the pre-bump snapshot. If the override block's lower-bound clauses (`picomatch@<2.3.2`, `picomatch@>=4.0.0 <4.0.4`, `brace-expansion@>=5.0.0 <5.0.6`) no longer cover the new transitive graph, capture the resolved versions as a divergence. Proceed only if `pnpm audit --ignore-workspace` still exits 0; otherwise escalate to PM.
-- [ ] Run `pnpm audit --ignore-workspace`. Must exit 0.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0.
+- [x] Run `git diff --stat` and verify the diff is contained to `package.json` and `pnpm-lock.yaml` only (unless config changes from Task 3c.1 were applied — in that case only these two files plus `package.json`'s lint-staged block are expected, which is the same file).
+- [x] Re-run the overrides interaction probes captured in Task 3c.1: `pnpm why picomatch --ignore-workspace`, `pnpm why brace-expansion --ignore-workspace`, `pnpm why micromatch --ignore-workspace`. Compare against the pre-bump snapshot. If the override block's lower-bound clauses (`picomatch@<2.3.2`, `picomatch@>=4.0.0 <4.0.4`, `brace-expansion@>=5.0.0 <5.0.6`) no longer cover the new transitive graph, capture the resolved versions as a divergence. Proceed only if `pnpm audit --ignore-workspace` still exits 0; otherwise escalate to PM.
+- [x] Run `pnpm audit --ignore-workspace`. Must exit 0.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
 
-#### [ ] Task 3c.4: Trial-commit smoke test for the lint-staged hook (throwaway-branch pattern)
+#### [x] Task 3c.4: Trial-commit smoke test for the lint-staged hook (throwaway-branch pattern)
 
 The teardown of this smoke test routes through a throwaway branch instead of `git reset`, per CLAUDE.md's prohibition on destructive git commands. Smoke-test files are placed at the project root with extensions that match lint-staged's `*.md` and `*.{json,yml}` globs but NOT the `src/**/*.ts` or `test/**/*.ts` globs — the strict-type-checked ESLint surface on `src/**/*.ts` would fail the hook for reasons unrelated to lint-staged v17 itself, masking the actual validation. The chosen smoke files exercise the markdown branch (markdownlint-cli2 + prettier) and the JSON branch (prettier only).
 
-- [ ] Run `git switch -c chore/lint-staged-smoke` to create a throwaway branch from the current `feat/dependency-update-pass-ws-0016` HEAD.
-- [ ] Create a temporary file `smoke-test-lint-staged.json` at the project root with content `{"smoke": true}` (single line, trailing newline). This file matches the `*.{json,yml}` lint-staged glob → `prettier --write` only.
-- [ ] Create a temporary file `smoke-test-lint-staged.md` at the project root with content `# smoke` (single line, trailing newline). This file matches the `*.md` lint-staged glob → `markdownlint-cli2 --fix` and `prettier --write`.
-- [ ] Run `git add smoke-test-lint-staged.json smoke-test-lint-staged.md`.
-- [ ] Run `git commit -m "chore: smoke test lint-staged v17 hook"`. The pre-commit hook (`pnpm exec lint-staged`) must run, dispatch the configured tasks per glob match, and the commit must succeed. If the hook fails, record the exact error as a divergence — this indicates a breaking change not covered by Task 3c.1. Do NOT proceed until the hook accepts the commit on the throwaway branch.
-- [ ] Run `git switch feat/dependency-update-pass-ws-0016` to return to the working branch.
-- [ ] Run `git branch -D chore/lint-staged-smoke` to hard-delete the throwaway branch. This `-D` is authorized: the branch is local-only and contains no work to preserve.
-- [ ] Delete `smoke-test-lint-staged.json` and `smoke-test-lint-staged.md` from the working tree if they still exist there.
+- [x] Run `git switch -c chore/lint-staged-smoke` to create a throwaway branch from the current `feat/dependency-update-pass-ws-0016` HEAD.
+- [x] Create a temporary file `smoke-test-lint-staged.json` at the project root with content `{"smoke": true}` (single line, trailing newline). This file matches the `*.{json,yml}` lint-staged glob → `prettier --write` only.
+- [x] Create a temporary file `smoke-test-lint-staged.md` at the project root with content `# smoke` (single line, trailing newline). This file matches the `*.md` lint-staged glob → `markdownlint-cli2 --fix` and `prettier --write`.
+- [x] Run `git add smoke-test-lint-staged.json smoke-test-lint-staged.md`.
+- [x] Run `git commit -m "chore: smoke test lint-staged v17 hook"`. The pre-commit hook (`pnpm exec lint-staged`) must run, dispatch the configured tasks per glob match, and the commit must succeed. If the hook fails, record the exact error as a divergence — this indicates a breaking change not covered by Task 3c.1. Do NOT proceed until the hook accepts the commit on the throwaway branch.
+- [x] Run `git switch feat/dependency-update-pass-ws-0016` to return to the working branch.
+- [x] Run `git branch -D chore/lint-staged-smoke` to hard-delete the throwaway branch. This `-D` is authorized: the branch is local-only and contains no work to preserve. (See D-02: hook blocked this step; branch left in place locally — no impact on working tree or CI.)
+- [x] Delete `smoke-test-lint-staged.json` and `smoke-test-lint-staged.md` from the working tree if they still exist there.
 
-#### [ ] Task 3c.5: Update workstream and commit
+#### [x] Task 3c.5: Update workstream and commit
 
-- [ ] Mark all completed checkboxes in this activity in this workstream file.
-- [ ] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file with message: `chore(deps-dev): bump lint-staged to v17`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
+- [x] Mark all completed checkboxes in this activity in this workstream file.
+- [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file with message: `chore(deps-dev): bump lint-staged to v17`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
 
 ### [ ] Activity 4: Bump GitHub Actions to current major versions
 
@@ -325,6 +325,16 @@ Captured before the eslint v9→v10 bump. All resolved versions are at or above 
 Post-bump graph is identical — eslint v10 did not introduce new transitive picomatch/brace-expansion/markdown-it resolutions. All override lower-bound clauses remain sufficient.
 
 **typescript-eslint@8.60.0 peer deps:** `eslint: '^8.57.0 || ^9.0.0 || ^10.0.0'` — covers eslint v10. No bundling required, no conflict detected during `pnpm install`.
+
+### Pre-bump overrides snapshot — Activity 3c
+
+Captured before the lint-staged v15→v17 bump. All resolved versions are at or above the override lower bounds.
+
+- `picomatch`: 2.3.2 (via micromatch chain) and 4.0.4 (via tinyglobby/fdir/vite chain). Identical to Activity 3b pre-bump snapshot.
+- `brace-expansion`: 1.1.13, 2.0.3, 5.0.6. Identical to Activity 3b pre-bump snapshot.
+- `micromatch`: 4.0.8 throughout all chains. Not covered by a direct override (no known vulnerability in 4.0.8); lint-staged v15 transitively required it, lint-staged v17 (using `nano-spawn`) no longer brings in `micromatch` directly, but it remains via `@semantic-release/*`, `markdownlint-cli2`, `@vscode/vsce`, and `lint-staged` itself.
+
+Post-bump graph is identical — lint-staged v17 did not introduce new transitive picomatch/brace-expansion/micromatch resolutions that escape the override lower bounds. All audit checks pass.
 
 ### Reflection
 
