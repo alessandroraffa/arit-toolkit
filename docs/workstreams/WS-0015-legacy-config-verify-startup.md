@@ -225,11 +225,11 @@ Mark all completed subtasks and tasks in this activity.
 - [x] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
 - [x] Commit `src/core/extensionStateManager.ts`, `docs/technical-context.md`, and this workstream file with message: `feat(core): add verifylegacyconfigmigration backstop to initialize`. Subject must be lowercase, type `feat` ∈ commitlint type-enum.
 
-### [ ] Activity 2: Add vitest unit tests for `verifyLegacyConfigMigration`
+### [x] Activity 2: Add vitest unit tests for `verifyLegacyConfigMigration`
 
 This activity adds a new test file `test/unit/core/extensionStateManager.legacyVerify.test.ts` covering the seven prescribed scenarios. After this activity commits, `pnpm run test:unit` runs the new tests and all seven pass.
 
-#### [ ] Task 2.1: Read the existing test infrastructure before writing any test
+#### [x] Task 2.1: Read the existing test infrastructure before writing any test
 
 Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/test/unit/core/extensionStateManager.test.ts` in full. Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/test/unit/mocks/vscode.ts` in full. Confirm the following before writing any test code:
 
@@ -242,7 +242,7 @@ Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/test/unit
 - The `FileSystemError` used in production code to signal "file not found" is simulated in tests by having `stat` reject with any `Error` — the production code catches all errors from `stat`, not just `FileSystemError` specifically.
 - The existing test helper `createManager()` creates an `ExtensionStateManager` with `mockLogger` and `mockMigrationService`. Use the same pattern in the new test file.
 
-#### [ ] Task 2.2: Create `test/unit/core/extensionStateManager.legacyVerify.test.ts`
+#### [x] Task 2.2: Create `test/unit/core/extensionStateManager.legacyVerify.test.ts`
 
 Create the file at `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/test/unit/core/extensionStateManager.legacyVerify.test.ts`. The file must import from the same paths used in the existing test files: `'../mocks/vscode'` for mocks and `'../../../src/core/extensionStateManager'` for the class. Each test calls `manager.initialize('1.19.0')` to trigger the full initialization including the backstop. Each test sets `workspace.workspaceFolders` to `[{ uri: { fsPath: '/workspace' } }]` unless testing the multi-root guard. Each test must reset all `workspace.fs.*` mocks in its own setup — no shared mock state between tests. The `describe` block is named `'verifyLegacyConfigMigration'`.
 
@@ -309,20 +309,20 @@ Implement the following seven `it` blocks in order:
 - Setup: Same as Test 2 (Call #1 rejects, Call #2 rejects, Call #3 resolves with valid bytes; stat for `.arit-toolkit.jsonc.bak` rejects).
 - Assert: `manager.isInitialized` is `true`. `manager.isEnabled` is `true`. The `onDidChangeState` event was fired at least once with value `true`. (Subscribe to `manager.onDidChangeState` before calling `initialize` to capture the events.)
 
-#### [ ] Task 2.3: Verify quality gate passes with new tests
+#### [x] Task 2.3: Verify quality gate passes with new tests
 
-- [ ] Run `pnpm run check-types`. Must pass with zero errors.
-- [ ] Run `pnpm run lint`. Must pass with zero errors. The new test file must not introduce new lint warnings. If `eslint` reports a `max-lines` or `complexity` warning on the new test file, split the `describe` block into a second `describe` within the same file (no activity-level restructuring needed) and re-run.
-- [ ] Run `pnpm run test:unit`. Must pass. The seven new tests must all appear as passing in the output. If any test fails, read the failure message, identify which assertion failed, correct only the test code (do not modify production code in this task), and re-run. If a test failure reveals a production code defect (e.g., the backstop fires when `.tangyr.jsonc` is present and it should not), record the defect as a divergence and escalate to the PM — do not silently fix production code in an activity scoped to tests only.
+- [x] Run `pnpm run check-types`. Must pass with zero errors.
+- [x] Run `pnpm run lint`. Must pass with zero errors. The new test file must not introduce new lint warnings. If `eslint` reports a `max-lines` or `complexity` warning on the new test file, split the `describe` block into a second `describe` within the same file (no activity-level restructuring needed) and re-run.
+- [x] Run `pnpm run test:unit`. Must pass. The seven new tests must all appear as passing in the output. If any test fails, read the failure message, identify which assertion failed, correct only the test code (do not modify production code in this task), and re-run. If a test failure reveals a production code defect (e.g., the backstop fires when `.tangyr.jsonc` is present and it should not), record the defect as a divergence and escalate to the PM — do not silently fix production code in an activity scoped to tests only.
 
-#### [ ] Task 2.4: Update impacted documentation
+#### [x] Task 2.4: Update impacted documentation
 
 No additional documentation change is required for this activity: the new test file follows the existing naming convention (`extensionStateManager.<scope>.test.ts`) and the test count increase is self-evident from `test:unit` output. Note "No documentation impact" against this task and mark it complete.
 
-#### [ ] Task 2.5: Commit changes
+#### [x] Task 2.5: Commit changes
 
-- [ ] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
-- [ ] Commit `test/unit/core/extensionStateManager.legacyVerify.test.ts` and this workstream file with message: `test(core): add unit tests for verifylegacyconfigmigration backstop`. Subject must be lowercase, type `test` ∈ commitlint type-enum.
+- [x] Run the full quality gate: `pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
+- [x] Commit `test/unit/core/extensionStateManager.legacyVerify.test.ts` and this workstream file with message: `test(core): add unit tests for verifylegacyconfigmigration backstop`. Subject must be lowercase, type `test` ∈ commitlint type-enum.
 
 ### [ ] Activity 3: Document `verifyLegacyConfigMigration` behaviour in `docs/technical-context.md`
 
@@ -370,7 +370,7 @@ Run `pnpm run lint` (which includes `markdownlint-cli2`). Must pass with zero er
 
 ## Divergences and notes
 
-_To be compiled at workstream completion._
+**D-1 (Activity 2, Task 2.2 — Test 7 `onDidChangeState` assertion):** The workstream prescribed that Test 7 assert "`onDidChangeState` was fired at least once with value `true`". However, `verifyLegacyConfigMigration` Path A calls `applyConfig()` (which fires `notifySectionListeners` but NOT `_onDidChangeState`) and `runMigration()` (which also does not fire `_onDidChangeState`). The `_onDidChangeState.fire()` calls are only in `initialize()`, `toggle()`, `initializeWorkspace()`, and the `FileSystemWatcher` callbacks — none of which fire during the Path A backstop flow when `showOnboardingNotification` returns `undefined`. The test assertion was therefore unreachable given the prescribed production implementation. Corrective action: removed the `onDidChangeState` subscription and `stateChanges` assertion from Test 7; retained `isInitialized` and `isEnabled` checks which do verify the internal state mutation. No production code was modified; the correction is test-only. This discrepancy is noted for PM awareness — if emitting `_onDidChangeState` from `verifyLegacyConfigMigration` is required, a follow-up workstream or amendment to this one would be needed.
 
 ### Reflection
 
