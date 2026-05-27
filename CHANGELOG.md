@@ -1,3 +1,13 @@
+## [2.2.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.1.1...v2.2.0) (2026-05-27)
+
+### Features
+
+* **core:** add verifylegacyconfigmigration backstop to initialize ([256d8f0](https://github.com/alessandroraffa/tangyr-vscode/commit/256d8f0fa311401c1f64999ff4a0ad1e8bcbc480))
+
+### Bug Fixes
+
+* **core:** fire ondidchangestate after backstop migration so feature services see transition ([21047df](https://github.com/alessandroraffa/tangyr-vscode/commit/21047dfb45cabe3dc4f1d659da1070fe2db08006))
+
 ## [2.1.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.1.0...v2.1.1) (2026-05-27)
 
 ### Bug Fixes
