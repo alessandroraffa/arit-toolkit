@@ -82,37 +82,37 @@ Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/package.j
 - [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
 - [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file with message: `chore(deps-dev): bump patch-level packages (prettier, markdownlint-cli2)`. Subject must be lowercase; type `chore` is in the commitlint `type-enum` defined in `commitlint.config.mjs`.
 
-### [ ] Activity 2: Bump minor-level dev dependency (typescript-eslint)
+### [x] Activity 2: Bump minor-level dev dependency (typescript-eslint)
 
 Bump one minor-level dev dependency. `turbo` is absent from `devDependencies` (it appears only in `pnpm.overrides` and is already pinned at `2.9.14`); this activity covers `typescript-eslint` only.
 
-#### [ ] Task 2.1: Confirm current version in `package.json`
+#### [x] Task 2.1: Confirm current version in `package.json`
 
 Read `package.json` in full before making any change.
 
-- [ ] Locate `"typescript-eslint"` in the `devDependencies` block and record its current version string.
-- [ ] Verify it is at `^8.54.0`. If it differs, record the actual version as a divergence and adjust the target in Task 2.2 to `8.60.0` if the current version is below that, or to the next minor release if the current version already meets or exceeds `8.60.0`.
+- [x] Locate `"typescript-eslint"` in the `devDependencies` block and record its current version string.
+- [x] Verify it is at `^8.54.0`. If it differs, record the actual version as a divergence and adjust the target in Task 2.2 to `8.60.0` if the current version is below that, or to the next minor release if the current version already meets or exceeds `8.60.0`.
 
-#### [ ] Task 2.2: Update the version specifier in `package.json`
+#### [x] Task 2.2: Update the version specifier in `package.json`
 
-- [ ] In the `devDependencies` block, update `"typescript-eslint"` from `"^8.54.0"` to `"^8.60.0"`.
-- [ ] Do not modify any other field in `package.json`.
+- [x] In the `devDependencies` block, update `"typescript-eslint"` from `"^8.54.0"` to `"^8.60.0"`.
+- [x] Do not modify any other field in `package.json`.
 
-#### [ ] Task 2.3: Regenerate `pnpm-lock.yaml` and verify scope
+#### [x] Task 2.3: Regenerate `pnpm-lock.yaml` and verify scope
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0. If pnpm reports a peer-dependency conflict with the ESLint v9 range that `typescript-eslint@8.60.0` declares, record the conflict message as a divergence and escalate to the PM before proceeding (the ESLint major bump in Activity 3b may need to be sequenced first or done in the same commit).
-- [ ] Run `git diff --stat` and verify the diff is contained to `package.json` and `pnpm-lock.yaml` only.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0. If pnpm reports a peer-dependency conflict with the ESLint v9 range that `typescript-eslint@8.60.0` declares, record the conflict message as a divergence and escalate to the PM before proceeding (the ESLint major bump in Activity 3b may need to be sequenced first or done in the same commit).
+- [x] Run `git diff --stat` and verify the diff is contained to `package.json` and `pnpm-lock.yaml` only.
 
-#### [ ] Task 2.4: Run security audit and quality gate
+#### [x] Task 2.4: Run security audit and quality gate
 
-- [ ] Run `pnpm audit --ignore-workspace`. Must exit 0.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
+- [x] Run `pnpm audit --ignore-workspace`. Must exit 0.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
 
-#### [ ] Task 2.5: Update workstream and commit
+#### [x] Task 2.5: Update workstream and commit
 
-- [ ] Mark all completed checkboxes in this activity in this workstream file.
-- [ ] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file with message: `chore(deps-dev): bump minor-level packages (typescript-eslint)`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
+- [x] Mark all completed checkboxes in this activity in this workstream file.
+- [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file with message: `chore(deps-dev): bump minor-level packages (typescript-eslint)`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
 
 ### [ ] Activity 3a: Bump commitlint group to v21
 
@@ -287,7 +287,16 @@ Read `.github/workflows/ci.yml` in full before making any change (even if it was
 
 ## Divergences and notes
 
-_To be compiled during execution._
+### Divergence D-01 — Activity 2: typescript-eslint@8.60.0 tightened `no-unnecessary-type-assertion` rule
+
+**Cause:** `typescript-eslint@8.60.0` (via `strictTypeChecked`) tightened the `no-unnecessary-type-assertion` rule. Four assertions that were previously accepted now produce errors. In all four cases the assertion target type has only optional fields, making it structurally assignable from `{}` (the narrowed type after a truthiness guard on `unknown`) or from `Record<string, unknown>`. TypeScript itself accepts the code without assertions; the rule is correct.
+
+**Affected locations:**
+
+- `src/features/agentSessionsArchiving/markdown/parsers/codexParser.ts` lines 266–268: `obj.payload as EventMsgPayload` and `obj.payload as ResponseItemPayload` removed (after `if (!obj.payload) return` guard narrows `unknown` to `{}`).
+- `src/features/agentSessionsArchiving/markdown/parsers/copilotChatParser.ts` lines 72 and 79: `inner as CopilotSession` and `reconstructSessionFromJsonl(content) as CopilotSession` removed (return type has only optional fields; `object`/`Record<string,unknown>` structurally assignable).
+
+**Corrective action:** Removed the four unnecessary assertions. `check-types` passes, lint passes at 26 warnings (baseline unchanged), tests pass at 786. Source files changed are outside the lockfile scope but causally tied to this bump commit — included in the Activity 2 commit.
 
 ### Reflection
 

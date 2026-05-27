@@ -262,9 +262,7 @@ export class CodexParser implements SessionParser {
       return;
     }
     if (!obj.payload) return;
-    if (obj.type === 'event_msg')
-      processEventMsg(obj.payload as EventMsgPayload, state, completedTurns);
-    else if (obj.type === 'response_item')
-      processResponseItem(obj.payload as ResponseItemPayload, state);
+    if (obj.type === 'event_msg') processEventMsg(obj.payload, state, completedTurns);
+    else if (obj.type === 'response_item') processResponseItem(obj.payload, state);
   }
 }
