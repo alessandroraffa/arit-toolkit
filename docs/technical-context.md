@@ -90,6 +90,19 @@ are prompted to opt in to new configuration sections.
 | UTC timestamps                   | All generated timestamps use UTC (`getUTCFullYear()`, etc.).                                                                                                                      |
 | Disposable pattern               | Every VS Code resource (watchers, event emitters, commands) is tracked via `context.subscriptions` for deterministic cleanup.                                                     |
 
+### 2.4 Dependency overrides
+
+**Dependency overrides:** `package.json` declares a `pnpm.overrides` block
+that forces vulnerable transitive packages to their patched versions.
+The block is updated whenever `pnpm audit` reports an advisory not
+already covered. Removal of an override entry is allowed only after
+verifying — via `pnpm why <package>` — that no remaining ancestor in the
+resolution tree pulls in a vulnerable range. The override block is the
+project's surgical fix path for transitive vulnerabilities; the
+Dependabot security-update PRs targeting the same packages are
+superseded once the overrides are merged and may be closed without
+merge.
+
 ## 3 Context and Scope
 
 ### 3.1 Business Context

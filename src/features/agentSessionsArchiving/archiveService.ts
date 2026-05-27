@@ -294,19 +294,159 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     }
   }
 
-  private async moveArchive(oldPath: string, newPath: string): Promise<void> {
+  private async moveTopLevelFile(
+    oldUri: vscode.Uri,
+    newUri: vscode.Uri,
+    name: string
+  ): Promise<boolean> {
+    try {
+      await vscode.workspace.fs.copy(
+        vscode.Uri.joinPath(oldUri, name),
+        vscode.Uri.joinPath(newUri, name),
+        { overwrite: true }
+      );
+      return true;
+    } catch (err) {
+      this.logger.warn(`Failed to move file ${name}: ${String(err)}`);
+      return false;
+    }
+  }
+
+  private async moveMonthDirectory(
+    monthOldUri: vscode.Uri,
+    monthNewUri: vscode.Uri,
+    label: string
+  ): Promise<boolean> {
+    let fileEntries: [string, vscode.FileType][];
+    try {
+      fileEntries = await vscode.workspace.fs.readDirectory(monthOldUri);
+    } catch (err) {
+      this.logger.warn(`Failed to read month dir ${label} during move: ${String(err)}`);
+      return false;
+    }
+    await this.ensureDirectory(monthNewUri);
+    let allOK = true;
+    for (const [fileName, fileType] of fileEntries) {
+      if (fileType !== vscode.FileType.File) {
+        continue;
+      }
+      try {
+        await vscode.workspace.fs.copy(
+          vscode.Uri.joinPath(monthOldUri, fileName),
+          vscode.Uri.joinPath(monthNewUri, fileName),
+          { overwrite: true }
+        );
+      } catch (err) {
+        allOK = false;
+        this.logger.warn(`Failed to move file ${label}/${fileName}: ${String(err)}`);
+      }
+    }
+    return allOK;
+  }
+
+  private async moveYearDirectory(
+    oldUri: vscode.Uri,
+    newUri: vscode.Uri,
+    yyyy: string
+  ): Promise<boolean> {
+    let monthEntries: [string, vscode.FileType][];
+    try {
+      monthEntries = await vscode.workspace.fs.readDirectory(
+        vscode.Uri.joinPath(oldUri, yyyy)
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to read year dir ${yyyy} during move: ${String(err)}`);
+      return false;
+    }
+    let allOK = true;
+    for (const [mmName, mmType] of monthEntries) {
+      if (mmType !== vscode.FileType.Directory || !/^\d{2}$/.test(mmName)) {
+        continue;
+      }
+      const monthOK = await this.moveMonthDirectory(
+        vscode.Uri.joinPath(oldUri, yyyy, mmName),
+        vscode.Uri.joinPath(newUri, yyyy, mmName),
+        `${yyyy}/${mmName}`
+      );
+      if (!monthOK) {
+        allOK = false;
+      }
+    }
+    return allOK;
+  }
+
+  private validateMovePaths(oldPath: string, newPath: string): boolean {
     const oldValidation = validateArchivePath(oldPath);
     if (!oldValidation.valid) {
       this.logger.warn(
         `Skipping moveArchive: invalid oldPath "${oldPath}" — ${oldValidation.reason ?? 'unknown'}`
       );
-      return;
+      return false;
     }
     const newValidation = validateArchivePath(newPath);
     if (!newValidation.valid) {
       this.logger.warn(
         `Skipping moveArchive: invalid newPath "${newPath}" — ${newValidation.reason ?? 'unknown'}`
       );
+      return false;
+    }
+    return true;
+  }
+
+  private async finalizeMoveArchive(
+    oldUri: vscode.Uri,
+    oldPath: string,
+    newPath: string,
+    allCopiesSucceeded: boolean
+  ): Promise<void> {
+    if (!allCopiesSucceeded) {
+      this.logger.warn(
+        `moveArchive completed with copy failures — left source archive in place at "${oldPath}" for manual cleanup after verifying "${newPath}" is complete. Do NOT delete "${oldPath}" until verifying the target tree is intact.`
+      );
+      return;
+    }
+    try {
+      await vscode.workspace.fs.delete(oldUri, { recursive: true });
+    } catch (err) {
+      this.logger.warn(
+        `Failed to delete old archive directory ${oldPath} after move: ${String(err)} — left in place`
+      );
+    }
+    this.logger.info(`Moved archive from ${oldPath} to ${newPath}`);
+  }
+
+  private async moveEntry(
+    oldUri: vscode.Uri,
+    newUri: vscode.Uri,
+    entry: [string, vscode.FileType]
+  ): Promise<boolean> {
+    const [name, type] = entry;
+    if (type === vscode.FileType.File) {
+      return this.moveTopLevelFile(oldUri, newUri, name);
+    }
+    if (type === vscode.FileType.Directory && /^\d{4}$/.test(name)) {
+      return this.moveYearDirectory(oldUri, newUri, name);
+    }
+    return true;
+  }
+
+  private async copyAllMoveEntries(
+    oldUri: vscode.Uri,
+    newUri: vscode.Uri,
+    entries: [string, vscode.FileType][]
+  ): Promise<boolean> {
+    let allOK = true;
+    for (const entry of entries) {
+      const ok = await this.moveEntry(oldUri, newUri, entry);
+      if (!ok) {
+        allOK = false;
+      }
+    }
+    return allOK;
+  }
+
+  private async moveArchive(oldPath: string, newPath: string): Promise<void> {
+    if (!this.validateMovePaths(oldPath, newPath)) {
       return;
     }
     const oldUri = vscode.Uri.joinPath(this.workspaceRootUri, oldPath);
@@ -319,82 +459,8 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       return;
     }
     await this.ensureDirectory(newUri);
-    let allCopiesSucceeded = true;
-    for (const [name, type] of entries) {
-      if (type === vscode.FileType.File) {
-        try {
-          await vscode.workspace.fs.copy(
-            vscode.Uri.joinPath(oldUri, name),
-            vscode.Uri.joinPath(newUri, name),
-            { overwrite: true }
-          );
-        } catch (err) {
-          allCopiesSucceeded = false;
-          this.logger.warn(`Failed to move file ${name}: ${String(err)}`);
-        }
-      } else if (type === vscode.FileType.Directory && /^\d{4}$/.test(name)) {
-        const yyyy = name;
-        let monthEntries: [string, vscode.FileType][];
-        try {
-          monthEntries = await vscode.workspace.fs.readDirectory(
-            vscode.Uri.joinPath(oldUri, yyyy)
-          );
-        } catch (err) {
-          allCopiesSucceeded = false;
-          this.logger.warn(`Failed to read year dir ${yyyy} during move: ${String(err)}`);
-          continue;
-        }
-        for (const [mmName, mmType] of monthEntries) {
-          if (mmType !== vscode.FileType.Directory || !/^\d{2}$/.test(mmName)) {
-            continue;
-          }
-          let fileEntries: [string, vscode.FileType][];
-          try {
-            fileEntries = await vscode.workspace.fs.readDirectory(
-              vscode.Uri.joinPath(oldUri, yyyy, mmName)
-            );
-          } catch (err) {
-            allCopiesSucceeded = false;
-            this.logger.warn(
-              `Failed to read month dir ${yyyy}/${mmName} during move: ${String(err)}`
-            );
-            continue;
-          }
-          await this.ensureDirectory(vscode.Uri.joinPath(newUri, yyyy, mmName));
-          for (const [fileName, fileType] of fileEntries) {
-            if (fileType !== vscode.FileType.File) {
-              continue;
-            }
-            try {
-              await vscode.workspace.fs.copy(
-                vscode.Uri.joinPath(oldUri, yyyy, mmName, fileName),
-                vscode.Uri.joinPath(newUri, yyyy, mmName, fileName),
-                { overwrite: true }
-              );
-            } catch (err) {
-              allCopiesSucceeded = false;
-              this.logger.warn(
-                `Failed to move file ${yyyy}/${mmName}/${fileName}: ${String(err)}`
-              );
-            }
-          }
-        }
-      }
-    }
-    if (allCopiesSucceeded) {
-      try {
-        await vscode.workspace.fs.delete(oldUri, { recursive: true });
-      } catch (err) {
-        this.logger.warn(
-          `Failed to delete old archive directory ${oldPath} after move: ${String(err)} — left in place`
-        );
-      }
-      this.logger.info(`Moved archive from ${oldPath} to ${newPath}`);
-    } else {
-      this.logger.warn(
-        `moveArchive completed with copy failures — left source archive in place at "${oldPath}" for manual cleanup after verifying "${newPath}" is complete. Do NOT delete "${oldPath}" until verifying the target tree is intact.`
-      );
-    }
+    const allCopiesSucceeded = await this.copyAllMoveEntries(oldUri, newUri, entries);
+    await this.finalizeMoveArchive(oldUri, oldPath, newPath, allCopiesSucceeded);
   }
 
   private async migrateFlatLayout(
