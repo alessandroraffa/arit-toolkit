@@ -46,6 +46,7 @@ Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/src/core/
 - `writeFullConfig()` is a `private async` method at line 294.
 - `readConfigFile(fileName)` is a `private async` method at line 260.
 - `applyConfig(config)` is a `private` method at line 269.
+- `getConfigUri(fileName)` is the helper at lines 204–208.
 
 If any line numbers differ from the values listed above, note the actual lines as a divergence and continue — the insertion targets are identified by their surrounding context, not by line number alone.
 
@@ -82,7 +83,7 @@ Insert the method body shown below immediately AFTER `findAvailableBackupPath()`
 1. Returns early if `_workspaceRoot` is absent (guard matching the upstream single-root check).
 2. Probes `.tangyr.jsonc` via `vscode.workspace.fs.stat(getConfigUri())`. If the file exists, logs `info` and returns (no-op — normal flow already succeeded).
 3. Probes `.arit-toolkit.jsonc` via `vscode.workspace.fs.stat(getConfigUri(LEGACY_CONFIG_FILENAME))`. If absent, logs `info` and returns (no legacy to migrate).
-4. Calls `readConfigFile(LEGACY_CONFIG_FILENAME)`. On success (Path A): calls `writeFullConfig(parsed)`, renames legacy to `.arit-toolkit.jsonc.bak` via `findAvailableBackupPath` + `vscode.workspace.fs.rename`, updates internal state (`_fullConfig`, `_isInitialized`, `_isEnabled`, `_loadedLegacyConfigFile`), fires `_onDidChangeState`, logs `info` at each milestone, and shows an information message. On failure (Path B): renames legacy to `.arit-toolkit.jsonc.malformed.bak` via `findAvailableBackupPath` + `vscode.workspace.fs.rename`, logs `warn`, and shows a warning message. Does NOT create `.tangyr.jsonc` in Path B.
+4. Calls `readConfigFile(LEGACY_CONFIG_FILENAME)`. On success (Path A): apply the parsed legacy config via `applyConfig()`, set `_loadedLegacyConfigFile = true`, then invoke `runMigration()` to bring the config to the current extension version and write `.tangyr.jsonc`. After the migration succeeds, rename the legacy file to `.arit-toolkit.jsonc.bak` (with timestamp collision suffix), and show the information message. On failure (Path B): renames legacy to `.arit-toolkit.jsonc.malformed.bak` via `findAvailableBackupPath` + `vscode.workspace.fs.rename`, logs `warn`, and shows a warning message. Does NOT create `.tangyr.jsonc` in Path B.
 
 ```typescript
 private async verifyLegacyConfigMigration(): Promise<void> {
@@ -141,9 +142,19 @@ private async verifyLegacyConfigMigration(): Promise<void> {
     return;
   }
   // Path A: parseable legacy
-  await this.writeFullConfig(parsed);
+  this.applyConfig(parsed);                          // sets _fullConfig, _isInitialized,
+                                                     // _isEnabled, _configVersionCode,
+                                                     // calls notifySectionListeners
+  this._loadedLegacyConfigFile = true;               // signal that we loaded from legacy
   this.logger.info(
-    `verifyLegacyConfigMigration: wrote ${CONFIG_FILENAME} from legacy config`
+    `verifyLegacyConfigMigration: applied legacy config to in-memory state`
+  );
+  await this.runMigration();                         // brings config to current
+                                                     // extension version AND writes
+                                                     // .tangyr.jsonc via writeFullConfig
+                                                     // OR via ensureCurrentConfigFile
+  this.logger.info(
+    `verifyLegacyConfigMigration: ran migration after Path A apply`
   );
   const bakUri = await this.findAvailableBackupPath(
     vscode.Uri.joinPath(this._workspaceRoot, `${LEGACY_CONFIG_FILENAME}.bak`)
@@ -158,11 +169,6 @@ private async verifyLegacyConfigMigration(): Promise<void> {
       `verifyLegacyConfigMigration: could not rename legacy file after migration: ${String(renameErr)}`
     );
   }
-  this._fullConfig = parsed;
-  this._isInitialized = true;
-  this._isEnabled = Boolean(parsed.enabled);
-  this._loadedLegacyConfigFile = false;
-  this._onDidChangeState.fire(this._isEnabled);
   void vscode.window.showInformationMessage(
     `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy file renamed to .arit-toolkit.jsonc.bak.`
   );
@@ -190,7 +196,7 @@ After the insertion, run the full quality gate: `pnpm run check-types && pnpm ru
 
 #### [ ] Task 1.5: Update impacted documentation
 
-`docs/technical-context.md` section 4.4 (Activation and Initialisation Sequence, lines 251–313) contains a `text` code block describing the `stateManager.initialize()` call tree. Insert one line at the end of that call tree, immediately before the line that reads `+-- if not initialised:`, so the sequence reflects the new backstop call. The inserted line is:
+`docs/technical-context.md` section 4.4 (Activation and Initialisation Sequence, lines 251–313) contains a `text` code block describing the `stateManager.initialize()` call tree. Insert one line at the end of the `stateManager.initialize(extensionVersion)` block, AFTER the `+-- if not initialised:` sub-block (and after `+-- if accepted: runMigration()`) and before the closing code-fence boundary. The inserted line is:
 
 ```text
         +-- verifyLegacyConfigMigration()  [backstop: no-op if .tangyr.jsonc present]
@@ -238,7 +244,26 @@ Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/test/unit
 
 #### [ ] Task 2.2: Create `test/unit/core/extensionStateManager.legacyVerify.test.ts`
 
-Create the file at `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/test/unit/core/extensionStateManager.legacyVerify.test.ts`. The file must import from the same paths used in the existing test files: `'../mocks/vscode'` for mocks and `'../../../src/core/extensionStateManager'` for the class. Each test calls `manager.initialize('1.19.0')` to trigger the full initialization including the backstop. Each test sets `workspace.workspaceFolders` to `[{ uri: { fsPath: '/workspace' } }]` unless testing the multi-root guard. Each test configures `workspace.fs.stat`, `workspace.fs.readFile`, `workspace.fs.rename`, and `workspace.fs.writeFile` mocks as needed. The `describe` block is named `'verifyLegacyConfigMigration'`.
+Create the file at `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/test/unit/core/extensionStateManager.legacyVerify.test.ts`. The file must import from the same paths used in the existing test files: `'../mocks/vscode'` for mocks and `'../../../src/core/extensionStateManager'` for the class. Each test calls `manager.initialize('1.19.0')` to trigger the full initialization including the backstop. Each test sets `workspace.workspaceFolders` to `[{ uri: { fsPath: '/workspace' } }]` unless testing the multi-root guard. Each test must reset all `workspace.fs.*` mocks in its own setup — no shared mock state between tests. The `describe` block is named `'verifyLegacyConfigMigration'`.
+
+For tests that exercise `verifyLegacyConfigMigration` (Tests 2, 3, 6, 7), prescribe `workspace.fs.stat` using `mockImplementation` keyed on `uri.fsPath` so call routing is robust to ordering changes. The skeleton for tests where the stat behaviour differs per path is:
+
+```typescript
+workspace.fs.stat = vi.fn().mockImplementation((uri: { fsPath: string }) => {
+  if (uri.fsPath.endsWith('.tangyr.jsonc')) return Promise.reject(new Error('not found'));
+  if (uri.fsPath.endsWith('.arit-toolkit.jsonc')) return Promise.resolve({});
+  // backup-path probe — resolve or reject per test
+  return Promise.reject(new Error('not found'));
+});
+```
+
+The `readFile` call chain consumed by `manager.initialize('1.19.0')` before reaching `verifyLegacyConfigMigration` is:
+
+- Call #1 — normal-flow read of `.tangyr.jsonc` (from `readCurrentConfigFile`)
+- Call #2 — normal-flow legacy fallback read of `.arit-toolkit.jsonc` (from `tryReadLegacyConfigFile`)
+- Call #3 — backstop read of `.arit-toolkit.jsonc` (from `verifyLegacyConfigMigration` Path A or Path B attempt)
+
+Use a `mockImplementation` counter or chain (`mockRejectedValueOnce` / `mockResolvedValueOnce`) so the call sequence is deterministic.
 
 Implement the following seven `it` blocks in order:
 
@@ -251,14 +276,14 @@ Implement the following seven `it` blocks in order:
 **Test 2 — `.tangyr.jsonc` missing, legacy parseable → Path A:**
 
 - Name: `'should migrate parseable legacy config when .tangyr.jsonc is absent'`
-- Setup: `workspace.fs.readFile` rejects on the first call (`.tangyr.jsonc` absent) and resolves with `new TextEncoder().encode('{ "enabled": true, "versionCode": 1001018003 }')` on the second call (legacy read). `workspace.fs.stat`: first call (`.tangyr.jsonc`) rejects with `new Error('not found')`; second call (`.arit-toolkit.jsonc`) resolves with `{}`. `workspace.fs.writeFile` resolves. `workspace.fs.rename` resolves. `window.showInformationMessage` is a fresh `vi.fn().mockResolvedValue(undefined)`.
-- Assert: `workspace.fs.writeFile` was called (`.tangyr.jsonc` written). `workspace.fs.rename` was called once with a first argument whose `fsPath` ends with `'.arit-toolkit.jsonc'` and a second argument whose `fsPath` ends with `'.arit-toolkit.jsonc.bak'`. `window.showInformationMessage` was called with a string containing `'migrated'`. The manager's `isInitialized` is `true`. The manager's `isEnabled` is `true`.
+- Setup: `workspace.fs.readFile`: Call #1 rejects (`.tangyr.jsonc` absent, so normal flow does NOT load legacy and does NOT write `.tangyr.jsonc`); Call #2 rejects (legacy fallback in normal flow also fails); Call #3 resolves with `new TextEncoder().encode('{ "enabled": true, "versionCode": 1001018003 }')` (backstop reads the legacy file). Use `mockRejectedValueOnce(new Error('not found')).mockRejectedValueOnce(new Error('not found')).mockResolvedValueOnce(...)` or equivalent counter. `workspace.fs.stat`: stat for `.tangyr.jsonc` rejects; stat for `.arit-toolkit.jsonc` resolves with `{}`; stat for `.arit-toolkit.jsonc.bak` rejects (backup path is free — no timestamp suffix). Use `mockImplementation` keyed on `uri.fsPath`. `workspace.fs.writeFile` resolves. `workspace.fs.rename` resolves. `window.showInformationMessage` is a fresh `vi.fn().mockResolvedValue(undefined)`.
+- Assert: `workspace.fs.writeFile` was called (`.tangyr.jsonc` written). `workspace.fs.rename` was called once with a first argument whose `fsPath` ends with `'.arit-toolkit.jsonc'` and a second argument whose `fsPath` ends with `'.arit-toolkit.jsonc.bak'` exactly (no timestamp suffix). `window.showInformationMessage` was called with a string containing `'migrated'`. The manager's `isInitialized` is `true`. The manager's `isEnabled` is `true`.
 
 **Test 3 — `.tangyr.jsonc` missing, legacy malformed → Path B:**
 
 - Name: `'should rename malformed legacy config and show warning when .tangyr.jsonc is absent'`
-- Setup: `workspace.fs.readFile` rejects on both calls (first for `.tangyr.jsonc`, second for legacy parse attempt). `workspace.fs.stat`: first call (`.tangyr.jsonc`) rejects; second call (`.arit-toolkit.jsonc`) resolves with `{}`. Third `stat` call (checking `.arit-toolkit.jsonc.malformed.bak`) rejects (backup path is free). `workspace.fs.rename` resolves. `window.showWarningMessage` is a fresh `vi.fn().mockResolvedValue(undefined)`.
-- Assert: `workspace.fs.rename` was called once with a first argument whose `fsPath` ends with `'.arit-toolkit.jsonc'` and a second argument whose `fsPath` ends with `'.malformed.bak'`. `workspace.fs.writeFile` was NOT called (`.tangyr.jsonc` must not be created in Path B). `window.showWarningMessage` was called with a string containing `'could not parse'`.
+- Setup: `workspace.fs.readFile`: Call #1 rejects; Call #2 rejects; Call #3 rejects (parse failure → Path B). Use `mockRejectedValue(new Error('not found'))` (all calls reject). `workspace.fs.stat`: stat for `.tangyr.jsonc` rejects; stat for `.arit-toolkit.jsonc` resolves with `{}`; stat for `.arit-toolkit.jsonc.malformed.bak` rejects (backup path is free — no timestamp suffix). Use `mockImplementation` keyed on `uri.fsPath`. `workspace.fs.rename` resolves. `window.showWarningMessage` is a fresh `vi.fn().mockResolvedValue(undefined)`.
+- Assert: `workspace.fs.rename` was called once with a first argument whose `fsPath` ends with `'.arit-toolkit.jsonc'` and a second argument whose `fsPath` ends with `'.arit-toolkit.jsonc.malformed.bak'` exactly (no timestamp suffix). `workspace.fs.writeFile` was NOT called (`.tangyr.jsonc` must not be created in Path B). `window.showWarningMessage` was called with a string containing `'could not parse'`.
 
 **Test 4 — both files missing, no-op:**
 
@@ -275,13 +300,13 @@ Implement the following seven `it` blocks in order:
 **Test 6 — `.bak` collision → timestamp suffix:**
 
 - Name: `'should append UTC timestamp suffix when .arit-toolkit.jsonc.bak already exists'`
-- Setup: Same as Test 2, except the third `stat` call (checking `.arit-toolkit.jsonc.bak`) resolves with `{}` (collision exists). `workspace.fs.rename` resolves.
-- Assert: `workspace.fs.rename` was called with a second argument whose `fsPath` matches the regex `/\.arit-toolkit\.jsonc\.bak\.\d{12}$/` (twelve digits = YYYYMMDDHHmm). The original `.arit-toolkit.jsonc.bak` path was NOT used as the rename destination.
+- Setup: Same readFile mock as Test 2 (Call #1 rejects, Call #2 rejects, Call #3 resolves with valid bytes). `workspace.fs.stat`: stat for `.tangyr.jsonc` rejects; stat for `.arit-toolkit.jsonc` resolves with `{}`; stat for `.arit-toolkit.jsonc.bak` resolves with `{}` (collision exists — forces timestamp suffix). Use `mockImplementation` keyed on `uri.fsPath`. `workspace.fs.rename` resolves. `window.showInformationMessage` is a fresh `vi.fn().mockResolvedValue(undefined)`.
+- Assert: `workspace.fs.rename` was called with a second argument whose `fsPath` matches the regex `/\.arit-toolkit\.jsonc\.bak\.\d{12}$/` (twelve digits = YYYYMMDDHHmm). The second argument's `fsPath` does NOT equal the plain `.arit-toolkit.jsonc.bak` path.
 
 **Test 7 — internal state mutation after Path A:**
 
 - Name: `'should update internal state so subsequent reads see the new config'`
-- Setup: Same as Test 2.
+- Setup: Same as Test 2 (Call #1 rejects, Call #2 rejects, Call #3 resolves with valid bytes; stat for `.arit-toolkit.jsonc.bak` rejects).
 - Assert: `manager.isInitialized` is `true`. `manager.isEnabled` is `true`. The `onDidChangeState` event was fired at least once with value `true`. (Subscribe to `manager.onDidChangeState` before calling `initialize` to capture the events.)
 
 #### [ ] Task 2.3: Verify quality gate passes with new tests
