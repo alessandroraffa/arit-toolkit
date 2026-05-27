@@ -2,7 +2,7 @@
 title: 'Dependency update pass — patch, minor, and safe-major dev dependencies'
 objective: Coordinated bump of patch-, minor-, and safe-major-level dev dependencies in a single workstream, isolating each tier and each major group into its own commit for granular rollback. Excludes typescript 5→6 and @types/node 20→25, which require dedicated workstreams. Closes the open Dependabot PR backlog after merge.
 workstream: WS-0016
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: []
 created: 2026-05-27
@@ -248,42 +248,42 @@ The teardown of this smoke test routes through a throwaway branch instead of `gi
 - [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
 - [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file with message: `chore(deps-dev): bump lint-staged to v17`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
 
-### [ ] Activity 4: Bump GitHub Actions to current major versions
+### [x] Activity 4: Bump GitHub Actions to current major versions
 
 Bump two CI actions in `.github/workflows/ci.yml` to current major versions: `actions/upload-artifact` from v6 to v7 (line 116 in the current file) and `codecov/codecov-action` from v5 to v6 (line 62 in the current file). These are CI-only infrastructure changes with no runtime impact. `release.yml` does not use these two actions (verified at authoring time: grep on `release.yml` returned no matches for `upload-artifact` or `codecov`).
 
-#### [ ] Task 4.1: Confirm current action pins in `ci.yml`
+#### [x] Task 4.1: Confirm current action pins in `ci.yml`
 
 Read `.github/workflows/ci.yml` in full before making any change.
 
-- [ ] Run `grep -nE 'uses: (actions/upload-artifact|codecov/codecov-action)' .github/workflows/ci.yml` and verify the output shows exactly: `62: - uses: codecov/codecov-action@v5` and `116: - uses: actions/upload-artifact@v6`. If line numbers differ, record them as a divergence — the update in Task 4.3 must target the actual lines, not the expected ones.
-- [ ] Run `grep -nE 'uses: (actions/upload-artifact|codecov/codecov-action)' .github/workflows/release.yml` to verify these actions are absent from `release.yml`. If either action appears, record it as a divergence and add the corresponding line update to Task 4.3.
+- [x] Run `grep -nE 'uses: (actions/upload-artifact|codecov/codecov-action)' .github/workflows/ci.yml` and verify the output shows exactly: `62: - uses: codecov/codecov-action@v5` and `116: - uses: actions/upload-artifact@v6`. If line numbers differ, record them as a divergence — the update in Task 4.3 must target the actual lines, not the expected ones.
+- [x] Run `grep -nE 'uses: (actions/upload-artifact|codecov/codecov-action)' .github/workflows/release.yml` to verify these actions are absent from `release.yml`. If either action appears, record it as a divergence and add the corresponding line update to Task 4.3.
 
-#### [ ] Task 4.2: Review upgrade notes for both actions
+#### [x] Task 4.2: Review upgrade notes for both actions
 
-- [ ] Fetch the `actions/upload-artifact` v7 release notes via WebFetch at `https://github.com/actions/upload-artifact/releases/tag/v7.0.0`. Identify any breaking changes to the `with:` input parameters used in `ci.yml` (current inputs: `name: extension-vsix`, `path: '*.vsix'`).
-- [ ] Fetch the `codecov/codecov-action` v6 release notes via WebFetch at `https://github.com/codecov/codecov-action/releases/tag/v6.0.0`. Identify any breaking changes to the `with:` input parameters used in `ci.yml` (current inputs: `files: ./coverage/lcov.info`, `fail_ci_if_error: false`).
-- [ ] If either action's v7/v6 release removes or renames a `with:` input used in `ci.yml`, note the required change in "Divergences and notes" and apply it in Task 4.3.
+- [x] Fetch the `actions/upload-artifact` v7 release notes via WebFetch at `https://github.com/actions/upload-artifact/releases/tag/v7.0.0`. Identify any breaking changes to the `with:` input parameters used in `ci.yml` (current inputs: `name: extension-vsix`, `path: '*.vsix'`).
+- [x] Fetch the `codecov/codecov-action` v6 release notes via WebFetch at `https://github.com/codecov/codecov-action/releases/tag/v6.0.0`. Identify any breaking changes to the `with:` input parameters used in `ci.yml` (current inputs: `files: ./coverage/lcov.info`, `fail_ci_if_error: false`).
+- [x] If either action's v7/v6 release removes or renames a `with:` input used in `ci.yml`, note the required change in "Divergences and notes" and apply it in Task 4.3.
 
-#### [ ] Task 4.3: Apply version bumps in `.github/workflows/ci.yml`
+#### [x] Task 4.3: Apply version bumps in `.github/workflows/ci.yml`
 
 Read `.github/workflows/ci.yml` in full before making any change (even if it was read in Task 4.1 — re-read to confirm no changes occurred between tasks).
 
-- [ ] Replace `uses: codecov/codecov-action@v5` at line 62 with `uses: codecov/codecov-action@v6`.
-- [ ] Replace `uses: actions/upload-artifact@v6` at line 116 with `uses: actions/upload-artifact@v7`.
-- [ ] If `release.yml` also requires bumps (divergence found in Task 4.1), apply the same substitutions to `release.yml` now.
-- [ ] Run `grep -c 'codecov-action@v5\|upload-artifact@v6' .github/workflows/ci.yml` and verify the count is 0.
-- [ ] Validate YAML syntax: run `node -e "require('fs').readFileSync('.github/workflows/ci.yml','utf8').split('\n').forEach((l,i)=>{ if(l !== l.trimEnd()) throw new Error('trailing whitespace line '+(i+1)); }); console.log('ok')"` from the project root to catch gross formatting regressions. Full structural YAML validation is performed by CI on push.
+- [x] Replace `uses: codecov/codecov-action@v5` at line 62 with `uses: codecov/codecov-action@v6`.
+- [x] Replace `uses: actions/upload-artifact@v6` at line 116 with `uses: actions/upload-artifact@v7`.
+- [x] If `release.yml` also requires bumps (divergence found in Task 4.1), apply the same substitutions to `release.yml` now.
+- [x] Run `grep -c 'codecov-action@v5\|upload-artifact@v6' .github/workflows/ci.yml` and verify the count is 0.
+- [x] Validate YAML syntax: run `node -e "require('fs').readFileSync('.github/workflows/ci.yml','utf8').split('\n').forEach((l,i)=>{ if(l !== l.trimEnd()) throw new Error('trailing whitespace line '+(i+1)); }); console.log('ok')"` from the project root to catch gross formatting regressions. Full structural YAML validation is performed by CI on push.
 
-#### [ ] Task 4.4: Run the quality gate
+#### [x] Task 4.4: Run the quality gate
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. The workflow changes do not touch source — this is a sanity check.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures. The workflow changes do not touch source — this is a sanity check.
 
-#### [ ] Task 4.5: Update workstream and commit
+#### [x] Task 4.5: Update workstream and commit
 
-- [ ] Mark all completed checkboxes in this activity in this workstream file.
-- [ ] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `.github/workflows/ci.yml`, this workstream file, and (if modified in Task 4.3) `.github/workflows/release.yml` with message: `ci(deps): bump upload-artifact to v7 and codecov-action to v6`. Subject must be lowercase; type `ci` is in the commitlint `type-enum`.
+- [x] Mark all completed checkboxes in this activity in this workstream file.
+- [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `.github/workflows/ci.yml`, this workstream file, and (if modified in Task 4.3) `.github/workflows/release.yml` with message: `ci(deps): bump upload-artifact to v7 and codecov-action to v6`. Subject must be lowercase; type `ci` is in the commitlint `type-enum`.
 
 ## Divergences and notes
 
@@ -338,4 +338,25 @@ Post-bump graph is identical — lint-staged v17 did not introduce new transitiv
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergence count by cause:**
+
+| ID   | Cause                                                     | Activity | Source         |
+| ---- | --------------------------------------------------------- | -------- | -------------- |
+| D-01 | typescript-eslint@8.60.0 tightened rule analysis          | 2        | package change |
+| D-02 | `git-safety-guard` hook blocks authorized `-D` teardown   | 3a, 3c   | platform gap   |
+| D-03 | eslint v10 blog URL 404; migration guide used as fallback | 3b       | external URL   |
+
+**Recurring patterns:**
+
+1. **Hook over-breadth (D-02):** The `git-safety-guard` hook blocks `git branch -D` unconditionally, with no allowance for explicitly-prescribed throwaway-branch teardown. Both smoke-test teardowns (3a and 3c) were blocked. The throwaway-branch pattern was designed to avoid `git reset` but still requires `-D` for cleanup. This is a recurring platform gap — the hook rule should be refined to allow `-D` on non-remote branches with names matching `*/smoke*` or via an explicit task annotation.
+
+2. **Linter rule tightening on minor bump (D-01):** A minor bump of `typescript-eslint` (8.54 → 8.60) introduced new lint errors in source code. The errors were genuine (the casts were structurally unnecessary), but unexpected at a minor tier. The fix was clean (removing 4 assertions), but the workstream did not anticipate source file changes being needed for a dep-only bump. Future dependency-update workstreams should include a "lint errors expected?" gate after minor typescript-eslint bumps.
+
+3. **External URL instability (D-03):** One of three external URLs fetched for release notes returned 404. The migration guide fallback worked well. No blocking impact.
+
+**Proposed improvements:**
+
+1. Encode the throwaway-branch `-D` teardown as an explicit Bash hook exception (e.g., allow `-D` when the branch name matches `chore/*-smoke` and was created in the same session). Raise as a governance item to the PM.
+2. Add a post-bump lint error gate note to future typescript-eslint workstream tasks: "if lint errors appear, check whether the rule tightening is genuinely correct before choosing the fix approach."
+
+**Assessment:** All 6 activities completed. Quality gate passes at every commit — 0 errors, 26 warnings (baseline stable), 786 tests. Coverage delta on `extensionStateManager.ts` is zero (no source changes in that file). The only source files changed were `codexParser.ts` and `copilotChatParser.ts` in Activity 2 (4 unnecessary type assertions removed). Lockfile regenerated cleanly after each bump. No peer conflicts encountered. Divergences were all low-severity and resolved without PM escalation (except D-02 which is informational — PM may clean up local branches manually).
