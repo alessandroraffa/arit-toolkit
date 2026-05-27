@@ -44,43 +44,43 @@ The project has 14 outdated dev dependencies and 0 runtime dependencies. The Dep
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Bump patch-level dev dependencies (prettier, markdownlint-cli2)
+### [x] Activity 1: Bump patch-level dev dependencies (prettier, markdownlint-cli2)
 
 Bump two patch-level dev dependencies in a single tier commit. The four packages listed in the PM brief (`commit-and-tag-version`, `semver`) were not found in `package.json`; this activity covers only the two packages that are present.
 
-#### [ ] Task 1.1: Confirm current versions in `package.json`
+#### [x] Task 1.1: Confirm current versions in `package.json`
 
 Read `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/package.json` in full before making any change.
 
-- [ ] Locate `"prettier"` and `"markdownlint-cli2"` in the `devDependencies` block and record their current version strings.
-- [ ] Verify `"prettier"` is at `^3.8.1` and `"markdownlint-cli2"` is at `^0.21.0`. If either version differs from these values, record the actual version as a divergence in "Divergences and notes" and adjust the target version in Task 1.2 to the next patch or minor release above what is installed.
-- [ ] Confirm the version specifier format used by the surrounding entries is `^X.Y.Z`. If a different format is used, match that format in Task 1.2.
+- [x] Locate `"prettier"` and `"markdownlint-cli2"` in the `devDependencies` block and record their current version strings.
+- [x] Verify `"prettier"` is at `^3.8.1` and `"markdownlint-cli2"` is at `^0.21.0`. If either version differs from these values, record the actual version as a divergence in "Divergences and notes" and adjust the target version in Task 1.2 to the next patch or minor release above what is installed.
+- [x] Confirm the version specifier format used by the surrounding entries is `^X.Y.Z`. If a different format is used, match that format in Task 1.2.
 
-#### [ ] Task 1.2: Update the two version specifiers in `package.json`
+#### [x] Task 1.2: Update the two version specifiers in `package.json`
 
-- [ ] In the `devDependencies` block of `package.json`, update `"prettier"` from `"^3.8.1"` to `"^3.8.3"`.
-- [ ] Update `"markdownlint-cli2"` from `"^0.21.0"` to `"^0.22.1"`.
-- [ ] Do not modify any other field in `package.json`.
+- [x] In the `devDependencies` block of `package.json`, update `"prettier"` from `"^3.8.1"` to `"^3.8.3"`.
+- [x] Update `"markdownlint-cli2"` from `"^0.21.0"` to `"^0.22.1"`.
+- [x] Do not modify any other field in `package.json`.
 
-#### [ ] Task 1.3: Regenerate `pnpm-lock.yaml` and verify scope
+#### [x] Task 1.3: Regenerate `pnpm-lock.yaml` and verify scope
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. The command must exit 0. If pnpm reports a resolution error on the new version ranges, record the error message as a divergence and escalate to the PM before proceeding.
-- [ ] Run `git diff --stat` and verify the diff is contained to `package.json` and `pnpm-lock.yaml` only. If any other file appears in the diff, investigate before proceeding.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. The command must exit 0. If pnpm reports a resolution error on the new version ranges, record the error message as a divergence and escalate to the PM before proceeding.
+- [x] Run `git diff --stat` and verify the diff is contained to `package.json` and `pnpm-lock.yaml` only. If any other file appears in the diff, investigate before proceeding.
 
-#### [ ] Task 1.4: Run security audit
+#### [x] Task 1.4: Run security audit
 
-- [ ] Run `pnpm audit --ignore-workspace`. The command must exit 0 (the existing `pnpm.auditConfig.ignoreCves` block covers the single known remaining advisory). If any new advisory appears, record the package name and patched range as a divergence and escalate to the PM — do not extend the overrides block unilaterally in this workstream.
+- [x] Run `pnpm audit --ignore-workspace`. The command must exit 0 (the existing `pnpm.auditConfig.ignoreCves` block covers the single known remaining advisory). If any new advisory appears, record the package name and patched range as a divergence and escalate to the PM — do not extend the overrides block unilaterally in this workstream.
 
-#### [ ] Task 1.5: Run the full quality gate
+#### [x] Task 1.5: Run the full quality gate
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three commands must pass with zero errors and zero failures.
-- [ ] If any command fails for a reason traceable to the version bump, narrow the target version to the previous patch release, update `package.json`, re-run Task 1.3, and retry the gate.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three commands must pass with zero errors and zero failures.
+- [x] If any command fails for a reason traceable to the version bump, narrow the target version to the previous patch release, update `package.json`, re-run Task 1.3, and retry the gate.
 
-#### [ ] Task 1.6: Update workstream and commit
+#### [x] Task 1.6: Update workstream and commit
 
-- [ ] Mark all completed checkboxes in this activity in this workstream file.
-- [ ] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file with message: `chore(deps-dev): bump patch-level packages (prettier, markdownlint-cli2)`. Subject must be lowercase; type `chore` is in the commitlint `type-enum` defined in `commitlint.config.mjs`.
+- [x] Mark all completed checkboxes in this activity in this workstream file.
+- [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file with message: `chore(deps-dev): bump patch-level packages (prettier, markdownlint-cli2)`. Subject must be lowercase; type `chore` is in the commitlint `type-enum` defined in `commitlint.config.mjs`.
 
 ### [ ] Activity 2: Bump minor-level dev dependency (typescript-eslint)
 
