@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { workspace } from '../../mocks/vscode';
+import { workspace, FileType } from '../../mocks/vscode';
 
 const { mockCheckAndPromptGitignore } = vi.hoisted(() => ({
   mockCheckAndPromptGitignore: vi.fn().mockResolvedValue(undefined),
@@ -806,6 +806,214 @@ describe('AgentSessionArchiveService', () => {
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('left source archive in place')
       );
+
+      service.dispose();
+    });
+  });
+
+  describe('migrateFlatLayout (via deduplicateAndHydrate)', () => {
+    it('should move a flat archive file into the YYYY/MM subdirectory', async () => {
+      let migrated = false;
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/agent-sessions') && !migrated) {
+            return Promise.resolve([['202605251830-foo.md', FileType.File]]);
+          }
+          return Promise.resolve([]);
+        });
+      workspace.fs.copy = vi.fn().mockImplementation(async () => {
+        migrated = true;
+      });
+      workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
+      workspace.fs.createDirectory = vi.fn().mockResolvedValue(undefined);
+
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      // Bypass start() to avoid the fire-and-forget cycle race.
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+      (service as unknown as { _needsDedup: boolean })._needsDedup = true;
+      await service.runArchiveCycle();
+
+      const copyDests = vi
+        .mocked(workspace.fs.copy)
+        .mock.calls.map((c) => (c[1] as { fsPath: string }).fsPath);
+      expect(copyDests.some((p) => p.endsWith('2026/05/202605251830-foo.md'))).toBe(true);
+      const deleteSrcs = vi
+        .mocked(workspace.fs.delete)
+        .mock.calls.map((c) => (c[0] as { fsPath: string }).fsPath);
+      expect(deleteSrcs.some((p) => p.endsWith('202605251830-foo.md'))).toBe(true);
+
+      service.dispose();
+    });
+
+    it('should be idempotent — does not move files already under YYYY/MM', async () => {
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([['2026', FileType.Directory]]);
+          return Promise.resolve([]);
+        });
+      workspace.fs.copy = vi.fn().mockResolvedValue(undefined);
+      workspace.fs.createDirectory = vi.fn().mockResolvedValue(undefined);
+
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+      (service as unknown as { _needsDedup: boolean })._needsDedup = true;
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.copy).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should handle a mixed tree: migrate flat files and leave YYYY/MM entries alone', async () => {
+      let migrated = false;
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/agent-sessions')) {
+            return Promise.resolve(
+              migrated
+                ? [['2026', FileType.Directory]]
+                : [
+                    ['202605251830-foo.md', FileType.File],
+                    ['2026', FileType.Directory],
+                  ]
+            );
+          }
+          return Promise.resolve([]);
+        });
+      workspace.fs.copy = vi.fn().mockImplementation(async () => {
+        migrated = true;
+      });
+      workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
+      workspace.fs.createDirectory = vi.fn().mockResolvedValue(undefined);
+
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+      (service as unknown as { _needsDedup: boolean })._needsDedup = true;
+      await service.runArchiveCycle();
+
+      expect(workspace.fs.copy).toHaveBeenCalledTimes(1);
+      const copyCall = vi.mocked(workspace.fs.copy).mock.calls[0]!;
+      expect((copyCall[1] as { fsPath: string }).fsPath).toContain(
+        '2026/05/202605251830-foo.md'
+      );
+
+      service.dispose();
+    });
+
+    it('should overwrite the destination if it already exists', async () => {
+      let migrated = false;
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/agent-sessions') && !migrated)
+            return Promise.resolve([['202605251830-foo.md', FileType.File]]);
+          return Promise.resolve([]);
+        });
+      workspace.fs.copy = vi.fn().mockImplementation(async () => {
+        migrated = true;
+      });
+      workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
+      workspace.fs.createDirectory = vi.fn().mockResolvedValue(undefined);
+
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+      (service as unknown as { _needsDedup: boolean })._needsDedup = true;
+      await service.runArchiveCycle();
+
+      const copyCall = vi.mocked(workspace.fs.copy).mock.calls[0]!;
+      expect(copyCall[2]).toEqual({ overwrite: true });
+
+      service.dispose();
+    });
+
+    it('should leave the source in place and continue when copy fails', async () => {
+      // Post-migrate top-level still contains the failed-copy source file as a File entry.
+      // The dedup year-loop in deduplicateAndHydrate only iterates entries that are
+      // FileType.Directory matching /^\d{4}$/ — the stranded File is naturally ignored.
+      // A future maintainer modifying the dedup body must preserve this property, or
+      // the failed-copy file will be processed again.
+      let succeededMigration = false;
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/agent-sessions')) {
+            return Promise.resolve(
+              succeededMigration
+                ? [['202605251830-foo.md', FileType.File]]
+                : [
+                    ['202605251830-foo.md', FileType.File],
+                    ['202606011000-bar.md', FileType.File],
+                  ]
+            );
+          }
+          return Promise.resolve([]);
+        });
+      workspace.fs.copy = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('disk full'))
+        .mockImplementation(async () => {
+          succeededMigration = true;
+        });
+      workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
+      workspace.fs.createDirectory = vi.fn().mockResolvedValue(undefined);
+
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+      (service as unknown as { _needsDedup: boolean })._needsDedup = true;
+      await service.runArchiveCycle();
+
+      // delete called for the successful copy's source, not for the failed one
+      expect(workspace.fs.delete).toHaveBeenCalledTimes(1);
+      const warnCalls = vi
+        .mocked(logger.warn)
+        .mock.calls.filter(([msg]) =>
+          String(msg).includes('Failed to migrate flat archive file')
+        );
+      expect(warnCalls.length).toBe(1);
 
       service.dispose();
     });

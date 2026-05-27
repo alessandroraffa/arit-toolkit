@@ -502,6 +502,23 @@ patched extension automatically re-archives previously affected sessions
 on its first cycle without requiring any persistent flag or manual
 intervention.
 
+**Idempotent flat-layout migration sweep:** On every cold start and
+after every `reconfigure` (any time `_needsDedup` is reset to `true`),
+`deduplicateAndHydrate` runs `migrateFlatLayout` before scanning
+year/month subdirectories. `migrateFlatLayout` reads the top-level
+entries of `archiveUri`; for each file whose name matches
+`^(\d{4})(0[1-9]|1[0-2])\d{6}-.+\.\w+$` (a flat-layout archive file
+with a valid month), it extracts `YYYY` and `MM` from the first four
+and next two characters of the filename, creates the target
+`YYYY/MM/` subdirectory, and moves the file there (`copy` with
+`overwrite: true` followed by `delete` of the source). A failed copy
+is logged at `warn` level; the source file is left in place and the
+migration continues with the next file. The sweep is idempotent: once
+the tree is fully migrated, no files at the top level match the flat
+pattern, so subsequent invocations are no-ops. After the sweep,
+`deduplicateAndHydrate` re-reads the top-level entries before scanning
+year/month subdirectories.
+
 **Archive file naming:** `{YYYY}/{MM}/{YYYYMMDDHHmm}-{archiveName}{extension}`,
 where the timestamp is derived from the session file's creation time
 (`ctime`), not the modification time or the current time. `YYYY` and

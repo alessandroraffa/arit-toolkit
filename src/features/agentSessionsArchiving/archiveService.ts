@@ -403,7 +403,8 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   ): Promise<void> {
     // Month constrained to 01-12 to prevent migration of files with invalid month components
     // (e.g., a manually-placed '202099310000-foo.md' would otherwise be moved into '2020/99/').
-    const FLAT_PATTERN = /^(\d{4})(0[1-9]|1[0-2])\d{8}-.+\.\w+$/;
+    // Total 12 digits before the '-': YYYY(4) + MM(2) + DDHHmm(6).
+    const FLAT_PATTERN = /^(\d{4})(0[1-9]|1[0-2])\d{6}-.+\.\w+$/;
     for (const [name, type] of topEntries) {
       if (type !== vscode.FileType.File) {
         continue;
