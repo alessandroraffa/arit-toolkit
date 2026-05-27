@@ -6,10 +6,10 @@
 
 # Tangyr `▏▎▍▌▍▎▏` Workbench
 
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/alessandroraffa.tangyr)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
-[![Installs](https://img.shields.io/visual-studio-marketplace/i/alessandroraffa.tangyr)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
-[![Downloads](https://img.shields.io/visual-studio-marketplace/d/alessandroraffa.tangyr)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/alessandroraffa.tangyr)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr&ssr=false#review-details)
+[![VS Code Marketplace](https://vsmarketplacebadges.dev/version/alessandroraffa.tangyr.png)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
+[![Installs](https://vsmarketplacebadges.dev/installs/alessandroraffa.tangyr.png)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
+[![Downloads](https://vsmarketplacebadges.dev/downloads/alessandroraffa.tangyr.png)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
+[![Rating](https://vsmarketplacebadges.dev/rating/alessandroraffa.tangyr.png)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr&ssr=false#review-details)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Tangyr Workbench is the VS Code companion that supports the use of operating kits from the Tangyr discipline — turning AI coding sessions, decision logs, and prompt artifacts into versioned project material.
@@ -38,9 +38,11 @@ Missing your assistant? Contact the maintainer to request support.
 - Sessions are copied (not moved) to the archive directory
 - Sessions are automatically converted to structured markdown during archiving
 - Each session maps to exactly one archived file — when the source changes, the old archive is replaced
-- Archive filenames use the session's creation timestamp: `{YYYYMMDDHHmm}-{name}.md`
+- Archive files are organized by year and month: `{archivePath}/{YYYY}/{MM}/{YYYYMMDDHHmm}-{name}.md`
+- Existing flat-layout archives from earlier versions are migrated into the year/month structure automatically on activation
 - Only sessions belonging to the current workspace are archived
 - Session file changes are detected automatically via file system watchers (with 10-second debounce), in addition to the periodic interval
+- In a Git repository, you are prompted once per archive path to add it to `.gitignore`. The decision is remembered and re-evaluated when the archive path changes
 
 **Configuration** (in `.tangyr.jsonc`):
 
