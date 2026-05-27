@@ -1,7 +1,7 @@
 {
   "name": "tangyr",
   "displayName": "Tangyr Workbench",
-  "description": "Archive AI coding sessions (Claude Code, Cline, Aider, Copilot, Roo Code, Continue) into your workspace. Real-time token counting, text stats, and timestamped file management for agentic coding.",
+  "description": "Archive AI coding sessions (Claude Code, Cline, GitHub Copilot Chat, OpenAI Codex) into your workspace. Real-time token counting, text stats, and timestamped file management for agentic and vibe coding.",
   "version": "2.2.0",
   "versionCode": 1002002000,
   "publisher": "alessandroraffa",
@@ -25,6 +25,8 @@
   "keywords": [
     "ai",
     "agent",
+    "agentic-coding",
+    "vibe-coding",
     "archive",
     "timestamp",
     "documentation"
