@@ -439,6 +439,9 @@ export class ExtensionStateManager {
     // _isEnabled, _configVersionCode,
     // calls notifySectionListeners
     this._loadedLegacyConfigFile = true; // signal that we loaded from legacy
+    this._onDidChangeState.fire(this._isEnabled); // mirror initialize() upstream
+    // transition so feature services
+    // see the enable/disable signal
     this.logger.info(
       `verifyLegacyConfigMigration: applied legacy config to in-memory state`
     );

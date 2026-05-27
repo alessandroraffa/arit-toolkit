@@ -212,12 +212,12 @@ describe('verifyLegacyConfigMigration', () => {
     window.showWarningMessage = vi.fn().mockResolvedValue(undefined);
 
     const manager = createManager();
+    const stateChanges: boolean[] = [];
+    manager.onDidChangeState((enabled) => stateChanges.push(enabled));
     await manager.initialize('1.19.0');
 
-    // verifyLegacyConfigMigration Path A: applyConfig sets _isInitialized and _isEnabled;
-    // _onDidChangeState is not fired by verifyLegacyConfigMigration itself (applyConfig only
-    // fires notifySectionListeners, not _onDidChangeState). State is visible via getters.
     expect(manager.isInitialized).toBe(true);
     expect(manager.isEnabled).toBe(true);
+    expect(stateChanges).toContain(true);
   });
 });
