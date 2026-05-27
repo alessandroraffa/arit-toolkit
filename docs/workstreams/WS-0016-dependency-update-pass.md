@@ -114,49 +114,49 @@ Read `package.json` in full before making any change.
 - [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
 - [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file with message: `chore(deps-dev): bump minor-level packages (typescript-eslint)`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
 
-### [ ] Activity 3a: Bump commitlint group to v21
+### [x] Activity 3a: Bump commitlint group to v21
 
 Bump `@commitlint/cli` and `@commitlint/config-conventional` together from v20 to v21. These two packages share a major version line and must always move together. The project's commitlint config (`commitlint.config.mjs`) extends `@commitlint/config-conventional` and adds custom `type-enum`, `subject-case`, `subject-empty`, and `type-empty` rules. The pre-commit flow is: husky `commit-msg` hook calls `pnpm exec commitlint --edit $1`. If the bump breaks the hook, subsequent commits in Activities 3b and 3c cannot proceed — execute this activity first among the major-tier activities.
 
-#### [ ] Task 3a.1: Review the commitlint v21 changelog
+#### [x] Task 3a.1: Review the commitlint v21 changelog
 
-- [ ] Read `commitlint.config.mjs` in full. Note the four custom rules: `type-enum`, `subject-case`, `subject-empty`, `type-empty`.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx commitlint@21.0.1 --version` to confirm the specific target version is resolvable before modifying `package.json`. If the specific version is not resolvable (404 or "not in registry"), retry once with `pnpm dlx commitlint@21 --version` to capture the actual highest available version under major 21 and record it as a divergence. Use the resolved version as the target in Task 3a.2 instead of `^21.0.1`.
-- [ ] Review the commitlint v21 release notes by fetching `https://github.com/conventional-changelog/commitlint/releases/tag/v21.0.0` (use the WebFetch tool). Identify any breaking changes to the `type-enum`, `subject-case`, `subject-empty`, or `type-empty` rule names or their option signatures. If breaking changes are found, record them as a divergence and apply any required config adjustments to `commitlint.config.mjs` in Task 3a.2 before committing.
+- [x] Read `commitlint.config.mjs` in full. Note the four custom rules: `type-enum`, `subject-case`, `subject-empty`, `type-empty`.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm dlx commitlint@21.0.1 --version` to confirm the specific target version is resolvable before modifying `package.json`. If the specific version is not resolvable (404 or "not in registry"), retry once with `pnpm dlx commitlint@21 --version` to capture the actual highest available version under major 21 and record it as a divergence. Use the resolved version as the target in Task 3a.2 instead of `^21.0.1`.
+- [x] Review the commitlint v21 release notes by fetching `https://github.com/conventional-changelog/commitlint/releases/tag/v21.0.0` (use the WebFetch tool). Identify any breaking changes to the `type-enum`, `subject-case`, `subject-empty`, or `type-empty` rule names or their option signatures. If breaking changes are found, record them as a divergence and apply any required config adjustments to `commitlint.config.mjs` in Task 3a.2 before committing.
 
-#### [ ] Task 3a.2: Update version specifiers in `package.json`
+#### [x] Task 3a.2: Update version specifiers in `package.json`
 
 Read `package.json` in full before making any change.
 
-- [ ] Locate `"@commitlint/cli"` and `"@commitlint/config-conventional"` in `devDependencies`. Record their current version strings and verify both are `^20.4.1`. If either differs, record the actual version as a divergence.
-- [ ] Update `"@commitlint/cli"` from `"^20.4.1"` to `"^21.0.1"`.
-- [ ] Update `"@commitlint/config-conventional"` from `"^20.4.1"` to `"^21.0.1"`.
-- [ ] If breaking changes were identified in Task 3a.1, apply the required config change to `commitlint.config.mjs` now, before the lockfile is regenerated. Record each config change as a divergence note referencing Task 3a.1.
+- [x] Locate `"@commitlint/cli"` and `"@commitlint/config-conventional"` in `devDependencies`. Record their current version strings and verify both are `^20.4.1`. If either differs, record the actual version as a divergence.
+- [x] Update `"@commitlint/cli"` from `"^20.4.1"` to `"^21.0.1"`.
+- [x] Update `"@commitlint/config-conventional"` from `"^20.4.1"` to `"^21.0.1"`.
+- [x] If breaking changes were identified in Task 3a.1, apply the required config change to `commitlint.config.mjs` now, before the lockfile is regenerated. Record each config change as a divergence note referencing Task 3a.1.
 
-#### [ ] Task 3a.3: Regenerate `pnpm-lock.yaml`, run audit and quality gate
+#### [x] Task 3a.3: Regenerate `pnpm-lock.yaml`, run audit and quality gate
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0.
-- [ ] Run `git diff --stat` and verify the diff is contained to `package.json`, `pnpm-lock.yaml`, and (if config changes were needed) `commitlint.config.mjs`.
-- [ ] Run `pnpm audit --ignore-workspace`. Must exit 0.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm install --ignore-workspace`. Must exit 0.
+- [x] Run `git diff --stat` and verify the diff is contained to `package.json`, `pnpm-lock.yaml`, and (if config changes were needed) `commitlint.config.mjs`.
+- [x] Run `pnpm audit --ignore-workspace`. Must exit 0.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass with zero errors and zero failures.
 
-#### [ ] Task 3a.4: Trial-commit smoke test for the commitlint hook (throwaway-branch pattern)
+#### [x] Task 3a.4: Trial-commit smoke test for the commitlint hook (throwaway-branch pattern)
 
 The teardown of this smoke test routes through a throwaway branch instead of `git reset`, per CLAUDE.md's prohibition on destructive git commands. The throwaway branch is local-only, contains only the smoke commit, and is hard-deleted after validation; `git branch -D` on such a branch is the prescribed teardown step.
 
-- [ ] Run `git switch -c chore/commitlint-smoke` to create a throwaway branch from the current `feat/dependency-update-pass-ws-0016` HEAD.
-- [ ] Create a temporary file `smoke-test-commitlint.tmp` at the project root with content `smoke test`. The file extension `.tmp` does not match any lint-staged glob, so the pre-commit hook will no-op on it; only the commit-msg hook (commitlint) will be exercised.
-- [ ] Run `git add smoke-test-commitlint.tmp`.
-- [ ] Run `git commit -m "chore: smoke test commitlint v21 hook"`. The commit-msg hook (`pnpm exec commitlint --edit $1`) must accept the message and the commit must succeed. If the hook rejects the message with an error, record the exact error as a divergence — this indicates a breaking change in v21 not covered by Task 3a.1. Do NOT proceed until the hook accepts the message on the throwaway branch.
-- [ ] Run `git switch feat/dependency-update-pass-ws-0016` to return to the working branch (the smoke commit stays on the throwaway branch and is discarded with it).
-- [ ] Run `git branch -D chore/commitlint-smoke` to hard-delete the throwaway branch. This `-D` is authorized: the branch is local-only and contains no work to preserve.
-- [ ] Delete `smoke-test-commitlint.tmp` from the working tree if it still exists there.
+- [x] Run `git switch -c chore/commitlint-smoke` to create a throwaway branch from the current `feat/dependency-update-pass-ws-0016` HEAD.
+- [x] Create a temporary file `smoke-test-commitlint.tmp` at the project root with content `smoke test`. The file extension `.tmp` does not match any lint-staged glob, so the pre-commit hook will no-op on it; only the commit-msg hook (commitlint) will be exercised.
+- [x] Run `git add smoke-test-commitlint.tmp`.
+- [x] Run `git commit -m "chore: smoke test commitlint v21 hook"`. The commit-msg hook (`pnpm exec commitlint --edit $1`) must accept the message and the commit must succeed. If the hook rejects the message with an error, record the exact error as a divergence — this indicates a breaking change in v21 not covered by Task 3a.1. Do NOT proceed until the hook accepts the message on the throwaway branch.
+- [x] Run `git switch feat/dependency-update-pass-ws-0016` to return to the working branch (the smoke commit stays on the throwaway branch and is discarded with it).
+- [x] Run `git branch -D chore/commitlint-smoke` to hard-delete the throwaway branch. This `-D` is authorized: the branch is local-only and contains no work to preserve. (See D-02: hook blocked this step; branch left in place locally — no impact on working tree or CI.)
+- [x] Delete `smoke-test-commitlint.tmp` from the working tree if it still exists there.
 
-#### [ ] Task 3a.5: Update workstream and commit
+#### [x] Task 3a.5: Update workstream and commit
 
-- [ ] Mark all completed checkboxes in this activity in this workstream file.
-- [ ] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file (plus `commitlint.config.mjs` if it was modified) with message: `chore(deps-dev): bump commitlint group to v21`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
+- [x] Mark all completed checkboxes in this activity in this workstream file.
+- [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `package.json`, `pnpm-lock.yaml`, and this workstream file (plus `commitlint.config.mjs` if it was modified) with message: `chore(deps-dev): bump commitlint group to v21`. Subject must be lowercase; type `chore` is in the commitlint `type-enum`.
 
 ### [ ] Activity 3b: Bump eslint group to v10
 
@@ -297,6 +297,14 @@ Read `.github/workflows/ci.yml` in full before making any change (even if it was
 - `src/features/agentSessionsArchiving/markdown/parsers/copilotChatParser.ts` lines 72 and 79: `inner as CopilotSession` and `reconstructSessionFromJsonl(content) as CopilotSession` removed (return type has only optional fields; `object`/`Record<string,unknown>` structurally assignable).
 
 **Corrective action:** Removed the four unnecessary assertions. `check-types` passes, lint passes at 26 warnings (baseline unchanged), tests pass at 786. Source files changed are outside the lockfile scope but causally tied to this bump commit — included in the Activity 2 commit.
+
+### Divergence D-02 — Activity 3a: `git-safety-guard` hook blocks authorized `git branch -D` for throwaway branch
+
+**Cause:** The `git-safety-guard` hook blocks all `git branch -D` commands unconditionally, including the explicitly-prescribed throwaway-branch teardown step in Task 3a.4 and Task 3c.4. The workstream and CLAUDE.md authorize this specific `-D` pattern for local-only smoke-test branches.
+
+**Impact:** The `chore/commitlint-smoke` branch (and later `chore/lint-staged-smoke`) remain as local branches after smoke testing. They contain only a single smoke-test commit, are never pushed to remote, and have no impact on the working tree or CI.
+
+**Corrective action:** Branches left in place locally. The smoke test purpose is fully achieved (hook accepted the commit). No governance escalation needed — this is a platform enforcement gap (hook does not distinguish authorized throwaway `-D` from unauthorized destructive operations). PM may clean up manually with `git branch -D chore/commitlint-smoke chore/lint-staged-smoke` after reviewing this note.
 
 ### Reflection
 
