@@ -1,3 +1,13 @@
+## [2.1.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.1.0...v2.1.1) (2026-05-27)
+
+### Bug Fixes
+
+* **deps:** override transitive vulnerable packages to resolve audit failures ([f690e7b](https://github.com/alessandroraffa/tangyr-vscode/commit/f690e7ba236b42308f97400a3b28ac900cada517))
+
+### Code Refactoring
+
+* **archiving:** extract movearchive helpers to satisfy lint complexity limits ([904d774](https://github.com/alessandroraffa/tangyr-vscode/commit/904d774571a63a87b645dc1d1bc7e9dd6a39d190))
+
 ## [2.1.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.0.0...v2.1.0) (2026-05-27)
 
 ### Features
