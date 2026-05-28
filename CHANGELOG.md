@@ -1,3 +1,9 @@
+## [2.2.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.2.0...v2.2.1) (2026-05-28)
+
+### Bug Fixes
+
+* **ci:** bump node pin to 22.22.1 to satisfy lint-staged v17.0.5 engine requirement ([01ea76f](https://github.com/alessandroraffa/tangyr-vscode/commit/01ea76fa7270bb4159e1669380a99269d81105a5))
+
 ## [2.2.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.1.1...v2.2.0) (2026-05-27)
 
 ### Features
