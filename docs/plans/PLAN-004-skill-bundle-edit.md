@@ -49,7 +49,7 @@ Extension-wide constraints inherited from the submodule architecture:
 | A (selected) | Auto-repack on every save of the temp `SKILL.md` (`onDidSaveTextDocument` filtered by path) | Aligns with the user's mental model: save means persist. No additional UI surface. Each save is an atomic commit point. | Each save incurs ZIP I/O. A failed repack leaves the bundle untouched on disk; edit preservation is enforced by a `pendingFailure` flag on the session that keeps the temp file alive across tab close (Decisions 6, 10). |
 | B            | Manual repack via explicit "Repack bundle" command                                          | Coarser control over when I/O happens                                                                                   | Decouples save from persistence — an anti-pattern in any editor workflow. The user has to remember the second action; forgetting it silently loses edits when the temp file is later cleaned up. Not viable.              |
 
-**Selection rationale.** Alternative A maps directly to the editor convention that saving persists. The ZIP I/O cost is negligible for typical skill bundles (kilobytes to low single-digit megabytes). Failure paths are handled by keeping the buffer dirty when repack fails, so no edit is silently lost.
+**Selection rationale.** Alternative A maps directly to the editor convention that saving persists. The ZIP I/O cost is negligible for typical skill bundles (kilobytes to low single-digit megabytes). Failure paths are handled by tagging the session with a `pendingFailure` flag and preserving the temp file across tab close (Decisions 6, 10), so no edit is silently lost.
 
 ### Bundle integrity for non-edited entries
 
