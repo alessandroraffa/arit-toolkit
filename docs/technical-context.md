@@ -17,7 +17,7 @@
 | Licence            | MIT                                                                                                                                         |
 | Architecture style | Feature-based modular architecture, dependency injection                                                                                    |
 | Runtime deps       | None at runtime (VS Code API only). `js-tiktoken` and `@anthropic-ai/tokenizer` are dev dependencies bundled into the extension by esbuild. |
-| Last updated       | 2026-02-26                                                                                                                                  |
+| Last updated       | 2026-05-28                                                                                                                                  |
 
 ---
 
@@ -27,13 +27,14 @@
 
 Tangyr Workbench is a VS Code extension that bundles productivity utilities
 for developers working inside a single-root workspace. Its capabilities
-fall into two categories:
+fall into four categories:
 
 | Category            | Capability                                                                                                                                                            |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | File utilities      | Create or rename files/directories with UTC timestamp prefixes in configurable formats.                                                                               |
 | Background services | Periodically archive chat session files produced by AI coding assistants (Aider, Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue).                        |
 | Status bar services | Display real-time text statistics (characters, tokens, words, lines, paragraphs, reading time, file size) with selection awareness and configurable tokenizer models. |
+| Editing utilities   | Increment or decrement markdown heading levels across selected text via command palette and keybindings.                                                              |
 
 The extension is workspace-aware: a JSONC configuration file
 (`.tangyr.jsonc`) at the workspace root stores the enabled state,
@@ -172,12 +173,12 @@ merge.
 |  |  |                  | |  - Providers (x6) |              |    |
 |  |  |                  | |  - Parsers (x4+1) |              |    |
 |  |  +------------------+ +-------------------+              |    |
-|  |  +------------------+                                    |    |
-|  |  | textStats        |                                    |    |
-|  |  |  - Controller    |                                    |    |
-|  |  |  - Metrics (x7)  |                                    |    |
-|  |  |  - Tokenizers    |                                    |    |
-|  |  +------------------+                                    |    |
+|  |  +------------------+ +-------------------+              |    |
+|  |  | textStats        | | markdownHeadings  |              |    |
+|  |  |  - Controller    | |  - Increment/     |              |    |
+|  |  |  - Metrics (x7)  | |    Decrement      |              |    |
+|  |  |  - Tokenizers    | |    commands       |              |    |
+|  |  +------------------+ +-------------------+              |    |
 |  +----------------------------------------------------------+    |
 |                                                                  |
 +------------------------------------------------------------------+
@@ -273,15 +274,18 @@ activate(context)
   |     |     +-- subscribe to onDidChangeState
   |     |     +-- subscribe to onConfigSectionChanged
   |     +-- registerTextStatsFeature(ctx)
-  |           |
-  |           +-- migrationRegistry.register(textStats section)
-  |           +-- stateManager.registerService(textStats)
-  |           +-- createTextStatsStatusBarItem()
-  |           +-- new TextStatsController()
-  |           +-- wireCommands (toggle + changeTokenizer)
-  |           +-- subscribe to onDidChangeState
-  |           +-- subscribe to onConfigSectionChanged
-  |           +-- subscribe to editor/document/selection change events
+  |     |     |
+  |     |     +-- migrationRegistry.register(textStats section)
+  |     |     +-- stateManager.registerService(textStats)
+  |     |     +-- createTextStatsStatusBarItem()
+  |     |     +-- new TextStatsController()
+  |     |     +-- wireCommands (toggle + changeTokenizer)
+  |     |     +-- subscribe to onDidChangeState
+  |     |     +-- subscribe to onConfigSectionChanged
+  |     |     +-- subscribe to editor/document/selection change events
+  |     +-- registerMarkdownHeadingsFeature(registry, logger)
+  |           +-- register tangyr.markdownHeadings.increment command
+  |           +-- register tangyr.markdownHeadings.decrement command
   |
   +-- stateManager.initialize(extensionVersion)  [async]
         |
