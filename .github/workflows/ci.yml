@@ -15,7 +15,7 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
-          node-version: '22.22.0'
+          node-version: '22.22.1'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm audit
@@ -28,7 +28,7 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
-          node-version: '22.22.0'
+          node-version: '22.22.1'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
@@ -42,7 +42,7 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
-          node-version: '22.22.0'
+          node-version: '22.22.1'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check-types
@@ -55,11 +55,11 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
-          node-version: '22.22.0'
+          node-version: '22.22.1'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run test:unit:coverage
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: false
@@ -75,7 +75,7 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
-          node-version: '22.22.0'
+          node-version: '22.22.1'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run compile
@@ -94,7 +94,7 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
-          node-version: '22.22.0'
+          node-version: '22.22.1'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run test:integration:vitest:coverage
@@ -108,12 +108,12 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
         with:
-          node-version: '22.22.0'
+          node-version: '22.22.1'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run package
       - run: pnpm run vsce:package
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: extension-vsix
           path: '*.vsix'
