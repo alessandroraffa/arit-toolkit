@@ -4,10 +4,12 @@ import { Uri, window, workspace, resetAllMocks } from '../../mocks/vscode';
 vi.mock('vscode', () => import('../../mocks/vscode'));
 vi.mock('../../../../src/features/skillBundleEdit/bundle', () => ({
   readSkillBundle: vi.fn(),
+  writeSkillBundle: vi.fn(),
 }));
 vi.mock('../../../../src/features/skillBundleEdit/tempStore', () => ({
   resolveTempUri: vi.fn(),
   writeTempFile: vi.fn(),
+  deleteTempDir: vi.fn(),
 }));
 
 import { editSkillBundleCommand } from '../../../../src/features/skillBundleEdit/command';

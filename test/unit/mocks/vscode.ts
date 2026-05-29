@@ -37,6 +37,7 @@ export const window = {
   showInputBox: vi.fn(),
   showTextDocument: vi.fn(),
   showQuickPick: vi.fn(),
+  showSaveDialog: vi.fn(),
   createStatusBarItem: vi.fn(() => ({ ...mockStatusBarItem })),
   onDidChangeActiveTextEditor: vi.fn(() => mockDisposable),
   onDidChangeTextEditorSelection: vi.fn(() => mockDisposable),
@@ -56,6 +57,8 @@ export const workspace = {
   })),
   onDidChangeConfiguration: vi.fn(() => mockDisposable),
   onDidChangeTextDocument: vi.fn(() => mockDisposable),
+  onDidSaveTextDocument: vi.fn(() => mockDisposable),
+  onDidCloseTextDocument: vi.fn(() => mockDisposable),
   workspaceFolders: undefined as Array<{ uri: { fsPath: string } }> | undefined,
   openTextDocument: vi.fn((uri: unknown) =>
     Promise.resolve({ uri, getText: (): string => '' })

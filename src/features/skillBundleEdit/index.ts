@@ -5,6 +5,7 @@ import { sweepOrphans } from './tempStore';
 import type { PreservedFailureRecord } from './tempStore';
 import { SessionRegistry } from './session';
 import { editSkillBundleCommand } from './command';
+import { registerSaveListener, registerCloseListener } from './saveHandler';
 
 export const COMMAND_ID_EDIT_SKILL_BUNDLE = 'tangyr.editSkillBundle';
 export const SKILL_EDITS_DIR_NAME = 'skill-edits';
@@ -37,7 +38,11 @@ export async function registerSkillBundleEditFeature(
       return editSkillBundleCommand(uri, ctx.context, sessionRegistry);
     }
   );
+  const saveListener = registerSaveListener(sessionRegistry);
+  const closeListener = registerCloseListener(sessionRegistry);
+  ctx.context.subscriptions.push(saveListener, closeListener);
   return new vscode.Disposable(() => {
-    // Session registry requires no teardown beyond subscription disposal.
+    saveListener.dispose();
+    closeListener.dispose();
   });
 }
