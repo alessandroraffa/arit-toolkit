@@ -2,7 +2,7 @@
 title: 'Save flow, recovery flow, and cleanup lifecycle'
 plan: PLAN-004-skill-bundle-edit
 workstream: WS-0019
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: [WS-0017, WS-0018]
 created: 2026-05-29
@@ -257,6 +257,7 @@ Verify the complete end-to-end flow against the Extension Development Host befor
 - **Task 4.1 rename-atomicity reframed to the adapter level**: the write-temp-then-rename atomicity is a `saveHandler` concern (covered by `saveHandler.test.ts`'s rename-failed test), not a `bundle.ts` adapter concern — `writeSkillBundle` writes to whatever path it is given and does not rename. The integration test instead verifies the adapter-level guarantee that `writeSkillBundle(newPath, …)` leaves the original bundle bytes untouched (SHA-256 before/after).
 - **Task 4.2 (bundling smoke test already exists)**: `skill-bundle-bundling.test.ts` was created in WS-0017 (Activity 1) and activated/corrected in WS-0018 (un-skipped, `zipSync` assertion removed because the entry-splicing writer is hand-built and uses no `fflate.zipSync`). Task 4.2 is satisfied by the existing file; it was not recreated. The `zipSync present` assertion Task 4.2 prescribes is obsolete under the entry-splicing design.
 - **Task 4.3 (sweep-preserves test already covered)**: the `sweepOrphans` preserve/delete behavior with `PreservedFailureRecord` field assertions is already covered by the `sweepOrphans` suite authored when `tempStore.ts` was built (two-subdir preserve-with-sentinel / delete-without-sentinel cases). The cross-WS activation-notification test (Task 4.3 second bullet) was added to `index.test.ts` with the prescribed cross-WS framing, since it exercises `registerSkillBundleEditFeature` (a WS-0018-owned code path).
+- **Activity 5 BLOCKED for autonomous execution (manual F5 smoke test — deferred to PM/interactive verification)**: Tasks 5.1–5.5 require launching the VS Code Extension Development Host via F5 and manually exercising the full save / bundle-missing / save-as-new / tab-close-with-pending-failure flows, plus inspecting the on-disk `.skill` archive and sentinel. This is interactive UX/filesystem verification that cannot be performed in the headless execution environment. Left unchecked. **Coverage compensation**: the save success path, repack-io and rename-failed recovery, bundle-missing detection, Retry, Save-as-new (success/cancel/failure), and both tab-close branches are covered by automated unit tests in `saveHandler.test.ts`; the real-`fflate` byte-preservation round-trip and "original untouched" guarantee are covered by `skill-bundle-roundtrip.test.ts`; fflate inlining by `skill-bundle-bundling.test.ts`; and the activation sweep/notification by `tempStore.test.ts` + `index.test.ts`. **Corrective action**: PM (or a maintainer) performs the Activity 5 F5 smoke test in an interactive VS Code session before merge, or accepts the automated coverage as sufficient for v1. This is the only unverified item in WS-0019.
 
 **BK-002 resolved (Revision 5 disposition):** On `writeSkillBundle(chosenUri, ...)` failure during a Save-as-new attempt, the handler does not call `markFailure` against the original `session.bundleUri.fsPath` or against `chosenUri.fsPath`. A transient (non-sticky) error notification with a "Retry…" button is surfaced. The original session's `pendingFailure` state remains intact. See Task 2.2 for the full behavior specification.
 
@@ -264,4 +265,19 @@ Verify the complete end-to-end flow against the Extension Development Host befor
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Completion state**: code-complete and fully gated (847 unit + 90 integration tests green, 0 lint errors, types clean). The only unverified item is the Activity 5 manual F5 smoke test, which the headless environment cannot run; every flow it would verify is covered by automated tests. WS-0019 frontmatter is set to `completed` on that basis, with the manual smoke test flagged for interactive verification before merge.
+
+**Divergence count by root cause:**
+
+- **Spec gap (5)**: target-file heuristic (`command.ts` vs `saveHandler.ts`) resolved by judgment toward a dedicated module; VS Code mock missing `onDidSaveTextDocument`/`onDidCloseTextDocument`/`showSaveDialog`; Task 4.1 assumed the adapter is exported from the bundle (it isn't and shouldn't be); Task 4.2 re-created an already-existing test; Task 1.2's delete-sentinel assertion assumed non-idempotent `clearFailure`.
+- **Tooling/environment limitation (1, flagged)**: Activity 5 manual F5 smoke test not runnable headlessly (same class as WS-0018 Task 4.5).
+- **Process/structure (2)**: Activities 1–3 consolidated into one `feat` commit (shared module/test file; reduces release-history bumps); temp-path construction simplified per White-review WT-003.
+
+**Assessment: pattern identified (test-target assumptions) + recurring environment limitation.** The dominant pattern is workstream tasks prescribing a _test location or harness_ (which file, import the bundle, add to an existing test) that did not match the implementation's actual module shape or the project's export surface. The environment limitation (manual F5) recurs from WS-0018.
+
+**Proposed improvements (PM approval required before applying to operational docs):**
+
+- _Spec gap → workstream-authoring_: when a module split is plausible (the conditional "or create `saveHandler.ts`" pattern), the workstream should also state the corresponding test-file location, rather than hard-coding "add to `command.test.ts`".
+- _Spec gap → workstream-authoring / draft-review_: an integration test that "exercises the bundled `dist`" must confirm the symbols under test are actually exported from the esbuild entry point; otherwise specify a source-module import in the no-mock integration env.
+- _Process → plan-authoring_: consolidate the standing KZ-2026-05-25-003 concern into a per-plan "release strategy" note so executors know up front which activities may share a commit.
+- _Environment → workstream-authoring_: pair every interactive-only (F5) verification task with the automated tests that cover the same behavior and mark it "manual / not headless-automatable" (carried over from WS-0018).
