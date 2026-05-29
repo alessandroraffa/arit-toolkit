@@ -1,7 +1,7 @@
 ---
 title: 'In-bundle SKILL.md editing implementation'
 initiative: INIT-004-skill-bundle-edit
-status: draft
+status: completed
 workspaces: []
 created: 2026-05-28
 references:

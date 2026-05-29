@@ -1,6 +1,6 @@
 ---
 title: 'In-bundle SKILL.md editing for skill packages'
-status: draft
+status: completed
 created: 2026-05-28
 references:
   - docs/technical-context.md
