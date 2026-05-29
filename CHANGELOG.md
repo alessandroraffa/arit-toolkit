@@ -1,3 +1,20 @@
+## [2.3.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.2.1...v2.3.0) (2026-05-29)
+
+### Features
+
+* **skill-bundle-edit:** add edit command with four open-case branches ([adc6624](https://github.com/alessandroraffa/tangyr-vscode/commit/adc66243f4c17ccbb156df0008f6024e5e44a46f))
+* **skill-bundle-edit:** add entry-splicing bundle adapter, template, and tests ([c33abff](https://github.com/alessandroraffa/tangyr-vscode/commit/c33abff01cdbe06a332fb48510b03e8ff1b686f7))
+* **skill-bundle-edit:** add fflate dependency and bundling smoke test ([6f3ac15](https://github.com/alessandroraffa/tangyr-vscode/commit/6f3ac1519bf8d0526892e5359b48557a7a98d747))
+* **skill-bundle-edit:** add save flow, recovery flow, and tab-close cleanup ([3951a41](https://github.com/alessandroraffa/tangyr-vscode/commit/3951a413e741a5b9eaa366b29f8f4d98d9543825))
+* **skill-bundle-edit:** add session registry with async sentinel-durable markfailure/clearfailure ([dc1b65f](https://github.com/alessandroraffa/tangyr-vscode/commit/dc1b65f983bf4b65f97da62509d07c26f4d0aa47))
+* **skill-bundle-edit:** add skill-bundle test fixture corpus ([774b5dd](https://github.com/alessandroraffa/tangyr-vscode/commit/774b5dd6ed71ee975278acfc0269f8f38bb0bdfd))
+* **skill-bundle-edit:** add tempstore module with sentinel-aware sweep ([d37ad0a](https://github.com/alessandroraffa/tangyr-vscode/commit/d37ad0a18c331ebc4818698aeab388e56979b2fc))
+* **skill-bundle-edit:** wire feature registration and menus ([0b103c9](https://github.com/alessandroraffa/tangyr-vscode/commit/0b103c95b544deeaf3294dc56eb1655fc58d5c98))
+
+### Bug Fixes
+
+* **skill-bundle-edit:** normalize malformed-archive errors to invalid_zip ([5901c38](https://github.com/alessandroraffa/tangyr-vscode/commit/5901c38906ecb133f21c2fc6058e74d9d426dc77))
+
 ## [2.2.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.2.0...v2.2.1) (2026-05-28)
 
 ### Bug Fixes
