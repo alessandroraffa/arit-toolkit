@@ -37,7 +37,7 @@ Excluded:
 
 - Editing of any file other than `SKILL.md` inside the bundle (deferred until a concrete user need emerges).
 - A tree view or browser of bundle contents.
-- Registration as the default editor for `.skill` files (via `CustomEditorProvider`). The context-menu and command-palette entry points are sufficient for v1; promotion to default editor is a candidate v2 enhancement.
+- Registration as the default editor for `.skill` files (via `CustomTextEditorProvider`). The context-menu and command-palette entry points are sufficient for v1; promotion to default editor is a candidate v2 enhancement.
 - A virtual file system provider (`skill://` URI scheme) that would let editors operate directly on bundle contents without temporary extraction.
 - Creation of new `.skill` bundles ex novo: the user always starts from an existing bundle file.
 - Multi-bundle or batch operations.
