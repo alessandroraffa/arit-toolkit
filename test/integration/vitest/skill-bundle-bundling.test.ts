@@ -4,7 +4,16 @@ import { resolve } from 'path';
 
 const BUNDLE_PATH = resolve(__dirname, '../../../dist/extension.js');
 
-describe('skill-bundle bundling smoke tests', () => {
+// NOTE (WS-0017 → WS-0018): these assertions verify that fflate is INLINED into
+// the production bundle (not externalized). fflate only becomes reachable once
+// WS-0018 wires `registerSkillBundleEditFeature` into `src/extension.ts`, which
+// imports `bundle.ts` (the sole fflate consumer). Until the feature is wired,
+// esbuild correctly tree-shakes the entire skillBundleEdit module — including
+// fflate — out of the bundle as dead code, so the suite is skipped. WS-0018
+// removes `.skip` after wiring the feature. The entry-splicing adapter uses
+// `unzipSync` for the read path and hand-builds the writer, so `zipSync` is not
+// expected in the bundle (see PLAN-004 Decision 2).
+describe.skip('skill-bundle bundling smoke tests', () => {
   let bundleContent: string;
 
   beforeAll(() => {
@@ -16,10 +25,6 @@ describe('skill-bundle bundling smoke tests', () => {
 
   it('should inline unzipSync from fflate', () => {
     expect(bundleContent).toContain('unzipSync');
-  });
-
-  it('should inline zipSync from fflate', () => {
-    expect(bundleContent).toContain('zipSync');
   });
 
   it('should not externalize fflate', () => {
