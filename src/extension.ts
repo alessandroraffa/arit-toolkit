@@ -44,7 +44,7 @@ function runSettingsMigration(context: vscode.ExtensionContext): void {
   });
 }
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   logger = Logger.getInstance();
   const configManager = setupConfiguration(context, logger);
   logger.info('Tangyr Workbench is activating...');
@@ -62,7 +62,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const commandRegistry = new CommandRegistry(context, stateManager);
 
   // Register all features
-  registerAllFeatures({
+  await registerAllFeatures({
     registry: commandRegistry,
     stateManager,
     config: configManager,

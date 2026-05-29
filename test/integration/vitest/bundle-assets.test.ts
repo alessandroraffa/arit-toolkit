@@ -64,6 +64,7 @@ describe('bundle asset verification', () => {
       'crypto',
       'events',
       'fs',
+      'module',
       'http',
       'https',
       'net',
@@ -76,8 +77,11 @@ describe('bundle asset verification', () => {
       'worker_threads',
       'zlib',
     ]);
-    const isNodeBuiltin = (m: string): boolean =>
-      NODE_BUILTINS.has(m) || NODE_BUILTINS.has(m.replace('node:', ''));
+    const isNodeBuiltin = (m: string): boolean => {
+      const bare = m.replace('node:', '');
+      const base = bare.split('/')[0] ?? bare;
+      return NODE_BUILTINS.has(m) || NODE_BUILTINS.has(bare) || NODE_BUILTINS.has(base);
+    };
     const requireCalls = bundleContent.match(/require\("([^.][^"]+)"\)/g) ?? [];
     const externalModules = requireCalls
       .map((r) => r.replace(/require\("(.+)"\)/, '$1'))

@@ -101,6 +101,11 @@
         "command": "tangyr.markdownHeadings.decrement",
         "title": "Tangyr: Decrement Markdown Headings",
         "icon": "$(arrow-up)"
+      },
+      {
+        "command": "tangyr.editSkillBundle",
+        "title": "Tangyr: Edit SKILL.md",
+        "icon": "$(edit)"
       }
     ],
     "menus": {
@@ -134,6 +139,11 @@
           "command": "tangyr.markdownHeadings.decrement",
           "group": "1_tangyr@2",
           "when": "!explorerResourceIsFolder && resourceLangId == markdown"
+        },
+        {
+          "command": "tangyr.editSkillBundle",
+          "group": "1_tangyr@3",
+          "when": "!explorerResourceIsFolder && resourceExtname == .skill"
         }
       ],
       "editor/context": [
@@ -175,6 +185,10 @@
         {
           "command": "tangyr.markdownHeadings.decrement",
           "when": "editorLangId == markdown"
+        },
+        {
+          "command": "tangyr.editSkillBundle",
+          "when": "workspaceFolderCount == 1"
         }
       ]
     },

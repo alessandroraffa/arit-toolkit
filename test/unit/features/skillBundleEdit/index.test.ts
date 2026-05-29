@@ -1,4 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('vscode', () => import('../../mocks/vscode'));
+
 import {
   COMMAND_ID_EDIT_SKILL_BUNDLE,
   SKILL_EDITS_DIR_NAME,

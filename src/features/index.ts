@@ -10,6 +10,7 @@ import { registerStatusBarToggleFeature } from './statusBarToggle';
 import { registerAgentSessionsArchivingFeature } from './agentSessionsArchiving';
 import { registerTextStatsFeature } from './textStats';
 import { registerMarkdownHeadingsFeature } from './markdownHeadings';
+import { registerSkillBundleEditFeature } from './skillBundleEdit';
 
 export interface FeatureRegistrationContext {
   registry: CommandRegistry;
@@ -20,11 +21,14 @@ export interface FeatureRegistrationContext {
   migrationRegistry: ConfigSectionRegistry;
 }
 
-export function registerAllFeatures(ctx: FeatureRegistrationContext): void {
+export async function registerAllFeatures(
+  ctx: FeatureRegistrationContext
+): Promise<void> {
   registerTimestampedFileFeature(ctx.registry, ctx.config, ctx.logger);
   registerTimestampedDirectoryFeature(ctx.registry, ctx.config, ctx.logger);
   registerAgentSessionsArchivingFeature(ctx);
   registerStatusBarToggleFeature(ctx);
   registerTextStatsFeature(ctx);
   registerMarkdownHeadingsFeature(ctx.registry, ctx.logger);
+  await registerSkillBundleEditFeature(ctx);
 }
