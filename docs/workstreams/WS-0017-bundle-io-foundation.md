@@ -82,42 +82,42 @@ Create `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/test/in
 - [x] Run the full quality gate: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit && pnpm run test:integration:vitest`. All commands must pass. _(Integration gate deferred to Task 3.5 per Task 1.4 divergence; Activity 1 committed under the unit gate, which is green.)_
 - [x] Commit `package.json`, `pnpm-lock.yaml`, `test/integration/vitest/skill-bundle-bundling.test.ts`, and this workstream file with message: `feat(skill-bundle-edit): add fflate dependency and bundling smoke test`.
 
-### [ ] Activity 2: Create test fixture corpus and fixture-generation helper
+### [x] Activity 2: Create test fixture corpus and fixture-generation helper
 
 Create the five `.skill` fixture files under `test/fixtures/skill-bundles/` and the Node.js helper script that generates them deterministically using `fflate`. The fixtures are consumed by the unit tests in Activity 3.
 
-#### [ ] Task 2.1: Create the fixture directory and fixture-generation helper script
+#### [x] Task 2.1: Create the fixture directory and fixture-generation helper script
 
-- [ ] Create the directory path `test/fixtures/skill-bundles/` (the parent `test/fixtures/` does not yet exist and must also be created).
-- [ ] Create the file `test/fixtures/skill-bundles/generate-fixtures.mjs`. This is a plain Node.js ESM script (not TypeScript, not subject to tsconfig) that runs with `node test/fixtures/skill-bundles/generate-fixtures.mjs` from the project root after `pnpm install`.
-- [ ] Write the script with the following imports at the top:
+- [x] Create the directory path `test/fixtures/skill-bundles/` (the parent `test/fixtures/` does not yet exist and must also be created).
+- [x] Create the file `test/fixtures/skill-bundles/generate-fixtures.mjs`. This is a plain Node.js ESM script (not TypeScript, not subject to tsconfig) that runs with `node test/fixtures/skill-bundles/generate-fixtures.mjs` from the project root after `pnpm install`.
+- [x] Write the script with the following imports at the top:
   - `import { zipSync, strToU8 } from 'fflate';`
   - `import { writeFileSync } from 'fs';`
   - `import { resolve, dirname } from 'path';`
   - `import { fileURLToPath } from 'url';`
   - `const __dirname = dirname(fileURLToPath(import.meta.url));`
-- [ ] Write five fixture files to `__dirname` using `writeFileSync`. Exact payloads:
+- [x] Write five fixture files to `__dirname` using `writeFileSync`. Exact payloads:
   - `valid-with-skill-md.skill`: `Buffer.from(zipSync({ 'SKILL.md': strToU8('# Skill\n\nDescription.\n') }))`.
   - `valid-no-skill-md.skill`: `Buffer.from(zipSync({ 'README.md': strToU8('# README\n') }))`.
   - `valid-empty-skill-md.skill`: `Buffer.from(zipSync({ 'SKILL.md': new Uint8Array(0) }))`.
   - `valid-with-companions.skill`: `Buffer.from(zipSync({ 'SKILL.md': strToU8('# Skill\n'), 'assets/logo.png': new Uint8Array([0x89, 0x50, 0x4e, 0x47]), 'docs/usage.md': strToU8('# Usage\n') }))`.
   - `invalid-not-zip.skill`: `Buffer.from('not a zip file')`.
-- [ ] End the script with `console.log('Fixtures generated.');`.
+- [x] End the script with `console.log('Fixtures generated.');`.
 
-#### [ ] Task 2.2: Run the fixture-generation helper and verify output
+#### [x] Task 2.2: Run the fixture-generation helper and verify output
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && node test/fixtures/skill-bundles/generate-fixtures.mjs` from the project root. The command must exit 0 and print `Fixtures generated.`.
-- [ ] Verify the four valid ZIP fixtures are well-formed by running: `node -e "const f=require('./node_modules/fflate/umd/index.js');['valid-with-skill-md.skill','valid-no-skill-md.skill','valid-empty-skill-md.skill','valid-with-companions.skill'].forEach(n=>{const r=f.unzipSync(require('fs').readFileSync('test/fixtures/skill-bundles/'+n));console.log(n,Object.keys(r));});"`. The command must print one line per fixture. Verify: `valid-with-skill-md.skill` → `[ 'SKILL.md' ]`; `valid-no-skill-md.skill` → `[ 'README.md' ]`; `valid-empty-skill-md.skill` → `[ 'SKILL.md' ]`; `valid-with-companions.skill` → `[ 'SKILL.md', 'assets/logo.png', 'docs/usage.md' ]`.
-- [ ] Verify `invalid-not-zip.skill` is rejected by running: `node -e "try{require('./node_modules/fflate/umd/index.js').unzipSync(require('fs').readFileSync('test/fixtures/skill-bundles/invalid-not-zip.skill'));}catch(e){console.log('rejected:',e.message);}"`. The command must print a line starting with `rejected:`.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && node test/fixtures/skill-bundles/generate-fixtures.mjs` from the project root. The command must exit 0 and print `Fixtures generated.`.
+- [x] Verify the four valid ZIP fixtures are well-formed by running: `node -e "const f=require('./node_modules/fflate/umd/index.js');['valid-with-skill-md.skill','valid-no-skill-md.skill','valid-empty-skill-md.skill','valid-with-companions.skill'].forEach(n=>{const r=f.unzipSync(require('fs').readFileSync('test/fixtures/skill-bundles/'+n));console.log(n,Object.keys(r));});"`. The command must print one line per fixture. Verify: `valid-with-skill-md.skill` → `[ 'SKILL.md' ]`; `valid-no-skill-md.skill` → `[ 'README.md' ]`; `valid-empty-skill-md.skill` → `[ 'SKILL.md' ]`; `valid-with-companions.skill` → `[ 'SKILL.md', 'assets/logo.png', 'docs/usage.md' ]`.
+- [x] Verify `invalid-not-zip.skill` is rejected by running: `node -e "try{require('./node_modules/fflate/umd/index.js').unzipSync(require('fs').readFileSync('test/fixtures/skill-bundles/invalid-not-zip.skill'));}catch(e){console.log('rejected:',e.message);}"`. The command must print a line starting with `rejected:`.
 
-#### [ ] Task 2.3: Update impacted documentation
+#### [x] Task 2.3: Update impacted documentation
 
-- [ ] In this workstream file, mark all completed checkboxes in Activity 2.
+- [x] In this workstream file, mark all completed checkboxes in Activity 2.
 
-#### [ ] Task 2.4: Commit changes
+#### [x] Task 2.4: Commit changes
 
-- [ ] Run the quality gate: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `test/fixtures/skill-bundles/generate-fixtures.mjs`, `test/fixtures/skill-bundles/valid-with-skill-md.skill`, `test/fixtures/skill-bundles/valid-no-skill-md.skill`, `test/fixtures/skill-bundles/valid-empty-skill-md.skill`, `test/fixtures/skill-bundles/valid-with-companions.skill`, `test/fixtures/skill-bundles/invalid-not-zip.skill`, and this workstream file with message: `feat(skill-bundle-edit): add skill-bundle test fixture corpus`.
+- [x] Run the quality gate: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `test/fixtures/skill-bundles/generate-fixtures.mjs`, `test/fixtures/skill-bundles/valid-with-skill-md.skill`, `test/fixtures/skill-bundles/valid-no-skill-md.skill`, `test/fixtures/skill-bundles/valid-empty-skill-md.skill`, `test/fixtures/skill-bundles/valid-with-companions.skill`, `test/fixtures/skill-bundles/invalid-not-zip.skill`, and this workstream file with message: `feat(skill-bundle-edit): add skill-bundle test fixture corpus`.
 
 ### [ ] Activity 3: Implement source modules and unit tests
 
@@ -270,6 +270,7 @@ Create `/Users/alessandroraffa/dev/oceanus/projects/tangyr/tangyr-vscode/test/un
 
 ## Divergences and notes
 
+- **Task 2.1 (review gap — ESLint Node globals for `.mjs`)**: The spec'd `generate-fixtures.mjs` uses `Buffer.from(...)` and `console.log(...)`. It lands under `test/fixtures/`, which is in scope for `eslint.configs.recommended` (active `no-undef`), but `eslint.config.mjs` grants `globals.node` only to `.ts` config blocks (`src/**/*.ts`, `test/**/*.ts`), and the global `*.mjs` ignore matches root-level `.mjs` only — not nested ones. Result: 6 `no-undef` errors (`Buffer`, `console`). The project's established pattern is to _ignore_ `.mjs` scripts from linting (root config), but broadening that glob touches a root config file (escalation boundary). **Corrective action (in-file, no root-config change)**: added an inline `/* global Buffer, console */` declaration to `generate-fixtures.mjs` — these globals genuinely exist in the Node runtime the script targets, so `no-undef` was a false positive; the declaration is the correct semantic fix. Lint returns to 0 errors. **Review improvement**: when a workstream introduces a nested `.mjs` script under a linted root (`test/`, `src/`), either route it through the `**/*.mjs` ignore or specify the in-file global declaration, so the executor does not discover the lint gap at gate time.
 - **Task 1.4 (review gap — import ordering)**: The bundling smoke test (`skill-bundle-bundling.test.ts`) asserts that `fflate` symbols (`unzipSync`, `zipSync`) are inlined into `dist/extension.js`. At Activity 1, no source module imports `fflate` (its only consumer, `bundle.ts`, is created in Activity 3), so esbuild tree-shakes `fflate` out entirely and the smoke test is necessarily red. The workstream requires this test green in Task 1.4 and in the Activity 1 commit gate (Task 1.6), which is unsatisfiable before Activity 3. **Corrective action**: standard red-test-first ordering — Activity 1 commits the dependency and the smoke-test file under the unit gate only (`check-types`, `lint`, `test:unit`, all green); the integration-smoke green-requirement is deferred to Task 3.5/3.8 where `bundle.ts` imports `fflate`. Task 1.4 bullet 1 and the Activity 1 header checkbox are marked at Task 3.5 once the smoke test passes. **Review improvement**: workstream-authoring should not place a bundling-inlining verification in an activity that precedes the activity introducing the dependency's first importer.
 
 ### Reflection
