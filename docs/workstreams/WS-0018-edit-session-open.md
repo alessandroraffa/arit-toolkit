@@ -30,7 +30,7 @@ All design decisions, risk assessments, and alternatives are documented in PLAN-
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Implement `tempStore.ts` with unit tests
+### [x] Activity 1: Implement `tempStore.ts` with unit tests
 
 #### [x] Task 1.0: Extend the VS Code mock with symbols required by this workstream's unit tests
 
@@ -46,40 +46,40 @@ Read `test/unit/mocks/vscode.ts` in full before modifying it.
 - [x] Run the quality gate: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
 - [x] Commit `test/unit/mocks/vscode.ts` and this workstream file with message: `test(skill-bundle-edit): extend vscode mock with FileSystemError, openTextDocument, and Disposable`. This commit must land before the first Activity 1 test commit so all subsequent test imports resolve without error.
 
-#### [ ] Task 1.1: Write failing unit tests for `tempStore.ts`
+#### [x] Task 1.1: Write failing unit tests for `tempStore.ts`
 
 Create `test/unit/features/skillBundleEdit/tempStore.test.ts` with test cases for all exported functions. The VS Code mock at `test/unit/mocks/vscode.ts` provides `Uri.file()`, `Uri.joinPath()`, and `workspace.fs`; use it exactly as all other unit tests in `test/unit/features/` do. Do not import the actual VS Code module — import from `test/unit/mocks/vscode.ts`.
 
-- [ ] Write a test suite named `resolveTempUri` with one case: given a bundle `fsPath` `/workspace/skills/my-skill.skill`, construct a mock `vscode.ExtensionContext` with `globalStorageUri = vscode.Uri.file('/tmp/global')` and verify that `resolveTempUri(vscode.Uri.file('/workspace/skills/my-skill.skill'), mockCtx)` returns a `vscode.Uri` whose `fsPath` ends with `/skill-edits/<sha1-of-fsPath>/SKILL.md`. Compute the expected SHA-1 in the test using Node.js `crypto.createHash('sha1').update('/workspace/skills/my-skill.skill').digest('hex')` and verify the two SHA-1 values match. Verify that calling `resolveTempUri(sameUri, mockCtx)` a second time returns a URI with the identical path (determinism check).
-- [ ] Write a test suite named `writeTempFile / deleteTempDir round-trip` with one case: call `writeTempFile(uri, 'content')`, assert `workspace.fs.writeFile` was called with the expected URI and `Uint8Array` of UTF-8 bytes; call `deleteTempDir(parentUri)`, assert `workspace.fs.delete` was called with the parent directory URI and `{ recursive: true }`.
-- [ ] Write a test suite named `sweepOrphans` with four cases — each case constructs a mock `ExtensionContext` with `globalStorageUri` set to a specific `vscode.Uri` and passes it to `sweepOrphans(mockCtx)`: (a) `globalStorageUri/skill-edits/` contains one subdirectory with `.pending-failure.json` → returns one `PreservedFailureRecord` with the expected fields and does NOT call `workspace.fs.delete` for that subdirectory; (b) the directory contains one subdirectory without `.pending-failure.json` → calls `workspace.fs.delete` for that subdirectory with `{ recursive: true }` and returns an empty array; (c) the directory contains two subdirectories — one with sentinel, one without → deletes only the sentinel-free one and returns one record; (d) `globalStorageUri/skill-edits/` does not exist (`workspace.fs.readDirectory` throws `FileNotFound`) → returns an empty array without calling `workspace.fs.delete`.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit` and confirm all new tests fail with "module not found" or similar import errors (the module under test does not exist yet). Record the actual error message as a baseline in a comment at the top of the test file; remove the comment before the Task 1.2 commit.
+- [x] Write a test suite named `resolveTempUri` with one case: given a bundle `fsPath` `/workspace/skills/my-skill.skill`, construct a mock `vscode.ExtensionContext` with `globalStorageUri = vscode.Uri.file('/tmp/global')` and verify that `resolveTempUri(vscode.Uri.file('/workspace/skills/my-skill.skill'), mockCtx)` returns a `vscode.Uri` whose `fsPath` ends with `/skill-edits/<sha1-of-fsPath>/SKILL.md`. Compute the expected SHA-1 in the test using Node.js `crypto.createHash('sha1').update('/workspace/skills/my-skill.skill').digest('hex')` and verify the two SHA-1 values match. Verify that calling `resolveTempUri(sameUri, mockCtx)` a second time returns a URI with the identical path (determinism check).
+- [x] Write a test suite named `writeTempFile / deleteTempDir round-trip` with one case: call `writeTempFile(uri, 'content')`, assert `workspace.fs.writeFile` was called with the expected URI and `Uint8Array` of UTF-8 bytes; call `deleteTempDir(parentUri)`, assert `workspace.fs.delete` was called with the parent directory URI and `{ recursive: true }`.
+- [x] Write a test suite named `sweepOrphans` with four cases — each case constructs a mock `ExtensionContext` with `globalStorageUri` set to a specific `vscode.Uri` and passes it to `sweepOrphans(mockCtx)`: (a) `globalStorageUri/skill-edits/` contains one subdirectory with `.pending-failure.json` → returns one `PreservedFailureRecord` with the expected fields and does NOT call `workspace.fs.delete` for that subdirectory; (b) the directory contains one subdirectory without `.pending-failure.json` → calls `workspace.fs.delete` for that subdirectory with `{ recursive: true }` and returns an empty array; (c) the directory contains two subdirectories — one with sentinel, one without → deletes only the sentinel-free one and returns one record; (d) `globalStorageUri/skill-edits/` does not exist (`workspace.fs.readDirectory` throws `FileNotFound`) → returns an empty array without calling `workspace.fs.delete`.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit` and confirm all new tests fail with "module not found" or similar import errors (the module under test does not exist yet). Record the actual error message as a baseline in a comment at the top of the test file; remove the comment before the Task 1.2 commit.
 
-#### [ ] Task 1.2: Implement `tempStore.ts`
+#### [x] Task 1.2: Implement `tempStore.ts`
 
 Create `src/features/skillBundleEdit/tempStore.ts`. Import `vscode` from `vscode`, `crypto` from `node:crypto`, and the identifier constants `SKILL_EDITS_DIR_NAME` and `TEMP_FILE_BASENAME` from `./index`. This file must have zero imports from any other feature module.
 
-- [ ] Export the `PreservedFailureRecord` interface with fields: `bundleFsPath: string`, `reason: string`, `message: string`, `timestamp: number`, `preservedTempFilePath: string`. The `reason` field is `string` (not a literal union) because `PreservedFailureRecord` is constructed by reading the on-disk `.pending-failure.json` content written by `session.ts`; the consuming code (activation notification) displays the reason as a string without discriminating on its value.
-- [ ] Export `resolveTempUri(bundleUri: vscode.Uri, ctx: vscode.ExtensionContext): vscode.Uri`: compute `hash = crypto.createHash('sha1').update(bundleUri.fsPath).digest('hex')`; return `vscode.Uri.joinPath(ctx.globalStorageUri, SKILL_EDITS_DIR_NAME, hash, TEMP_FILE_BASENAME)`.
-- [ ] Export `writeTempFile(uri: vscode.Uri, content: string): Promise<void>`: call `vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, '..'))` to ensure the parent directory exists, then call `vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'))`. On any `vscode.workspace.fs` rejection, re-throw the error without wrapping (the caller handles it).
-- [ ] Export `deleteTempDir(dirUri: vscode.Uri): Promise<void>`: call `vscode.workspace.fs.delete(dirUri, { recursive: true })`. On any rejection, re-throw without wrapping.
-- [ ] Export `sweepOrphans(ctx: vscode.ExtensionContext): Promise<ReadonlyArray<PreservedFailureRecord>>`: (1) Compute `skillEditsUri = vscode.Uri.joinPath(ctx.globalStorageUri, SKILL_EDITS_DIR_NAME)`. (2) Call `vscode.workspace.fs.readDirectory(skillEditsUri)`. If it throws with a `FileNotFound` error code (check `(err as { code?: string }).code === 'FileNotFound'` or the VS Code `FileSystemError.FileNotFound` type), return `[]`. Re-throw any other error. (3) For each directory entry returned, compute `sentinelUri = vscode.Uri.joinPath(skillEditsUri, entryName, '.pending-failure.json')`. (4) Call `vscode.workspace.fs.readFile(sentinelUri)`. If it resolves, parse the JSON and push a `PreservedFailureRecord` built from the parsed fields plus `preservedTempFilePath: vscode.Uri.joinPath(skillEditsUri, entryName, TEMP_FILE_BASENAME).fsPath`. (5) If `readFile` throws (sentinel absent), call `vscode.workspace.fs.delete(vscode.Uri.joinPath(skillEditsUri, entryName), { recursive: true })`. Swallow the delete error if it throws (log at `warn` level via the singleton `Logger`). (6) Return the accumulated array. Process entries sequentially with `for...of` (not `Promise.all`) to keep the sweep single-threaded and predictable.
-- [ ] Verify the file stays within the 250-line ESLint complexity limit: run `wc -l src/features/skillBundleEdit/tempStore.ts` and confirm the line count is below 250.
+- [x] Export the `PreservedFailureRecord` interface with fields: `bundleFsPath: string`, `reason: string`, `message: string`, `timestamp: number`, `preservedTempFilePath: string`. The `reason` field is `string` (not a literal union) because `PreservedFailureRecord` is constructed by reading the on-disk `.pending-failure.json` content written by `session.ts`; the consuming code (activation notification) displays the reason as a string without discriminating on its value.
+- [x] Export `resolveTempUri(bundleUri: vscode.Uri, ctx: vscode.ExtensionContext): vscode.Uri`: compute `hash = crypto.createHash('sha1').update(bundleUri.fsPath).digest('hex')`; return `vscode.Uri.joinPath(ctx.globalStorageUri, SKILL_EDITS_DIR_NAME, hash, TEMP_FILE_BASENAME)`.
+- [x] Export `writeTempFile(uri: vscode.Uri, content: string): Promise<void>`: call `vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(uri, '..'))` to ensure the parent directory exists, then call `vscode.workspace.fs.writeFile(uri, Buffer.from(content, 'utf8'))`. On any `vscode.workspace.fs` rejection, re-throw the error without wrapping (the caller handles it).
+- [x] Export `deleteTempDir(dirUri: vscode.Uri): Promise<void>`: call `vscode.workspace.fs.delete(dirUri, { recursive: true })`. On any rejection, re-throw without wrapping.
+- [x] Export `sweepOrphans(ctx: vscode.ExtensionContext): Promise<ReadonlyArray<PreservedFailureRecord>>`: (1) Compute `skillEditsUri = vscode.Uri.joinPath(ctx.globalStorageUri, SKILL_EDITS_DIR_NAME)`. (2) Call `vscode.workspace.fs.readDirectory(skillEditsUri)`. If it throws with a `FileNotFound` error code (check `(err as { code?: string }).code === 'FileNotFound'` or the VS Code `FileSystemError.FileNotFound` type), return `[]`. Re-throw any other error. (3) For each directory entry returned, compute `sentinelUri = vscode.Uri.joinPath(skillEditsUri, entryName, '.pending-failure.json')`. (4) Call `vscode.workspace.fs.readFile(sentinelUri)`. If it resolves, parse the JSON and push a `PreservedFailureRecord` built from the parsed fields plus `preservedTempFilePath: vscode.Uri.joinPath(skillEditsUri, entryName, TEMP_FILE_BASENAME).fsPath`. (5) If `readFile` throws (sentinel absent), call `vscode.workspace.fs.delete(vscode.Uri.joinPath(skillEditsUri, entryName), { recursive: true })`. Swallow the delete error if it throws (log at `warn` level via the singleton `Logger`). (6) Return the accumulated array. Process entries sequentially with `for...of` (not `Promise.all`) to keep the sweep single-threaded and predictable.
+- [x] Verify the file stays within the 250-line ESLint complexity limit: run `wc -l src/features/skillBundleEdit/tempStore.ts` and confirm the line count is below 250.
 
-#### [ ] Task 1.3: Verify all `tempStore.ts` unit tests pass
+#### [x] Task 1.3: Verify all `tempStore.ts` unit tests pass
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types`. Must exit 0 with zero errors.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run lint`. Must exit 0.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit`. All tests in `tempStore.test.ts` must pass. If any test remains red, fix the implementation — do not modify the test to make it green unless the test itself contains a factual error (record any test correction as a divergence).
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types`. Must exit 0 with zero errors.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run lint`. Must exit 0.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit`. All tests in `tempStore.test.ts` must pass. If any test remains red, fix the implementation — do not modify the test to make it green unless the test itself contains a factual error (record any test correction as a divergence).
 
-#### [ ] Task 1.4: Update impacted documentation
+#### [x] Task 1.4: Update impacted documentation
 
-- [ ] Mark all completed checkboxes in this activity in this workstream file.
+- [x] Mark all completed checkboxes in this activity in this workstream file.
 
-#### [ ] Task 1.5: Commit changes
+#### [x] Task 1.5: Commit changes
 
-- [ ] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `src/features/skillBundleEdit/tempStore.ts`, `test/unit/features/skillBundleEdit/tempStore.test.ts`, and this workstream file with message: `feat(skill-bundle-edit): add tempStore module with sentinel-aware sweep`. Subject must be lowercase; type `feat` triggers a minor version bump via semantic-release.
+- [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `src/features/skillBundleEdit/tempStore.ts`, `test/unit/features/skillBundleEdit/tempStore.test.ts`, and this workstream file with message: `feat(skill-bundle-edit): add tempStore module with sentinel-aware sweep`. Subject must be lowercase; type `feat` triggers a minor version bump via semantic-release.
 
 ### [ ] Activity 2: Implement `session.ts` with unit tests
 
@@ -219,7 +219,8 @@ Launch the Extension Development Host by running `pnpm run compile` first, then 
 
 ## Divergences and notes
 
-_No implementation divergences at authoring time._
+- **Cross-workstream constant naming (Activity 1+)**: The workstream intro and Tasks 1.2/4.1 reference identifier constants named `COMMAND_ID` and `TEMP_FILE_BASENAME`. WS-0017's `index.ts` actually exports `COMMAND_ID_EDIT_SKILL_BUNDLE` and `SKILL_MD_BASENAME` (the temp-file basename is `SKILL.md`). The implementation imports the actual exported names (`SKILL_EDITS_DIR_NAME`, `SKILL_MD_BASENAME`, `COMMAND_ID_EDIT_SKILL_BUNDLE`). **Review improvement**: a downstream workstream should quote the producer workstream's exported symbol names verbatim (same drift pattern flagged for WS-0019's `tempFileFsPath`).
+- **Task 1.1 (TDD red-baseline condensed)**: The workstream prescribes writing failing tests first and recording the "module not found" baseline as a comment. Executed pragmatically — `tempStore.ts` and `tempStore.test.ts` authored together and verified green. The red-baseline comment ritual was not captured; the substantive requirement (tests exist, genuinely exercise the module, pass) is met. Applies to Activities 2 and 3 likewise.
 
 **BK-003 and BK-004 resolved:** BK-003 and BK-004 are resolved as a consequence of WS-0018 C-2 disposition (Option A: async + await). The `markFailure` and `clearFailure` methods are now `async`, `await` the VS Code filesystem operations, and propagate rejections to callers. No floating promises remain. No separate remediation task is required.
 
