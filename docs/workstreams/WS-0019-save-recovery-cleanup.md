@@ -2,7 +2,7 @@
 title: 'Save flow, recovery flow, and cleanup lifecycle'
 plan: PLAN-004-skill-bundle-edit
 workstream: WS-0019
-status: 'draft'
+status: 'idle'
 workspaces: []
 dependencies: [WS-0017, WS-0018]
 created: 2026-05-29
