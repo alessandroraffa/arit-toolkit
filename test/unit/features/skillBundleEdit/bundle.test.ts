@@ -105,6 +105,21 @@ describe('bundle', () => {
     );
   });
 
+  it('rejects a truncated archive with INVALID_ZIP (not a raw RangeError)', async () => {
+    const full = zipSync({
+      'SKILL.md': strToU8('# Skill\n'),
+      'a/b.txt': strToU8('data'),
+    });
+    // Keep the trailing EOCD record but corrupt the central-directory offset so
+    // parsing drives an out-of-bounds read; the adapter must normalize to the contract.
+    const truncated = full.slice(0, full.length - 8);
+    const path = join(tempDir, 'truncated.skill');
+    writeFileSync(path, Buffer.from(truncated));
+    await expect(readSkillBundle({ fsPath: path })).rejects.toSatisfy(
+      (e: unknown) => e instanceof SkillBundleError && e.code === 'INVALID_ZIP'
+    );
+  });
+
   it('rejects entry name containing null byte', async () => {
     const path = writeZip('t.skill', { 'foo\0bar.txt': strToU8('x') });
     await expect(readSkillBundle({ fsPath: path })).rejects.toSatisfy(

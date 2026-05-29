@@ -169,7 +169,7 @@ function parseEntry(
   };
 }
 
-function parseEntries(buf: Uint8Array): ParsedEntry[] {
+function parseEntriesUnchecked(buf: Uint8Array): ParsedEntry[] {
   const view = dv(buf);
   const eocd = locateEocd(buf);
   const count = view.getUint16(eocd + 10, true);
@@ -181,6 +181,20 @@ function parseEntries(buf: Uint8Array): ParsedEntry[] {
     cdPos = next;
   }
   return entries;
+}
+
+function parseEntries(buf: Uint8Array): ParsedEntry[] {
+  try {
+    return parseEntriesUnchecked(buf);
+  } catch (e) {
+    if (e instanceof SkillBundleError) throw e;
+    // Truncated or malformed archives can drive an out-of-bounds DataView read
+    // (RangeError) before any structural check fires; normalize to the contract.
+    throw new SkillBundleError(
+      'Failed to parse ZIP: ' + (e as Error).message,
+      'INVALID_ZIP'
+    );
+  }
 }
 
 function decodeSkillMd(buf: Uint8Array, present: boolean): string | undefined {
