@@ -123,43 +123,43 @@ Create `src/features/skillBundleEdit/session.ts`. Import `vscode` from `vscode`,
 - [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
 - [x] Commit `src/features/skillBundleEdit/session.ts`, `test/unit/features/skillBundleEdit/session.test.ts`, and this workstream file with message: `feat(skill-bundle-edit): add session registry with async sentinel-durable markFailure/clearFailure`. Subject must be lowercase.
 
-### [ ] Activity 3: Implement `command.ts` with unit tests
+### [x] Activity 3: Implement `command.ts` with unit tests
 
-#### [ ] Task 3.1: Write failing unit tests for `command.ts`
+#### [x] Task 3.1: Write failing unit tests for `command.ts`
 
 Create `test/unit/features/skillBundleEdit/command.test.ts`. Mock `vscode` from `test/unit/mocks/vscode.ts`. Also mock `./bundle` (the `readSkillBundle` function) and `./tempStore` (`resolveTempUri`, `writeTempFile`) inline within the test file using Vitest's `vi.mock`. The `SessionRegistry` from `./session` is instantiated in tests with a mock `ExtensionContext`.
 
-- [ ] Write a test case named `concurrent open — focuses existing tab`: pre-populate the `SessionRegistry` with a session for `bundleUri.fsPath`; call `editSkillBundleCommand(bundleUri, ctx, registry)`; assert `vscode.window.showTextDocument` was called with the existing session's `document` and that `readSkillBundle` was NOT called.
-- [ ] Write a test case named `fresh open — SKILL.md present`: mock `readSkillBundle` to resolve with `{ skillMd: '# content', companions: [] }`; call `editSkillBundleCommand`; assert `resolveTempUri` was called, `writeTempFile` was called with the expected URI and `'# content'`, `vscode.workspace.openTextDocument` was called with the temp URI, `vscode.window.showTextDocument` was called, `registry.set` was called with a session containing the correct `bundleUri`, `tempUri`, `document`, and `companions: []`, and `vscode.window.showInformationMessage` was called with a string containing the bundle basename.
-- [ ] Write a test case named `fresh open — SKILL.md absent, user accepts template`: mock `readSkillBundle` to resolve with `{ skillMd: undefined, companions: [] }`; mock `vscode.window.showInformationMessage` to return `'Create from template'`; assert `writeTempFile` was called with the value of `SKILL_MD_TEMPLATE` (imported from `./template`), `registry.set` was called, and `vscode.window.showTextDocument` was called.
-- [ ] Write a test case named `fresh open — SKILL.md absent, user declines`: mock `readSkillBundle` to resolve with `{ skillMd: undefined, companions: [] }`; mock `vscode.window.showInformationMessage` to return `undefined` (dismiss); assert `writeTempFile` was NOT called, `registry.set` was NOT called, and `vscode.window.showTextDocument` was NOT called.
-- [ ] Write a test case named `fresh open — corrupted bundle (readSkillBundle throws)`: mock `readSkillBundle` to reject with `new Error('invalid ZIP signature')`; assert `vscode.window.showErrorMessage` was called with a string containing the bundle basename and `'invalid ZIP signature'`; assert `writeTempFile` was NOT called and `registry.set` was NOT called.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit` and confirm the new tests fail. Record the failure mode as a baseline comment; remove before Task 3.2 commit.
+- [x] Write a test case named `concurrent open — focuses existing tab`: pre-populate the `SessionRegistry` with a session for `bundleUri.fsPath`; call `editSkillBundleCommand(bundleUri, ctx, registry)`; assert `vscode.window.showTextDocument` was called with the existing session's `document` and that `readSkillBundle` was NOT called.
+- [x] Write a test case named `fresh open — SKILL.md present`: mock `readSkillBundle` to resolve with `{ skillMd: '# content', companions: [] }`; call `editSkillBundleCommand`; assert `resolveTempUri` was called, `writeTempFile` was called with the expected URI and `'# content'`, `vscode.workspace.openTextDocument` was called with the temp URI, `vscode.window.showTextDocument` was called, `registry.set` was called with a session containing the correct `bundleUri`, `tempUri`, `document`, and `companions: []`, and `vscode.window.showInformationMessage` was called with a string containing the bundle basename.
+- [x] Write a test case named `fresh open — SKILL.md absent, user accepts template`: mock `readSkillBundle` to resolve with `{ skillMd: undefined, companions: [] }`; mock `vscode.window.showInformationMessage` to return `'Create from template'`; assert `writeTempFile` was called with the value of `SKILL_MD_TEMPLATE` (imported from `./template`), `registry.set` was called, and `vscode.window.showTextDocument` was called.
+- [x] Write a test case named `fresh open — SKILL.md absent, user declines`: mock `readSkillBundle` to resolve with `{ skillMd: undefined, companions: [] }`; mock `vscode.window.showInformationMessage` to return `undefined` (dismiss); assert `writeTempFile` was NOT called, `registry.set` was NOT called, and `vscode.window.showTextDocument` was NOT called.
+- [x] Write a test case named `fresh open — corrupted bundle (readSkillBundle throws)`: mock `readSkillBundle` to reject with `new Error('invalid ZIP signature')`; assert `vscode.window.showErrorMessage` was called with a string containing the bundle basename and `'invalid ZIP signature'`; assert `writeTempFile` was NOT called and `registry.set` was NOT called.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit` and confirm the new tests fail. Record the failure mode as a baseline comment; remove before Task 3.2 commit.
 
-#### [ ] Task 3.2: Implement `command.ts`
+#### [x] Task 3.2: Implement `command.ts`
 
 Create `src/features/skillBundleEdit/command.ts`. Import `vscode` from `vscode`, `path` from `node:path`, `Logger` from `../../core/logger`, `readSkillBundle` from `./bundle`, `resolveTempUri`, `writeTempFile` from `./tempStore`, `SessionRegistry` from `./session`, and `SKILL_MD_TEMPLATE` from `./template`. This file must have zero imports from any other feature module.
 
-- [ ] Export `editSkillBundleCommand(bundleUri: vscode.Uri, ctx: vscode.ExtensionContext, registry: SessionRegistry): Promise<void>`.
-- [ ] Implement the existing-session branch (Decision 9 of PLAN-004): if `registry.get(bundleUri.fsPath)` is defined, call `vscode.window.showTextDocument(existingSession.document, { preview: false })` and return.
-- [ ] Implement the fresh-open branch: wrap the entire body in a `try/catch`. In the `try` block: (1) call `const result = await readSkillBundle(bundleUri)` — if it throws, re-throw to the `catch` block; (2) determine `rawContent`: if `result.skillMd !== undefined`, use it directly; if `result.skillMd === undefined`, call `vscode.window.showInformationMessage('The bundle does not contain SKILL.md.', 'Create from template')` — if the resolved value is `'Create from template'`, set `rawContent = SKILL_MD_TEMPLATE`; otherwise return (user declined); (3) compute `tempUri = resolveTempUri(bundleUri, ctx)`; (4) call `await writeTempFile(tempUri, rawContent)` — if it throws, re-throw to the `catch` block; (5) call `const doc = await vscode.workspace.openTextDocument(tempUri)`; (6) call `await vscode.window.showTextDocument(doc, { preview: false })`; (7) call `registry.set({ bundleUri, tempUri, document: doc, companions: result.companions })`; (8) call `vscode.window.showInformationMessage(`Editing SKILL.md from ${path.basename(bundleUri.fsPath)}`)` (use `path` imported at the top of the module).
-- [ ] Implement the `catch` block: call `Logger.getInstance().error(`[editSkillBundleCommand] Failed to open ${path.basename(bundleUri.fsPath)}: ${String(err)}`)` and call `vscode.window.showErrorMessage(`Tangyr: Cannot open ${path.basename(bundleUri.fsPath)}: ${String(err)}`)`. Do not swallow the error further — the command handler returns normally after surfacing the notification.
-- [ ] Verify line count is below 250: run `wc -l src/features/skillBundleEdit/command.ts`.
+- [x] Export `editSkillBundleCommand(bundleUri: vscode.Uri, ctx: vscode.ExtensionContext, registry: SessionRegistry): Promise<void>`.
+- [x] Implement the existing-session branch (Decision 9 of PLAN-004): if `registry.get(bundleUri.fsPath)` is defined, call `vscode.window.showTextDocument(existingSession.document, { preview: false })` and return.
+- [x] Implement the fresh-open branch: wrap the entire body in a `try/catch`. In the `try` block: (1) call `const result = await readSkillBundle(bundleUri)` — if it throws, re-throw to the `catch` block; (2) determine `rawContent`: if `result.skillMd !== undefined`, use it directly; if `result.skillMd === undefined`, call `vscode.window.showInformationMessage('The bundle does not contain SKILL.md.', 'Create from template')` — if the resolved value is `'Create from template'`, set `rawContent = SKILL_MD_TEMPLATE`; otherwise return (user declined); (3) compute `tempUri = resolveTempUri(bundleUri, ctx)`; (4) call `await writeTempFile(tempUri, rawContent)` — if it throws, re-throw to the `catch` block; (5) call `const doc = await vscode.workspace.openTextDocument(tempUri)`; (6) call `await vscode.window.showTextDocument(doc, { preview: false })`; (7) call `registry.set({ bundleUri, tempUri, document: doc, companions: result.companions })`; (8) call `vscode.window.showInformationMessage(`Editing SKILL.md from ${path.basename(bundleUri.fsPath)}`)` (use `path` imported at the top of the module).
+- [x] Implement the `catch` block: call `Logger.getInstance().error(`[editSkillBundleCommand] Failed to open ${path.basename(bundleUri.fsPath)}: ${String(err)}`)` and call `vscode.window.showErrorMessage(`Tangyr: Cannot open ${path.basename(bundleUri.fsPath)}: ${String(err)}`)`. Do not swallow the error further — the command handler returns normally after surfacing the notification.
+- [x] Verify line count is below 250: run `wc -l src/features/skillBundleEdit/command.ts`.
 
-#### [ ] Task 3.3: Verify all `command.ts` unit tests pass
+#### [x] Task 3.3: Verify all `command.ts` unit tests pass
 
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types`. Must exit 0.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run lint`. Must exit 0.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit`. All tests in `command.test.ts` must pass.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types`. Must exit 0.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run lint`. Must exit 0.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit`. All tests in `command.test.ts` must pass.
 
-#### [ ] Task 3.4: Update impacted documentation
+#### [x] Task 3.4: Update impacted documentation
 
-- [ ] Mark all completed checkboxes in this activity in this workstream file.
+- [x] Mark all completed checkboxes in this activity in this workstream file.
 
-#### [ ] Task 3.5: Commit changes
+#### [x] Task 3.5: Commit changes
 
-- [ ] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `src/features/skillBundleEdit/command.ts`, `test/unit/features/skillBundleEdit/command.test.ts`, and this workstream file with message: `feat(skill-bundle-edit): add edit command with four open-case branches`. Subject must be lowercase.
+- [x] Run the quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `src/features/skillBundleEdit/command.ts`, `test/unit/features/skillBundleEdit/command.test.ts`, and this workstream file with message: `feat(skill-bundle-edit): add edit command with four open-case branches`. Subject must be lowercase.
 
 ### [ ] Activity 4: Feature wiring and verifiable output
 
