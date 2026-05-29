@@ -57,6 +57,9 @@ export const workspace = {
   onDidChangeConfiguration: vi.fn(() => mockDisposable),
   onDidChangeTextDocument: vi.fn(() => mockDisposable),
   workspaceFolders: undefined as Array<{ uri: { fsPath: string } }> | undefined,
+  openTextDocument: vi.fn((uri: unknown) =>
+    Promise.resolve({ uri, getText: (): string => '' })
+  ),
   fs: {
     writeFile: vi.fn(),
     readFile: vi.fn(),
@@ -175,6 +178,28 @@ export class Range {
 
 export class ThemeColor {
   constructor(public readonly id: string) {}
+}
+
+export class FileSystemError extends Error {
+  public readonly code: string;
+
+  constructor(code: string, message?: string) {
+    super(message ?? code);
+    this.code = code;
+    this.name = 'FileSystemError';
+  }
+
+  static FileNotFound(message?: string): FileSystemError {
+    return new FileSystemError('FileNotFound', message);
+  }
+}
+
+export class Disposable {
+  constructor(private readonly callOnDispose: () => void) {}
+
+  dispose(): void {
+    this.callOnDispose();
+  }
 }
 
 export function resetAllMocks(): void {

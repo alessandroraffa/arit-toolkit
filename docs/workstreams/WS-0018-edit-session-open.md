@@ -2,7 +2,7 @@
 title: 'Edit session open — tempStore, session registry, command, and feature wiring'
 plan: PLAN-004-skill-bundle-edit
 workstream: WS-0018
-status: 'idle'
+status: 'in-progress'
 workspaces: []
 dependencies: [WS-0017]
 created: 2026-05-29
@@ -32,19 +32,19 @@ All design decisions, risk assessments, and alternatives are documented in PLAN-
 
 ### [ ] Activity 1: Implement `tempStore.ts` with unit tests
 
-#### [ ] Task 1.0: Extend the VS Code mock with symbols required by this workstream's unit tests
+#### [x] Task 1.0: Extend the VS Code mock with symbols required by this workstream's unit tests
 
 Read `test/unit/mocks/vscode.ts` in full before modifying it.
 
-- [ ] Add a `FileSystemError` class export to the mock. The class must have a static factory method `FileSystemError.FileNotFound(message?: string): FileSystemError` that returns an instance with `code === 'FileNotFound'` (matching the code property VS Code sets on real `FileSystemError` instances). The instance must also extend `Error` so that `instanceof Error` checks pass in the implementation under test.
-- [ ] Add `workspace.openTextDocument` to the mock's `workspace` object. The stub must return a resolved `Promise` whose value is an object shaped as `TextDocument`: `{ uri: Uri, getText: () => '' }`. The stub must be a `vi.fn()` so tests can override its resolved value via `mockResolvedValue`.
-- [ ] Add a `Disposable` class export to the mock. The class must accept a callable in its constructor (`constructor(callOnDispose: () => void)`) and expose a `dispose(): void` method that invokes `callOnDispose`. This matches the VS Code API shape consumed by `index.ts` Activity 4 command registration.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint` and verify both exit 0. No changes to any source file outside `test/unit/mocks/vscode.ts` are permitted in this task.
+- [x] Add a `FileSystemError` class export to the mock. The class must have a static factory method `FileSystemError.FileNotFound(message?: string): FileSystemError` that returns an instance with `code === 'FileNotFound'` (matching the code property VS Code sets on real `FileSystemError` instances). The instance must also extend `Error` so that `instanceof Error` checks pass in the implementation under test.
+- [x] Add `workspace.openTextDocument` to the mock's `workspace` object. The stub must return a resolved `Promise` whose value is an object shaped as `TextDocument`: `{ uri: Uri, getText: () => '' }`. The stub must be a `vi.fn()` so tests can override its resolved value via `mockResolvedValue`.
+- [x] Add a `Disposable` class export to the mock. The class must accept a callable in its constructor (`constructor(callOnDispose: () => void)`) and expose a `dispose(): void` method that invokes `callOnDispose`. This matches the VS Code API shape consumed by `index.ts` Activity 4 command registration.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint` and verify both exit 0. No changes to any source file outside `test/unit/mocks/vscode.ts` are permitted in this task.
 
-#### [ ] Task 1.0 commit: commit mock extension as Activity 1 prerequisite
+#### [x] Task 1.0 commit: commit mock extension as Activity 1 prerequisite
 
-- [ ] Run the quality gate: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
-- [ ] Commit `test/unit/mocks/vscode.ts` and this workstream file with message: `test(skill-bundle-edit): extend vscode mock with FileSystemError, openTextDocument, and Disposable`. This commit must land before the first Activity 1 test commit so all subsequent test imports resolve without error.
+- [x] Run the quality gate: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. All three must pass.
+- [x] Commit `test/unit/mocks/vscode.ts` and this workstream file with message: `test(skill-bundle-edit): extend vscode mock with FileSystemError, openTextDocument, and Disposable`. This commit must land before the first Activity 1 test commit so all subsequent test imports resolve without error.
 
 #### [ ] Task 1.1: Write failing unit tests for `tempStore.ts`
 
