@@ -500,4 +500,131 @@ describe('ExtensionStateManager', () => {
       expect(mockFileSystemWatcher.dispose).toHaveBeenCalled();
     });
   });
+
+  describe('watcher self-write suppression', () => {
+    async function createInitializedManager(): Promise<ExtensionStateManager> {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+      const manager = createManager();
+      await manager.initialize('1.0.0');
+      return manager;
+    }
+
+    function captureReloadCallback(): () => Promise<void> {
+      const onDidChangeCalls = vi.mocked(mockFileSystemWatcher.onDidChange).mock.calls;
+      const reloadFn = onDidChangeCalls[0]?.[0] as (() => Promise<void>) | undefined;
+      if (!reloadFn) {
+        throw new Error('reload callback not captured from onDidChange');
+      }
+      return reloadFn;
+    }
+
+    it('watcher reload suppresses onDidChangeState when content matches _lastWrittenConfigContent', async () => {
+      const manager = await createInitializedManager();
+      const stateListener = vi.fn();
+      manager.onDidChangeState(stateListener);
+      stateListener.mockClear();
+
+      (manager as any)._lastWrittenConfigContent = 'some-content';
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('some-content'));
+
+      const reload = captureReloadCallback();
+      await reload();
+
+      expect(stateListener).not.toHaveBeenCalled();
+      expect((manager as any)._lastWrittenConfigContent).toBeUndefined();
+    });
+
+    it('watcher reload fires onDidChangeState when _lastWrittenConfigContent is undefined', async () => {
+      const manager = await createInitializedManager();
+      const stateListener = vi.fn();
+      manager.onDidChangeState(stateListener);
+      stateListener.mockClear();
+
+      expect((manager as any)._lastWrittenConfigContent).toBeUndefined();
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
+
+      const reload = captureReloadCallback();
+      await reload();
+
+      expect(stateListener).toHaveBeenCalledOnce();
+    });
+
+    it('coalesced watcher event suppresses matching self-write and does not block subsequent external edit', async () => {
+      const manager = await createInitializedManager();
+      const stateListener = vi.fn();
+      manager.onDidChangeState(stateListener);
+      stateListener.mockClear();
+
+      // Simulate two consecutive writeFullConfig calls without watcher triggering.
+      // The second write's content is what _lastWrittenConfigContent holds.
+      const secondContent = 'second-write-content';
+      (manager as any)._lastWrittenConfigContent = secondContent;
+
+      // First watcher event: content matches second write — suppress
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode(secondContent));
+
+      const reload = captureReloadCallback();
+      await reload();
+
+      expect(stateListener).not.toHaveBeenCalled();
+      expect((manager as any)._lastWrittenConfigContent).toBeUndefined();
+
+      // Second watcher event: content differs (external edit) — fire
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": false, "versionCode": 1001000000 }')
+        );
+      await reload();
+
+      expect(stateListener).toHaveBeenCalledOnce();
+    });
+
+    it('single writeFullConfig fires both onDidCreate and onDidChange bound to same reload: first invocation suppresses, second falls through', async () => {
+      const manager = await createInitializedManager();
+      const stateListener = vi.fn();
+      manager.onDidChangeState(stateListener);
+      stateListener.mockClear();
+
+      // Simulate writeFullConfig having stored content
+      const capturedContent =
+        '{ "enabled": true, "versionCode": 1001000000, "written": true }';
+      (manager as any)._lastWrittenConfigContent = capturedContent;
+
+      // The reload callback is the same function registered to both onDidChange and onDidCreate
+      const reload = captureReloadCallback();
+      // Verify it's the same function reference registered to onDidCreate
+      const onDidCreateCalls = vi.mocked(mockFileSystemWatcher.onDidCreate).mock.calls;
+      const reloadFromCreate = onDidCreateCalls[0]?.[0] as
+        | (() => Promise<void>)
+        | undefined;
+      expect(reload).toBe(reloadFromCreate);
+
+      // First invocation (matching bytes): suppress and clear token
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode(capturedContent));
+      await reload();
+      expect(stateListener).not.toHaveBeenCalled();
+      expect((manager as any)._lastWrittenConfigContent).toBeUndefined();
+
+      // Second invocation: token already cleared, falls through to fire
+      await reload();
+      expect(stateListener).toHaveBeenCalledOnce();
+    });
+  });
 });

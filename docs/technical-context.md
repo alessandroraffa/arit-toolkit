@@ -372,6 +372,8 @@ state into the existing `_fullConfig`, preserving all custom sections.
 **External edit detection:** A `FileSystemWatcher` on the config file
 re-reads on change/create and fires `onDidChangeState`.
 
+**Self-write suppression:** Self-writes are suppressed via content-equality: `writeFullConfig` stores the exact formatted content string it wrote in `_lastWrittenConfigContent`; the watcher reload handler reads the file, decodes it, and on an exact string match clears the field and returns early without firing — preventing the extension's own config writes from triggering restart churn. A read error or content mismatch causes normal reload processing, bounding false-negative suppression to a single redundant reload.
+
 ### 8.2 Config Migration
 
 The migration system enables forward-compatible config evolution:
@@ -406,11 +408,11 @@ Each segment (major, minor, patch) supports values 0--999.
 
 Features coordinate through events, not direct calls:
 
-| Event                         | Emitter                 | Consumers                                 |
-| ----------------------------- | ----------------------- | ----------------------------------------- |
-| `onDidChangeState(boolean)`   | `ExtensionStateManager` | Status bar, Agent archiving, Text Stats   |
-| `onConfigSectionChanged(key)` | `ExtensionStateManager` | Agent archiving (reconfigure), Text Stats |
-| `onConfigChange()`            | `ConfigManager`         | Logger (update log level)                 |
+| Event                         | Emitter                 | Consumers                                                                                                                     |
+| ----------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `onDidChangeState(boolean)`   | `ExtensionStateManager` | Status bar, Agent archiving (idempotent — skips `start()` when service is already running with deep-equal config), Text Stats |
+| `onConfigSectionChanged(key)` | `ExtensionStateManager` | Agent archiving (reconfigure), Text Stats                                                                                     |
+| `onConfigChange()`            | `ConfigManager`         | Logger (update log level)                                                                                                     |
 
 This ensures features remain decoupled: they react to state changes
 rather than calling each other.

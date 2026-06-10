@@ -39,6 +39,7 @@ export class ExtensionStateManager {
   private _fullConfig: Record<string, unknown> | undefined;
   private _autoCommitService: ConfigAutoCommitService | undefined;
   private _loadedLegacyConfigFile = false;
+  private _lastWrittenConfigContent: string | undefined;
 
   constructor(
     private readonly logger: Logger,
@@ -299,6 +300,7 @@ export class ExtensionStateManager {
     }
     const content = formatJsonc(config, CONFIG_HEADER);
     await vscode.workspace.fs.writeFile(configUri, new TextEncoder().encode(content));
+    this._lastWrittenConfigContent = content;
     this.logger.debug('Wrote workspace config');
     void this._autoCommitService?.onConfigWritten();
   }
@@ -490,6 +492,23 @@ export class ExtensionStateManager {
     const pattern = new vscode.RelativePattern(this._workspaceRoot, CONFIG_FILENAME);
     this.watcher = vscode.workspace.createFileSystemWatcher(pattern);
     const reload = async (): Promise<void> => {
+      if (this._lastWrittenConfigContent !== undefined) {
+        const configUri = this.getConfigUri();
+        if (configUri) {
+          try {
+            const rawBytes = await vscode.workspace.fs.readFile(configUri);
+            const fileContent = new TextDecoder().decode(rawBytes);
+            if (fileContent === this._lastWrittenConfigContent) {
+              this._lastWrittenConfigContent = undefined;
+              this.logger.debug('Watcher reload suppressed — content matches self-write');
+              return;
+            }
+          } catch {
+            // Read error: fall through to normal reload processing
+          }
+        }
+        this._lastWrittenConfigContent = undefined;
+      }
       await this.readStateFromFile();
       this._onDidChangeState.fire(this._isEnabled);
     };

@@ -103,23 +103,32 @@ export function registerAgentSessionsArchivingFeature(
       | AgentSessionsArchivingConfig
       | undefined;
     if (globalEnabled && config?.enabled) {
-      service.start(config);
-      watcher.start(workspaceRoot.fsPath);
-      void checkAndPromptGitignore(
-        config.archivePath,
-        workspaceRoot,
-        config,
-        ctx.logger,
-        async (patch) => {
-          const current = stateManager.getConfigSection(CONFIG_KEY) as
-            | AgentSessionsArchivingConfig
-            | undefined;
-          if (!current) {
-            return;
+      const configEqual =
+        service.currentConfig !== undefined &&
+        JSON.stringify(service.currentConfig) === JSON.stringify(config);
+      if (configEqual) {
+        ctx.logger.debug(
+          'onDidChangeState: skipping start — config equal and service already running'
+        );
+      } else {
+        service.start(config);
+        watcher.start(workspaceRoot.fsPath);
+        void checkAndPromptGitignore(
+          config.archivePath,
+          workspaceRoot,
+          config,
+          ctx.logger,
+          async (patch) => {
+            const current = stateManager.getConfigSection(CONFIG_KEY) as
+              | AgentSessionsArchivingConfig
+              | undefined;
+            if (!current) {
+              return;
+            }
+            await stateManager.updateConfigSection(CONFIG_KEY, { ...current, ...patch });
           }
-          await stateManager.updateConfigSection(CONFIG_KEY, { ...current, ...patch });
-        }
-      );
+        );
+      }
     } else {
       service.stop();
       watcher.stop();
