@@ -499,8 +499,12 @@ same archive file.
 
 **Replacement semantics (not accumulation):** Each source session has
 exactly one archived file at any time. When the source's `mtime`
-changes, the old archive file is deleted and a new one with an updated
-timestamp prefix is created.
+changes, a new archive file with an updated timestamp prefix is written first;
+if the new filename differs from the old one, the old file is then deleted.
+When the filename is unchanged (same `ctime`-based prefix), `writeFile`
+overwrites in place and no delete is issued. This write-first-then-delete
+ordering eliminates the data-loss window that would exist if a delete
+succeeded but the subsequent write failed.
 
 **Orphan archive retention:** Replacement only applies to session IDs
 returned by the current provider scan. If a historical archive file no
@@ -510,17 +514,16 @@ the archive append-preserving for historical sessions even when the
 source store has already dropped them.
 
 **One-shot re-archive on startup:** On each extension startup,
-`deduplicateAndHydrate` reads all archive files from disk and stores
-`mtime: 0` for each one in `lastArchivedMap`. Because real source file
-`mtime` values are always positive integers, the skip guard
-(`entry?.mtime === session.mtime`) never triggers for any session
-hydrated from disk — every session is re-processed on the first archive
-cycle after startup. After that cycle completes, `lastArchivedMap` is
-updated with the actual source `mtime` values, and subsequent cycles
-resume normal mtime-based skip behavior. This design ensures that a
-patched extension automatically re-archives previously affected sessions
-on its first cycle without requiring any persistent flag or manual
-intervention.
+`deduplicateAndHydrate` reads all archive files from disk and stat-reads
+each one to obtain its real filesystem `mtime`, storing it in
+`lastArchivedMap`. Sessions whose source `mtime` already matches the
+stored archive `mtime` are skipped on the first cycle; only sessions
+modified since archiving are reprocessed. When `vscode.workspace.fs.stat`
+throws for a given archive file (missing or permission error), that entry
+falls back to `mtime: 0` — the fallback causes only that session to be
+reprocessed on the next cycle, not the entire archive. A patched extension
+therefore re-archives only the sessions that were genuinely affected,
+without requiring any persistent flag or manual intervention.
 
 **Idempotent flat-layout migration sweep:** On every cold start and
 after every `reconfigure` (any time `_needsDedup` is reset to `true`),

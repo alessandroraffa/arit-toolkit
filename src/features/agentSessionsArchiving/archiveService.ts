@@ -210,12 +210,14 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     await this.ensureDirectory(archiveUri);
     const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.ctime));
 
-    if (entry) {
-      await this.deleteFile(vscode.Uri.joinPath(archiveUri, entry.archiveFileName));
-    }
-
     const archiveFileName = await this.writeArchiveFile(session, archiveUri, timestamp);
     if (archiveFileName) {
+      // L2 guard: empty-session skip records '' as archiveFileName; joinPath(archiveUri, '') equals archiveUri itself
+      if (entry?.archiveFileName && entry.archiveFileName !== archiveFileName) {
+        await this.deleteOldArchive(
+          vscode.Uri.joinPath(archiveUri, entry.archiveFileName)
+        );
+      }
       this.lastArchivedMap.set(session.archiveName, {
         mtime: session.mtime,
         archiveFileName,
@@ -226,6 +228,17 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         mtime: session.mtime,
         archiveFileName: '',
       });
+    }
+  }
+
+  private async deleteOldArchive(uri: vscode.Uri): Promise<void> {
+    try {
+      await vscode.workspace.fs.delete(uri);
+    } catch (err) {
+      this.logger.warn(
+        'deleteOldArchive failed — orphan duplicate left; dedup will recover on next startup: ' +
+          String(err)
+      );
     }
   }
 
@@ -577,7 +590,18 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       }
       const best = files[0];
       if (best && !this.lastArchivedMap.has(archiveName)) {
-        this.lastArchivedMap.set(archiveName, { mtime: 0, archiveFileName: best.name });
+        let mtime = 0;
+        try {
+          const statResult = await vscode.workspace.fs.stat(
+            vscode.Uri.joinPath(archiveUri, best.name)
+          );
+          mtime = statResult.mtime;
+        } catch {
+          this.logger.debug(
+            'Hydration stat failed for ' + best.name + ' — using mtime 0'
+          );
+        }
+        this.lastArchivedMap.set(archiveName, { mtime, archiveFileName: best.name });
       }
     }
   }
