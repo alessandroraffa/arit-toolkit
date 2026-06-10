@@ -28,6 +28,19 @@ describe('Logger', () => {
 
       expect(instance1).toBe(instance2);
     });
+
+    it('Logger output channel name includes workspace folder name when provided', () => {
+      // Dispose the singleton created in beforeEach so we can create a fresh one with opts
+      logger.dispose();
+      vi.clearAllMocks();
+
+      const namedLogger = Logger.getInstance({ workspaceFolderName: 'my-project' });
+      expect(window.createOutputChannel).toHaveBeenCalledWith(
+        'Tangyr Workbench (my-project)'
+      );
+
+      namedLogger.dispose();
+    });
   });
 
   describe('setLevel', () => {

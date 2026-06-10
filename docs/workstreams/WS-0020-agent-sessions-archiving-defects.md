@@ -2,7 +2,7 @@
 title: 'agentSessionsArchiving — concurrency, feedback-loop, and data-integrity defect fixes'
 objective: Fix the three symptomatic bugs (self-write feedback loop, missing concurrency guard, delete-before-write data hazard) and the three latent defects (path traversal, empty-archiveName joinPath, unguarded runMigration) confirmed by the adversarially-verified multi-agent diagnostic session on 2026-06-10, and add the two diagnosability improvements (archive-root log line, workspace name in log lines).
 workstream: WS-0020
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: []
 created: 2026-06-10
@@ -214,39 +214,39 @@ Modify `src/core/extensionStateManager.ts`.
 
 Commit message: `fix(archiving): path-traversal sanitization, empty-archiveName guard, runMigration in-flight guard`
 
-### [ ] Activity 5: Add diagnosability improvements (D1)
+### [x] Activity 5: Add diagnosability improvements (D1)
 
 Emit the absolute archive root URI once per cycle start log line. Include the workspace folder name in the Logger output channel name.
 
-#### [ ] Task 5.1: Write failing unit tests for the diagnosability improvements
+#### [x] Task 5.1: Write failing unit tests for the diagnosability improvements
 
-- [ ] In `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, in a new `describe('cycle observability')`, add a test `'runArchiveCycle logs archive root absolute path at INFO level at cycle start'`: call `service.start(config)`; flush timers; assert that `logger.info` was called with a message containing both `'Archive cycle starting'` and the absolute `archiveUri.fsPath` (e.g., `/workspace/docs/archive/agent-sessions`).
-- [ ] In `test/unit/core/logger.test.ts`, add a test `'Logger output channel name includes workspace folder name when provided'`: call `Logger.getInstance({ workspaceFolderName: 'my-project' })`; assert that `vscode.window.createOutputChannel` was called with `'Tangyr Workbench (my-project)'`.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit` and confirm the two new tests fail with `AssertionError`.
+- [x] In `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, in a new `describe('cycle observability')`, add a test `'runArchiveCycle logs archive root absolute path at INFO level at cycle start'`: call `service.start(config)`; flush timers; assert that `logger.info` was called with a message containing both `'Archive cycle starting'` and the absolute `archiveUri.fsPath` (e.g., `/workspace/docs/archive/agent-sessions`).
+- [x] In `test/unit/core/logger.test.ts`, add a test `'Logger output channel name includes workspace folder name when provided'`: call `Logger.getInstance({ workspaceFolderName: 'my-project' })`; assert that `vscode.window.createOutputChannel` was called with `'Tangyr Workbench (my-project)'`.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit` and confirm the two new tests fail with `AssertionError`.
 
-#### [ ] Task 5.2: Implement archive-root log line in `runArchiveCycle`
+#### [x] Task 5.2: Implement archive-root log line in `runArchiveCycle`
 
 Modify `src/features/agentSessionsArchiving/archiveService.ts`.
 
-- [ ] In `_runCycleInternal` (the method extracted from `runArchiveCycle` in Task 2.2), locate the log line `this.logger.debug('Archive cycle starting')`. Move it to immediately after the `archiveUri` assignment (`vscode.Uri.joinPath(this.workspaceRootUri, this._currentConfig.archivePath)`) — three lines in the original at lines 127–130. Replace it with `this.logger.info('Archive cycle starting — archive root: ' + archiveUri.fsPath)`. The log line must be at INFO level so it is visible at the default log level and supports §8.8 multi-window triage without enabling debug mode.
+- [x] In `_runCycleInternal` (the method extracted from `runArchiveCycle` in Task 2.2), locate the log line `this.logger.debug('Archive cycle starting')`. Move it to immediately after the `archiveUri` assignment (`vscode.Uri.joinPath(this.workspaceRootUri, this._currentConfig.archivePath)`) — three lines in the original at lines 127–130. Replace it with `this.logger.info('Archive cycle starting — archive root: ' + archiveUri.fsPath)`. The log line must be at INFO level so it is visible at the default log level and supports §8.8 multi-window triage without enabling debug mode.
 
-#### [ ] Task 5.3: Implement workspace-name Logger channel name
+#### [x] Task 5.3: Implement workspace-name Logger channel name
 
 Modify `src/core/logger.ts` and `src/extension.ts`.
 
-- [ ] Change the `private constructor()` signature at line 11 to `private constructor(opts?: { workspaceFolderName?: string })`.
-- [ ] In the constructor body (line 12), replace `vscode.window.createOutputChannel('Tangyr Workbench')` with: `const folderSuffix = opts?.workspaceFolderName ? ' (' + opts.workspaceFolderName + ')' : ''; this.outputChannel = vscode.window.createOutputChannel('Tangyr Workbench' + folderSuffix)`.
-- [ ] Change `public static getInstance()` at line 15 to accept `public static getInstance(opts?: { workspaceFolderName?: string }): Logger`. Add a JSDoc comment above the method: `/** Returns the singleton Logger instance. The opts parameter is honoured only on first call; subsequent calls with opts are no-ops (singleton semantics). */`. Change the body from `Logger.instance ??= new Logger()` to `Logger.instance ??= new Logger(opts)`.
-- [ ] Read `src/extension.ts` before modifying it. At line 48 (`logger = Logger.getInstance()`), change the call to `logger = Logger.getInstance({ workspaceFolderName: vscode.workspace.workspaceFolders?.[0]?.name })`. This is verified as the first `getInstance()` call at runtime — all other call sites in `skillBundleEdit` are inside async command handlers invoked only after activation completes.
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types` and confirm zero type errors before proceeding to commit.
+- [x] Change the `private constructor()` signature at line 11 to `private constructor(opts?: { workspaceFolderName?: string })`.
+- [x] In the constructor body (line 12), replace `vscode.window.createOutputChannel('Tangyr Workbench')` with: `const folderSuffix = opts?.workspaceFolderName ? ' (' + opts.workspaceFolderName + ')' : ''; this.outputChannel = vscode.window.createOutputChannel('Tangyr Workbench' + folderSuffix)`.
+- [x] Change `public static getInstance()` at line 15 to accept `public static getInstance(opts?: { workspaceFolderName?: string }): Logger`. Add a JSDoc comment above the method: `/** Returns the singleton Logger instance. The opts parameter is honoured only on first call; subsequent calls with opts are no-ops (singleton semantics). */`. Change the body from `Logger.instance ??= new Logger()` to `Logger.instance ??= new Logger(opts)`.
+- [x] Read `src/extension.ts` before modifying it. At line 48 (`logger = Logger.getInstance()`), change the call to `logger = Logger.getInstance({ workspaceFolderName: vscode.workspace.workspaceFolders?.[0]?.name })`. This is verified as the first `getInstance()` call at runtime — all other call sites in `skillBundleEdit` are inside async command handlers invoked only after activation completes.
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types` and confirm zero type errors before proceeding to commit.
 
-#### [ ] Task 5.4: Update impacted documentation
+#### [x] Task 5.4: Update impacted documentation
 
-- [ ] Update `docs/technical-context.md` section 8.8 ("Logging") to add after the log level table: "When the extension activates in a single-root workspace, the output channel name includes the workspace folder name in parentheses (e.g., `Tangyr Workbench (my-project)`) to distinguish concurrent windows. To attribute a log line to the correct window during multi-window triage, match the `archiveUri.fsPath` in the INFO-level cycle-start log line to the workspace root shown in the window title bar (the cycle-start log is visible at the default `info` level — no debug mode required)."
-- [ ] Update `docs/technical-context.md` section 8.6 under "Cycle observability" to add: "Each cycle-start log line is emitted at INFO level and includes the absolute `archiveUri.fsPath`, making it unambiguous which workspace's archive directory is targeted and visible at the default log level."
-- [ ] Update the `docs/technical-context.md` header table: change the "Current version" row from `1.10.2 (versionCode \`1001010002\`)`to`2.3.0 (versionCode \`1002003000\`)`and change the "Last updated" row from`2026-05-28`to`2026-06-10`. Read the header table before editing to verify the exact current values.
+- [x] Update `docs/technical-context.md` section 8.8 ("Logging") to add after the log level table: "When the extension activates in a single-root workspace, the output channel name includes the workspace folder name in parentheses (e.g., `Tangyr Workbench (my-project)`) to distinguish concurrent windows. To attribute a log line to the correct window during multi-window triage, match the `archiveUri.fsPath` in the INFO-level cycle-start log line to the workspace root shown in the window title bar (the cycle-start log is visible at the default `info` level — no debug mode required)."
+- [x] Update `docs/technical-context.md` section 8.6 under "Cycle observability" to add: "Each cycle-start log line is emitted at INFO level and includes the absolute `archiveUri.fsPath`, making it unambiguous which workspace's archive directory is targeted and visible at the default log level."
+- [x] Update the `docs/technical-context.md` header table: change the "Current version" row from `1.10.2 (versionCode \`1001010002\`)`to`2.3.0 (versionCode \`1002003000\`)`and change the "Last updated" row from`2026-05-28`to`2026-06-10`. Read the header table before editing to verify the exact current values.
 
-#### [ ] Task 5.5: Commit changes
+#### [x] Task 5.5: Commit changes
 
 Commit message: `feat(archiving): add archive-root log line and workspace-name output channel`
 
@@ -264,10 +264,28 @@ Commit message: `feat(archiving): add archive-root log line and workspace-name o
 
 **DIV-001 — Task 3.1 "falls back to mtime:0" test passes pre-implementation:** The workstream prescribed all four Task 3.1 tests to fail before Task 3.2. The test `'falls back to mtime:0 when stat throws'` trivially passes against the current code because the current implementation always stores `mtime: 0` for every entry, satisfying the fallback assertion. This is not a defect in the test; it will remain a valid green test post-implementation (the fallback is correct behavior on stat failure). No corrective action required — three of four tests fail as expected.
 
+**DIV-004 — Task 4.6 commit subject lowercased to pass commitlint:** The workstream prescribed commit message `fix(archiving): path-traversal sanitization, empty-archiveName guard, runMigration in-flight guard`. Commitlint enforces `subject-case: lower-case`; the mixed-case words `archiveName` and `runMigration` failed. Actual commit: `fix(archiving): path-traversal sanitization, empty-archivename guard, runmigration in-flight guard`.
+
 **DIV-003 — Task 4.2 used Logger.getInstance() instead of this.logger:** The workstream specified `this.logger.warn(...)` for the sanitization rejection log, implying a logger field. `CodexProvider` has no logger constructor parameter — no existing provider injects a logger; they use the `Logger` singleton via `Logger.getInstance()` (same pattern as `skillBundleEdit` providers). Added `import { Logger } from '../../../core/logger'` and called `Logger.getInstance().warn(...)`. No caller change required. This is consistent with the existing project pattern for providers that need logging.
 
 **DIV-002 — Task 3.2 adapted existing test for write-before-delete semantics:** The existing test `'should reprocess a session whose archive was hydrated from disk with mtime 0, then skip it on the second cycle'` asserted that the hydrated archive was deleted on the first reprocess cycle. Under the new write-first-then-delete semantics, deletion only occurs when the new archive filename differs from the existing one. Since the session's `ctime` is unchanged between hydration and reprocessing, the ctime-based archive filename is the same → no delete is issued; the file is overwritten in place by `copyRawArchive`. The test was updated to drop the delete assertion and add a `not.toHaveBeenCalled` assertion for `delete`, keeping the copy assertion intact. This is a test-correctness update, not a behavior regression — the corrective note at the prior session end noted this update was needed.
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergence count by category:**
+
+| Category             | Count | Divergences                                                                                    |
+| -------------------- | ----- | ---------------------------------------------------------------------------------------------- |
+| Spec gap             | 2     | DIV-001 (test pre-pass not anticipated), DIV-003 (logger field implied but provider has none)  |
+| Codebase drift       | 1     | DIV-002 (existing test's delete assertion incompatible with new write-before-delete semantics) |
+| Convention ambiguity | 1     | DIV-004 (commit subject included camelCase technical terms, commitlint requires lowercase)     |
+| Other                | 0     | —                                                                                              |
+
+**Proposed improvements:**
+
+- **DIV-001 (Spec gap → authoring improvement):** When prescribing "all new tests must fail before implementation," explicitly identify any tests whose assertion is trivially satisfied by the existing code and note them as expected pre-passing. Add this check to the StepLedger authoring instructions for test-writing tasks.
+- **DIV-003 (Spec gap → authoring improvement):** Before prescribing `this.logger.warn(...)` in a class, verify whether the class has a logger field. If not, prescribe `Logger.getInstance().warn(...)` or add a constructor parameter. Add a pre-authoring check to `skills/stepledger-authoring/SKILL.md`: "verify that methods prescribed on `this` exist as fields or parameters on the target class."
+- **DIV-002 (Codebase drift → draft-review improvement):** When a StepLedger introduces a behavioral change to a code path, the draft review should scan existing tests that exercise that path and flag any whose assertions would be invalidated by the new behavior. Add this to `skills/draft-review/SKILL.md`.
+- **DIV-004 (Convention ambiguity → project-context improvement):** Commit subject convention: technical identifiers (camelCase, PascalCase) in commit subjects must be lowercased to satisfy commitlint's `subject-case: lower-case` rule. Record this in `docs/technical-context.md` section 2.2 ("Organisational Constraints") under the Conventional Commits row.
+
+**Assessment:** Pattern identified — two Spec gap divergences share a root cause (StepLedger prescribes implementation details that weren't verified against the actual class structure). The codebase drift divergence reflects a common test-breakage risk when behavioral semantics change. No critical errors, no unplanned architectural changes, no unresolved blocks. All divergences were resolved within scope.

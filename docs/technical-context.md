@@ -13,11 +13,11 @@
 | System             | Tangyr Workbench -- VS Code Extension                                                                                                       |
 | Repository         | <https://github.com/alessandroraffa/tangyr-vscode>                                                                                          |
 | Identifier         | `alessandroraffa.tangyr`                                                                                                                    |
-| Current version    | 1.10.2 (versionCode `1001010002`)                                                                                                           |
+| Current version    | 2.3.0 (versionCode `1002003000`)                                                                                                            |
 | Licence            | MIT                                                                                                                                         |
 | Architecture style | Feature-based modular architecture, dependency injection                                                                                    |
 | Runtime deps       | None at runtime (VS Code API only). `js-tiktoken` and `@anthropic-ai/tokenizer` are dev dependencies bundled into the extension by esbuild. |
-| Last updated       | 2026-05-28                                                                                                                                  |
+| Last updated       | 2026-06-10                                                                                                                                  |
 
 ---
 
@@ -556,9 +556,7 @@ full path relative to `archiveUri` (e.g.,
 resolve correctly via
 `vscode.Uri.joinPath(archiveUri, entry.archiveFileName)`.
 
-**Cycle observability:** `runArchiveCycle()` emits `debug`-level log
-entries at cycle start and end. `archiveSession()` emits a `debug`-level
-entry when it skips a session due to an unchanged `mtime`.
+**Cycle observability:** `runArchiveCycle()` emits an INFO-level log line at cycle start that includes the absolute `archiveUri.fsPath`, making it unambiguous which workspace's archive directory is targeted and visible at the default log level. `archiveSession()` emits a `debug`-level entry when it skips a session due to an unchanged `mtime`.
 
 **Force re-archive:** `runArchiveCycle()` accepts an optional `force`
 boolean parameter. When `true`, the `mtime` guard in `archiveSession()`
@@ -680,6 +678,8 @@ filtering:
 
 The level is configurable via `tangyr.logLevel` (VS Code setting) and
 updates reactively when the setting changes.
+
+When the extension activates in a single-root workspace, the output channel name includes the workspace folder name in parentheses (e.g., `Tangyr Workbench (my-project)`) to distinguish concurrent windows. To attribute a log line to the correct window during multi-window triage, match the `archiveUri.fsPath` in the INFO-level cycle-start log line to the workspace root shown in the window title bar (the cycle-start log is visible at the default `info` level — no debug mode required).
 
 ### 8.9 Testing Strategy
 

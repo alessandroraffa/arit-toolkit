@@ -1401,6 +1401,29 @@ describe('AgentSessionArchiveService', () => {
     });
   });
 
+  describe('cycle observability', () => {
+    it('runArchiveCycle logs archive root absolute path at INFO level at cycle start', async () => {
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      await service.start(DEFAULT_CONFIG);
+      await service.runArchiveCycle();
+
+      const infoCalls = vi.mocked(logger.info).mock.calls.map((c) => String(c[0]));
+      const cycleStartCall = infoCalls.find(
+        (msg) =>
+          msg.includes('Archive cycle starting') &&
+          msg.includes('/workspace/docs/archive/agent-sessions')
+      );
+      expect(cycleStartCall).toBeDefined();
+
+      service.dispose();
+    });
+  });
+
   describe('archiveSession — empty archiveFileName guard', () => {
     it('archiveSession with empty archiveFileName in existing entry does not call delete on archiveUri directly', async () => {
       const session = createMockSession({ mtime: 2000, ctime: 900 });

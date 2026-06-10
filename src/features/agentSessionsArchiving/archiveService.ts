@@ -147,11 +147,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       );
       return;
     }
-    this.logger.debug('Archive cycle starting');
     const archiveUri = vscode.Uri.joinPath(
       this.workspaceRootUri,
       this._currentConfig.archivePath
     );
+    this.logger.info('Archive cycle starting — archive root: ' + archiveUri.fsPath);
     if (this._needsDedup) {
       await this.deduplicateAndHydrate(archiveUri);
       this._needsDedup = false;

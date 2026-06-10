@@ -1,4 +1,4 @@
-import type * as vscode from 'vscode';
+import * as vscode from 'vscode';
 import {
   Logger,
   ConfigManager,
@@ -45,7 +45,10 @@ function runSettingsMigration(context: vscode.ExtensionContext): void {
 }
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  logger = Logger.getInstance();
+  const folderName = vscode.workspace.workspaceFolders?.[0]?.name;
+  logger = Logger.getInstance(
+    folderName ? { workspaceFolderName: folderName } : undefined
+  );
   const configManager = setupConfiguration(context, logger);
   logger.info('Tangyr Workbench is activating...');
 
