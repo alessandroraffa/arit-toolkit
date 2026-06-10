@@ -1400,4 +1400,35 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
   });
+
+  describe('archiveSession — empty archiveFileName guard', () => {
+    it('archiveSession with empty archiveFileName in existing entry does not call delete on archiveUri directly', async () => {
+      const session = createMockSession({ mtime: 2000, ctime: 900 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+
+      // Prime lastArchivedMap with empty archiveFileName (empty-session skip records '')
+      (service as any).lastArchivedMap.set(session.archiveName, {
+        mtime: 1000,
+        archiveFileName: '',
+      });
+
+      const newArchiveFileName = '2026/06/202606010000-test-session.json';
+      vi.spyOn(service as any, 'writeArchiveFile').mockResolvedValue(newArchiveFileName);
+      workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
+
+      await service.runArchiveCycle(true);
+
+      expect(workspace.fs.delete).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+  });
 });

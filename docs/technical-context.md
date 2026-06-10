@@ -391,6 +391,7 @@ ConfigSectionRegistry          ConfigMigrationService
   extension is globally enabled).
 - The merge is non-destructive: existing values are never overwritten.
 - `version` and `versionCode` are always updated.
+- Concurrent `runMigration` invocations coalesce: an in-flight migration guard ensures at most one `migrate()` call is in progress at any time, preventing duplicate section prompts when `initialize` and `checkup` race during startup.
 
 ### 8.3 Version Code Encoding
 
@@ -474,6 +475,8 @@ write is skipped and the skip is logged at `info` level. The session's
 `mtime` is still recorded in `lastArchivedMap` (with an empty
 `archiveFileName`) so the session is not reprocessed on subsequent
 archive cycles.
+
+**Codex provider session-ID sanitization:** The Codex provider sanitizes `meta.id` using an allowlist regex (`^[A-Za-z0-9._-]+$`) before constructing `archiveName`: any value that does not match (including path-traversal sequences such as `../evil` or IDs containing backslashes) is rejected and the session is skipped with a `warn` log. Single-component dot segments (`.` and `..`) are additionally rejected by a direct equality check before the regex test.
 
 **Codex parser multi-turn handling:** The Codex parser detects each
 `user_message` event as a turn boundary. When a new user message arrives,

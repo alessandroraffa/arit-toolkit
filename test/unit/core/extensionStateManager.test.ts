@@ -501,6 +501,41 @@ describe('ExtensionStateManager', () => {
     });
   });
 
+  describe('runMigration in-flight guard', () => {
+    it('concurrent runMigration invocations do not call migrate() twice', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{"enabled":true,"versionCode":1002003000}')
+        );
+      workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+      let deferred!: {
+        resolve: (v: Record<string, unknown> | undefined) => void;
+      };
+      const deferredPromise = new Promise<Record<string, unknown> | undefined>((res) => {
+        deferred = { resolve: res };
+      });
+      mockMigrationService.migrate = vi.fn().mockReturnValue(deferredPromise);
+
+      const manager = createManager();
+
+      // Start two concurrent paths that both invoke runMigration:
+      // initialize() fires onDidChangeState which triggers runMigration,
+      // then immediately calls runMigration again via checkup().
+      const p1 = manager.initialize('2.3.0');
+      const p2 = manager.checkup();
+
+      // Resolve the deferred migration
+      deferred.resolve(undefined);
+      await p1;
+      await p2;
+
+      expect(mockMigrationService.migrate).toHaveBeenCalledOnce();
+    });
+  });
+
   describe('watcher self-write suppression', () => {
     async function createInitializedManager(): Promise<ExtensionStateManager> {
       workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];

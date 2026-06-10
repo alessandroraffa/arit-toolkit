@@ -40,6 +40,7 @@ export class ExtensionStateManager {
   private _autoCommitService: ConfigAutoCommitService | undefined;
   private _loadedLegacyConfigFile = false;
   private _lastWrittenConfigContent: string | undefined;
+  private _migrationInFlight: Promise<boolean> | undefined;
 
   constructor(
     private readonly logger: Logger,
@@ -325,6 +326,19 @@ export class ExtensionStateManager {
   }
 
   private async runMigration(): Promise<boolean> {
+    if (this._migrationInFlight) {
+      this.logger.debug(
+        'runMigration: in-flight guard triggered — awaiting existing migration'
+      );
+      return await this._migrationInFlight;
+    }
+    this._migrationInFlight = this._runMigrationInternal().finally(() => {
+      this._migrationInFlight = undefined;
+    });
+    return await this._migrationInFlight;
+  }
+
+  private async _runMigrationInternal(): Promise<boolean> {
     if (!this._extensionVersion || !this._fullConfig) {
       return false;
     }

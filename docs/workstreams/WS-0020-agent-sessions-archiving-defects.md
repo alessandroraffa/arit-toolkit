@@ -171,46 +171,46 @@ Modify `src/features/agentSessionsArchiving/archiveService.ts`, `deduplicateAndH
 
 Commit message: `fix(archiving): write-before-delete and real-mtime hydration`
 
-### [ ] Activity 4: Fix the three latent defects (L1, L2, L3)
+### [x] Activity 4: Fix the three latent defects (L1, L2, L3)
 
 Sanitize `archiveName` in `CodexProvider` to reject path-traversal characters using an allowlist regex (L1); the empty `archiveFileName` guard is already prescribed in Task 3.2 (L2); add an in-flight guard to `runMigration` in `ExtensionStateManager` (L3).
 
-#### [ ] Task 4.1: Write failing unit tests for L1, L2, and L3
+#### [x] Task 4.1: Write failing unit tests for L1, L2, and L3
 
 Add tests to the relevant existing test files. All tests must fail before Task 4.2 is implemented.
 
-- [ ] In `test/unit/features/agentSessionsArchiving/providers/codexProvider.test.ts`, add `describe('archiveName sanitization')`: add a test `'toSessionFile rejects a session whose meta.id fails the allowlist'` — mock `readSessionMeta` to return `{ id: '../../../evil', cwd: workspacePath }`; call `provider.findSessions(workspacePath)`; assert the result is an empty array (session filtered out, not thrown).
-- [ ] In `test/unit/features/agentSessionsArchiving/providers/codexProvider.test.ts`, add a test `'toSessionFile rejects a session whose meta.id contains a backslash'` — same pattern with `meta.id = 'foo\\bar'`.
-- [ ] In `test/unit/features/agentSessionsArchiving/providers/codexProvider.test.ts`, add a test `'toSessionFile accepts a valid meta.id matching the allowlist'` — `meta.id = 'abc-123'`; assert result contains one session with `archiveName: 'codex-abc-123'`.
-- [ ] In `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, in a new `describe('archiveSession — empty archiveFileName guard')`, add a test `'archiveSession with empty archiveFileName in existing entry does not call deleteOldArchive on archiveUri directly'`: prime `lastArchivedMap` with `{ mtime: 999, archiveFileName: '' }`; call `archiveSession` with a session whose `mtime` differs; spy on `vscode.workspace.fs.delete`; mock `writeArchiveFile` to return `'2026/06/202606101200-test.md'`; assert that `vscode.workspace.fs.delete` is NOT called.
-- [ ] In `test/unit/core/extensionStateManager.test.ts`, in a new `describe('runMigration in-flight guard')`, add a test `'concurrent runMigration invocations do not call migrate() twice'`: create a deferred promise (resolve/reject handles stored externally); mock `migrationService.migrate` via `vi.spyOn` to return that deferred promise; mock `vscode.workspace.fs.readFile` to return bytes encoding `{"enabled":true,"versionCode":1002003000}`; mock `vscode.workspace.createFileSystemWatcher` to return a stub; call `const p1 = manager.initialize('2.3.0')` and `const p2 = manager.checkup()` without awaiting between them (both calls are issued into the event loop before either resolves); resolve the deferred; await both `p1` and `p2`; assert that `migrationService.migrate` was called exactly once (not twice).
-- [ ] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit` and confirm the five new tests fail with `AssertionError`.
+- [x] In `test/unit/features/agentSessionsArchiving/providers/codexProvider.test.ts`, add `describe('archiveName sanitization')`: add a test `'toSessionFile rejects a session whose meta.id fails the allowlist'` — mock `readSessionMeta` to return `{ id: '../../../evil', cwd: workspacePath }`; call `provider.findSessions(workspacePath)`; assert the result is an empty array (session filtered out, not thrown).
+- [x] In `test/unit/features/agentSessionsArchiving/providers/codexProvider.test.ts`, add a test `'toSessionFile rejects a session whose meta.id contains a backslash'` — same pattern with `meta.id = 'foo\\bar'`.
+- [x] In `test/unit/features/agentSessionsArchiving/providers/codexProvider.test.ts`, add a test `'toSessionFile accepts a valid meta.id matching the allowlist'` — `meta.id = 'abc-123'`; assert result contains one session with `archiveName: 'codex-abc-123'`.
+- [x] In `test/unit/features/agentSessionsArchiving/archiveService.test.ts`, in a new `describe('archiveSession — empty archiveFileName guard')`, add a test `'archiveSession with empty archiveFileName in existing entry does not call deleteOldArchive on archiveUri directly'`: prime `lastArchivedMap` with `{ mtime: 999, archiveFileName: '' }`; call `archiveSession` with a session whose `mtime` differs; spy on `vscode.workspace.fs.delete`; mock `writeArchiveFile` to return `'2026/06/202606101200-test.md'`; assert that `vscode.workspace.fs.delete` is NOT called.
+- [x] In `test/unit/core/extensionStateManager.test.ts`, in a new `describe('runMigration in-flight guard')`, add a test `'concurrent runMigration invocations do not call migrate() twice'`: create a deferred promise (resolve/reject handles stored externally); mock `migrationService.migrate` via `vi.spyOn` to return that deferred promise; mock `vscode.workspace.fs.readFile` to return bytes encoding `{"enabled":true,"versionCode":1002003000}`; mock `vscode.workspace.createFileSystemWatcher` to return a stub; call `const p1 = manager.initialize('2.3.0')` and `const p2 = manager.checkup()` without awaiting between them (both calls are issued into the event loop before either resolves); resolve the deferred; await both `p1` and `p2`; assert that `migrationService.migrate` was called exactly once (not twice).
+- [x] Run `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run test:unit` and confirm the five new tests fail with `AssertionError`.
 
-#### [ ] Task 4.2: Implement L1 — `archiveName` sanitization in `CodexProvider`
+#### [x] Task 4.2: Implement L1 — `archiveName` sanitization in `CodexProvider`
 
 Modify `src/features/agentSessionsArchiving/providers/codexProvider.ts`.
 
-- [ ] Add a private method `private sanitizeSessionId(id: string): string | undefined` to `CodexProvider`: the method first checks `if (id === '.' || id === '..')` and returns `undefined` for these single-component dot-segment edge cases; then returns `undefined` if `id` does NOT match the allowlist regex `/^[A-Za-z0-9._-]+$/`; otherwise returns `id`. Traversal safety for multi-component paths derives from the `codex-` prefix in `archiveName` (`codex-${sessionId}`) — no traversal sequence survives prepending a literal prefix. The `id !== '.' && id !== '..'` guard provides defense-in-depth for the single-component edge cases before the regex test. The allowlist constrains the character set to alphanumerics, hyphens, dots, and underscores. Note: `scanDir` already handles `undefined` returns from `toSessionFile` at line 65 (`if (session) results.push(session)`).
-- [ ] In `toSessionFile` (lines 71–93, line 83), replace `const sessionId = meta.id ?? path.parse(fname).name` with: `const rawId = meta.id ?? path.parse(fname).name; const sessionId = this.sanitizeSessionId(rawId); if (sessionId === undefined) { this.logger.warn('CodexProvider: rejected session with id "' + rawId + '" (failed allowlist) in ' + fname); return undefined; }`.
+- [x] Add a private method `private sanitizeSessionId(id: string): string | undefined` to `CodexProvider`: the method first checks `if (id === '.' || id === '..')` and returns `undefined` for these single-component dot-segment edge cases; then returns `undefined` if `id` does NOT match the allowlist regex `/^[A-Za-z0-9._-]+$/`; otherwise returns `id`. Traversal safety for multi-component paths derives from the `codex-` prefix in `archiveName` (`codex-${sessionId}`) — no traversal sequence survives prepending a literal prefix. The `id !== '.' && id !== '..'` guard provides defense-in-depth for the single-component edge cases before the regex test. The allowlist constrains the character set to alphanumerics, hyphens, dots, and underscores. Note: `scanDir` already handles `undefined` returns from `toSessionFile` at line 65 (`if (session) results.push(session)`).
+- [x] In `toSessionFile` (lines 71–93, line 83), replace `const sessionId = meta.id ?? path.parse(fname).name` with: `const rawId = meta.id ?? path.parse(fname).name; const sessionId = this.sanitizeSessionId(rawId); if (sessionId === undefined) { this.logger.warn('CodexProvider: rejected session with id "' + rawId + '" (failed allowlist) in ' + fname); return undefined; }`.
 
-#### [ ] Task 4.3: Verify L2 — empty `archiveFileName` guard and add L2 comment
+#### [x] Task 4.3: Verify L2 — empty `archiveFileName` guard and add L2 comment
 
 The guard required by L2 was introduced in Task 3.2 (the `entry.archiveFileName !== ''` check and the `deleteOldArchive` method). Read `src/features/agentSessionsArchiving/archiveService.ts` after the Activity 3 commit and confirm the guard is present. Verify that the inline comment `// L2 guard: empty-session skip records '' as archiveFileName; joinPath(archiveUri, '') equals archiveUri itself` is adjacent to the non-empty string check. No additional code change is needed if the guard and comment from Task 3.2 are present.
 
-#### [ ] Task 4.4: Implement L3 — in-flight guard on `runMigration` in `ExtensionStateManager`
+#### [x] Task 4.4: Implement L3 — in-flight guard on `runMigration` in `ExtensionStateManager`
 
 Modify `src/core/extensionStateManager.ts`.
 
-- [ ] Add a private field `private _migrationInFlight: Promise<boolean> | undefined` after the `_loadedLegacyConfigFile` field declaration (line 41).
-- [ ] Replace the body of `private async runMigration(): Promise<boolean>` with: if `this._migrationInFlight` is set, log `this.logger.debug('runMigration: in-flight guard triggered — awaiting existing migration')` and return `await this._migrationInFlight`; otherwise assign `this._migrationInFlight = this._runMigrationInternal().finally(() => { this._migrationInFlight = undefined; })` and return `await this._migrationInFlight`.
-- [ ] Extract the existing `runMigration` body (lines 326–344) into a new private method `private async _runMigrationInternal(): Promise<boolean>` with the identical body.
+- [x] Add a private field `private _migrationInFlight: Promise<boolean> | undefined` after the `_loadedLegacyConfigFile` field declaration (line 41).
+- [x] Replace the body of `private async runMigration(): Promise<boolean>` with: if `this._migrationInFlight` is set, log `this.logger.debug('runMigration: in-flight guard triggered — awaiting existing migration')` and return `await this._migrationInFlight`; otherwise assign `this._migrationInFlight = this._runMigrationInternal().finally(() => { this._migrationInFlight = undefined; })` and return `await this._migrationInFlight`.
+- [x] Extract the existing `runMigration` body (lines 326–344) into a new private method `private async _runMigrationInternal(): Promise<boolean>` with the identical body.
 
-#### [ ] Task 4.5: Update impacted documentation
+#### [x] Task 4.5: Update impacted documentation
 
-- [ ] Update `docs/technical-context.md` section 8.6: add under the "Codex provider" description a note: "The Codex provider sanitizes `meta.id` using an allowlist regex (`^[A-Za-z0-9._-]+$`) before constructing `archiveName`: any value that does not match is rejected and the session is skipped with a `warn` log."
-- [ ] Update `docs/technical-context.md` section 8.2 ("Config Migration"): add after the third bullet: "Concurrent `runMigration` invocations coalesce: an in-flight migration guard ensures at most one `migrate()` call is in progress at any time, preventing duplicate section prompts."
+- [x] Update `docs/technical-context.md` section 8.6: add under the "Codex provider" description a note: "The Codex provider sanitizes `meta.id` using an allowlist regex (`^[A-Za-z0-9._-]+$`) before constructing `archiveName`: any value that does not match is rejected and the session is skipped with a `warn` log."
+- [x] Update `docs/technical-context.md` section 8.2 ("Config Migration"): add after the third bullet: "Concurrent `runMigration` invocations coalesce: an in-flight migration guard ensures at most one `migrate()` call is in progress at any time, preventing duplicate section prompts."
 
-#### [ ] Task 4.6: Commit changes
+#### [x] Task 4.6: Commit changes
 
 Commit message: `fix(archiving): path-traversal sanitization, empty-archiveName guard, runMigration in-flight guard`
 
@@ -263,6 +263,8 @@ Commit message: `feat(archiving): add archive-root log line and workspace-name o
 **WS-0020-FU-1 — D2 deferred:** The cosmetic "needs migration" mislabel displayed after an archive cycle completes (diagnostic item D2) is deliberately excluded from this workstream — it is a display-only issue with no data-integrity impact. Tracked as `WS-0020-FU-1` with scope: relabel 'needs migration' section opt-in flow logging; persist declined sections.
 
 **DIV-001 — Task 3.1 "falls back to mtime:0" test passes pre-implementation:** The workstream prescribed all four Task 3.1 tests to fail before Task 3.2. The test `'falls back to mtime:0 when stat throws'` trivially passes against the current code because the current implementation always stores `mtime: 0` for every entry, satisfying the fallback assertion. This is not a defect in the test; it will remain a valid green test post-implementation (the fallback is correct behavior on stat failure). No corrective action required — three of four tests fail as expected.
+
+**DIV-003 — Task 4.2 used Logger.getInstance() instead of this.logger:** The workstream specified `this.logger.warn(...)` for the sanitization rejection log, implying a logger field. `CodexProvider` has no logger constructor parameter — no existing provider injects a logger; they use the `Logger` singleton via `Logger.getInstance()` (same pattern as `skillBundleEdit` providers). Added `import { Logger } from '../../../core/logger'` and called `Logger.getInstance().warn(...)`. No caller change required. This is consistent with the existing project pattern for providers that need logging.
 
 **DIV-002 — Task 3.2 adapted existing test for write-before-delete semantics:** The existing test `'should reprocess a session whose archive was hydrated from disk with mtime 0, then skip it on the second cycle'` asserted that the hydrated archive was deleted on the first reprocess cycle. Under the new write-first-then-delete semantics, deletion only occurs when the new archive filename differs from the existing one. Since the session's `ctime` is unchanged between hydration and reprocessing, the ctime-based archive filename is the same → no delete is issued; the file is overwritten in place by `copyRawArchive`. The test was updated to drop the delete assertion and add a `not.toHaveBeenCalled` assertion for `delete`, keeping the copy assertion intact. This is a test-correctness update, not a behavior regression — the corrective note at the prior session end noted this update was needed.
 
