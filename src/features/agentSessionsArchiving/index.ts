@@ -111,7 +111,9 @@ export function registerAgentSessionsArchivingFeature(
           'onDidChangeState: skipping start — config equal and service already running'
         );
       } else {
-        service.start(config);
+        service.start(config).catch((err: unknown) => {
+          ctx.logger.error('service.start failed: ' + String(err));
+        });
         watcher.start(workspaceRoot.fsPath);
         void checkAndPromptGitignore(
           config.archivePath,
@@ -130,7 +132,9 @@ export function registerAgentSessionsArchivingFeature(
         );
       }
     } else {
-      service.stop();
+      service.stop().catch((err: unknown) => {
+        ctx.logger.error('service.stop failed: ' + String(err));
+      });
       watcher.stop();
     }
   });

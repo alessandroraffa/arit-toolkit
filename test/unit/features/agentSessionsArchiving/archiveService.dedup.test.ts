@@ -69,7 +69,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
         });
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
       expect(workspace.fs.delete).toHaveBeenCalledWith(
@@ -109,7 +109,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
         });
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
       const deleteCalls = vi.mocked(workspace.fs.delete).mock.calls;
@@ -148,7 +148,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
         });
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
       expect(workspace.fs.delete).not.toHaveBeenCalled();
@@ -160,7 +160,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
       workspace.fs.readDirectory = vi.fn().mockResolvedValue([]);
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
       expect(workspace.fs.delete).not.toHaveBeenCalled();
@@ -172,7 +172,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
       workspace.fs.readDirectory = vi.fn().mockRejectedValue(new Error('not found'));
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
       expect(workspace.fs.delete).not.toHaveBeenCalled();
@@ -201,7 +201,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
         });
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
       expect(workspace.fs.delete).not.toHaveBeenCalled();
@@ -227,7 +227,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
         });
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
       expect(workspace.fs.delete).not.toHaveBeenCalled();
@@ -252,7 +252,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
         });
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       // Run first cycle — dedup hydrates the map
       // Then archiveSession would use the hydrated entry
@@ -312,7 +312,7 @@ describe('AgentSessionArchiveService – deduplication', () => {
         });
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       // First cycle — dedup runs, removes duplicate
       await service.runArchiveCycle();
@@ -349,14 +349,14 @@ describe('AgentSessionArchiveService – deduplication', () => {
         });
 
       const service = createService();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
       expect(workspace.fs.delete).toHaveBeenCalled();
 
       vi.mocked(workspace.fs.delete).mockClear();
 
       // Re-start triggers dedup again
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
       expect(workspace.fs.delete).toHaveBeenCalled();
 

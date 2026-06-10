@@ -561,6 +561,21 @@ cached `mtime`. The "Archive Now" command passes `force = true`; the
 automatic timer and file-watcher callbacks use the default
 `force = false`.
 
+**Concurrency guard:** `runArchiveCycle` is serialized by an in-flight
+promise managed by `ArchiveCycleGuard`. If a cycle is already running
+when `runArchiveCycle` is called again, the second call ORs its `force`
+flag into a pending-force slot and returns the in-flight promise; when
+the cycle completes, exactly one follow-up cycle runs using the
+strongest `force` value seen during coalescing. `start()` uses
+stash-and-replay re-entrancy: a concurrent `start(configB)` call while
+a start is in progress stashes `configB` in a pending-config slot
+(latest wins) and returns immediately; when the in-progress start
+completes, it re-invokes `start()` with the stashed config — the
+service always ends running the most-recently-requested config. `stop()`
+awaits the in-flight cycle before clearing the interval, so no orphaned
+cycle can run after `stop` returns. The guard logic lives in
+`src/features/agentSessionsArchiving/archiveCycleGuard.ts`.
+
 **`archivePath` validation:** The `archivePath` field of
 `AgentSessionsArchivingConfig` is validated by `validateArchivePath()`
 (`src/features/agentSessionsArchiving/archivePathValidation.ts`) at every

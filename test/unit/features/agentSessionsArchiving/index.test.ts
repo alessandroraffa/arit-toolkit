@@ -14,8 +14,8 @@ const {
   mockSessionFileWatcherConstructor,
 } = vi.hoisted(() => {
   const service = {
-    start: vi.fn(),
-    stop: vi.fn(),
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(undefined),
     reconfigure: vi.fn(),
     runArchiveCycle: vi.fn().mockResolvedValue(undefined),
     currentConfig: undefined as unknown,
