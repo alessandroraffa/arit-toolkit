@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
+import { Logger } from '../../../core/logger';
 import type { SessionFile, SessionProvider, WatchPattern } from '../types';
 import { getFileTimes } from './providerUtils';
 
@@ -68,6 +69,12 @@ export class CodexProvider implements SessionProvider {
     return results;
   }
 
+  private sanitizeSessionId(id: string): string | undefined {
+    if (id === '.' || id === '..') return undefined;
+    if (!/^[A-Za-z0-9._-]+$/.test(id)) return undefined;
+    return id;
+  }
+
   private async toSessionFile(
     uri: vscode.Uri,
     fname: string,
@@ -80,7 +87,17 @@ export class CodexProvider implements SessionProvider {
     const times = await getFileTimes(uri);
     if (!times) return undefined;
 
-    const sessionId = meta.id ?? path.parse(fname).name;
+    const rawId = meta.id ?? path.parse(fname).name;
+    const sessionId = this.sanitizeSessionId(rawId);
+    if (sessionId === undefined) {
+      Logger.getInstance().warn(
+        'CodexProvider: rejected session with id "' +
+          rawId +
+          '" (failed allowlist) in ' +
+          fname
+      );
+      return undefined;
+    }
     return {
       uri,
       providerName: this.name,

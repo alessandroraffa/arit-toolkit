@@ -79,7 +79,7 @@ describe('AgentSessionArchiveService', () => {
         logger as any
       );
 
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
       expect(provider.findSessions).toHaveBeenCalledWith('/workspace');
@@ -88,7 +88,7 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
 
-    it('should stop interval on stop()', () => {
+    it('should stop interval on stop()', async () => {
       const provider = createMockProvider();
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
@@ -96,15 +96,15 @@ describe('AgentSessionArchiveService', () => {
         logger as any
       );
 
-      service.start(DEFAULT_CONFIG);
-      service.stop();
+      await service.start(DEFAULT_CONFIG);
+      await service.stop();
 
       expect(logger.info).toHaveBeenCalledWith('Agent sessions archiving stopped');
 
       service.dispose();
     });
 
-    it('should expose current config', () => {
+    it('should expose current config', async () => {
       const provider = createMockProvider();
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
@@ -113,7 +113,7 @@ describe('AgentSessionArchiveService', () => {
       );
 
       expect(service.currentConfig).toBeUndefined();
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       expect(service.currentConfig).toEqual(DEFAULT_CONFIG);
 
       service.dispose();
@@ -129,7 +129,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.runArchiveCycle();
 
@@ -156,7 +156,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.runArchiveCycle();
 
@@ -177,7 +177,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.runArchiveCycle();
 
@@ -196,7 +196,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.runArchiveCycle();
       vi.mocked(workspace.fs.copy).mockClear();
@@ -216,7 +216,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.runArchiveCycle();
       vi.mocked(workspace.fs.copy).mockClear();
@@ -228,19 +228,22 @@ describe('AgentSessionArchiveService', () => {
       service.dispose();
     });
 
-    it('should replace old archive when mtime changes', async () => {
-      const session = createMockSession({ mtime: 1000 });
+    it('should replace old archive when mtime changes and ctime changes (new filename)', async () => {
+      const session = createMockSession({ mtime: 1000, ctime: 1_609_459_200_000 });
       const provider = createMockProvider([session]);
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
-      // Update mtime
-      const updatedSession = createMockSession({ mtime: 2000 });
+      // Update both mtime and ctime so the archive filename changes
+      const updatedSession = createMockSession({
+        mtime: 2000,
+        ctime: 1_612_137_600_000,
+      });
       vi.mocked(provider.findSessions).mockResolvedValue([updatedSession]);
       vi.mocked(workspace.fs.copy).mockClear();
 
@@ -248,6 +251,32 @@ describe('AgentSessionArchiveService', () => {
 
       expect(workspace.fs.delete).toHaveBeenCalled();
       expect(workspace.fs.copy).toHaveBeenCalled();
+
+      service.dispose();
+    });
+
+    it('should overwrite in place when mtime changes but ctime is unchanged (same filename)', async () => {
+      const session = createMockSession({ mtime: 1000, ctime: 1_609_459_200_000 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      await service.start(DEFAULT_CONFIG);
+      await service.runArchiveCycle();
+
+      // Update mtime only — ctime unchanged means same archive filename
+      const updatedSession = createMockSession({ mtime: 2000, ctime: 1_609_459_200_000 });
+      vi.mocked(provider.findSessions).mockResolvedValue([updatedSession]);
+      vi.mocked(workspace.fs.copy).mockClear();
+      vi.mocked(workspace.fs.delete).mockClear();
+
+      await service.runArchiveCycle();
+
+      // write happens (copy), but no delete because filename is unchanged
+      expect(workspace.fs.copy).toHaveBeenCalled();
+      expect(workspace.fs.delete).not.toHaveBeenCalled();
 
       service.dispose();
     });
@@ -263,7 +292,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.runArchiveCycle();
 
@@ -299,7 +328,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       await service.runArchiveCycle();
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -317,7 +346,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start({ ...DEFAULT_CONFIG, ignoreSessionsBefore: '20250101' });
+      await service.start({ ...DEFAULT_CONFIG, ignoreSessionsBefore: '20250101' });
 
       await service.runArchiveCycle();
 
@@ -334,7 +363,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start({ ...DEFAULT_CONFIG, ignoreSessionsBefore: '20250101' });
+      await service.start({ ...DEFAULT_CONFIG, ignoreSessionsBefore: '20250101' });
 
       await service.runArchiveCycle();
 
@@ -351,7 +380,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.runArchiveCycle();
 
@@ -381,7 +410,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.runArchiveCycle();
 
@@ -401,7 +430,7 @@ describe('AgentSessionArchiveService', () => {
     it('should reprocess a session whose archive was hydrated from disk with mtime 0, then skip it on the second cycle', async () => {
       // Source session fixture: ctime is the file's CREATION time; mtime is the file's MODIFICATION time.
       // Both belong to March 2026 — same year/month as the hydrated archive — so the new write
-      // produced by archiveSession lands in the same '2026/03/' subdirectory as the deleted hydrated file.
+      // produced by archiveSession lands in the same '2026/03/' subdirectory as the hydrated file.
       const SESSION_CTIME = Date.UTC(2026, 2, 9, 5, 13, 0); // 2026-03-09T05:13:00Z → timestamp 202603090513
       const SESSION_MTIME = Date.UTC(2026, 2, 9, 6, 0, 0); // 2026-03-09T06:00:00Z (newer than hydrated mtime=0)
       const HYDRATED_ARCHIVE_RELATIVE =
@@ -438,15 +467,16 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
-      // First cycle: hydration stores mtime: 0, source mtime is SESSION_MTIME → re-processes.
+      // First cycle: hydration stat fails (mock returns undefined) → mtime: 0; source mtime is
+      // SESSION_MTIME → re-processes. Because ctime is unchanged, the new archive filename equals
+      // the hydrated filename → write-first-then-delete only fires when the filename differs, so
+      // no delete is issued; the file is overwritten in place by copyRawArchive.
       await service.runArchiveCycle();
 
-      // Hydrated archive was deleted (full relative path).
-      const deleteCalls = vi.mocked(workspace.fs.delete).mock.calls;
-      const deletedPaths = deleteCalls.map((c) => (c[0] as { fsPath: string }).fsPath);
-      expect(deletedPaths.some((p) => p.endsWith(HYDRATED_ARCHIVE_RELATIVE))).toBe(true);
+      // No delete — the archive filename is unchanged (same ctime-based prefix).
+      expect(workspace.fs.delete).not.toHaveBeenCalled();
 
       // New archive written to the same year/month via copyRawArchive (no parser for 'test-provider').
       const copyCalls = vi.mocked(workspace.fs.copy).mock.calls;
@@ -491,7 +521,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.runArchiveCycle();
 
@@ -569,7 +599,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.reconfigure(
         DEFAULT_CONFIG,
@@ -604,7 +634,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       const newConfig = { ...DEFAULT_CONFIG, archivePath: 'new/archive/path' };
       await service.reconfigure(DEFAULT_CONFIG, newConfig, vi.fn());
@@ -632,7 +662,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       const newConfig = { ...DEFAULT_CONFIG, archivePath: 'new/path' };
       await service.reconfigure(DEFAULT_CONFIG, newConfig, vi.fn());
@@ -671,7 +701,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.reconfigure(
         DEFAULT_CONFIG,
@@ -694,7 +724,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.reconfigure(DEFAULT_CONFIG, DEFAULT_CONFIG, vi.fn());
 
@@ -711,7 +741,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       const startSpy = vi.spyOn(service, 'start');
       const innerUpdateConfig = vi.fn().mockResolvedValue(undefined);
@@ -789,7 +819,7 @@ describe('AgentSessionArchiveService', () => {
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
 
       await service.reconfigure(
         DEFAULT_CONFIG,
@@ -1020,17 +1050,408 @@ describe('AgentSessionArchiveService', () => {
   });
 
   describe('dispose', () => {
-    it('should stop interval on dispose', () => {
+    it('should stop interval on dispose', async () => {
       const provider = createMockProvider();
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
         [provider],
         logger as any
       );
-      service.start(DEFAULT_CONFIG);
+      await service.start(DEFAULT_CONFIG);
       service.dispose();
 
       expect(logger.info).toHaveBeenCalledWith('Agent sessions archiving stopped');
+    });
+  });
+
+  describe('runArchiveCycle concurrency guard', () => {
+    // Flush pending microtasks — enough passes for finally chains to settle.
+    async function flushMicrotasks(): Promise<void> {
+      for (let i = 0; i < 15; i++) {
+        await Promise.resolve();
+      }
+    }
+
+    it('concurrent runArchiveCycle calls coalesce into at most two sequential cycles', async () => {
+      let resolveFirst: (() => void) | undefined;
+      const firstCyclePromise = new Promise<void>((resolve) => {
+        resolveFirst = resolve;
+      });
+      const provider = createMockProvider([createMockSession()]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      vi.spyOn(service as any, 'deduplicateAndHydrate').mockResolvedValue(undefined);
+      const archiveSpy = vi
+        .spyOn(service as any, 'archiveFromProviders')
+        .mockImplementationOnce(async () => {
+          await firstCyclePromise;
+        })
+        .mockResolvedValue(undefined);
+
+      await service.start(DEFAULT_CONFIG);
+      // Cycle A is now in-flight (archiveSpy called once, stuck on firstCyclePromise)
+      void service.runArchiveCycle();
+      void service.runArchiveCycle();
+
+      resolveFirst!();
+      await flushMicrotasks();
+
+      // Cycle A (1) + at most one follow-up (1) = 2. NOT 3 (one per extra call).
+      expect(archiveSpy.mock.calls.length).toBeLessThanOrEqual(2);
+      service.dispose();
+    });
+
+    it('stop awaits the in-flight cycle before returning', async () => {
+      let resolveInFlight: (() => void) | undefined;
+      const inFlightPromise = new Promise<void>((resolve) => {
+        resolveInFlight = resolve;
+      });
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      vi.spyOn(service as any, 'deduplicateAndHydrate').mockResolvedValue(undefined);
+      const archiveSpy = vi
+        .spyOn(service as any, 'archiveFromProviders')
+        .mockImplementation(async () => {
+          await inFlightPromise;
+        });
+
+      await service.start(DEFAULT_CONFIG);
+      const stopPromise = service.stop();
+      expect(stopPromise).toBeInstanceOf(Promise);
+
+      resolveInFlight!();
+      await stopPromise;
+
+      const callCountAfterStop = archiveSpy.mock.calls.length;
+      await flushMicrotasks();
+      expect(archiveSpy.mock.calls.length).toBe(callCountAfterStop);
+
+      service.dispose();
+    });
+
+    it('_needsDedup is cleared only once per in-flight cycle, not per coalesced call', async () => {
+      let resolveFirst: (() => void) | undefined;
+      const firstCyclePromise = new Promise<void>((resolve) => {
+        resolveFirst = resolve;
+      });
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      const dedupSpy = vi
+        .spyOn(service as any, 'deduplicateAndHydrate')
+        .mockResolvedValue(undefined);
+
+      vi.spyOn(service as any, 'archiveFromProviders')
+        .mockImplementationOnce(async () => {
+          await firstCyclePromise;
+        })
+        .mockResolvedValue(undefined);
+
+      await service.start(DEFAULT_CONFIG);
+      void service.runArchiveCycle();
+      void service.runArchiveCycle();
+
+      resolveFirst!();
+      await flushMicrotasks();
+
+      // deduplicateAndHydrate called at most twice (once per actual cycle, not per coalesced call)
+      expect(dedupSpy.mock.calls.length).toBeLessThanOrEqual(2);
+      service.dispose();
+    });
+
+    it('force=true from a coalesced call is preserved in the follow-up cycle', async () => {
+      let resolveFirst: (() => void) | undefined;
+      const firstCyclePromise = new Promise<void>((resolve) => {
+        resolveFirst = resolve;
+      });
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      const forceValues: boolean[] = [];
+
+      vi.spyOn(service as any, 'deduplicateAndHydrate').mockResolvedValue(undefined);
+      vi.spyOn(service as any, 'archiveFromProviders')
+        .mockImplementationOnce(async () => {
+          await firstCyclePromise;
+        })
+        .mockImplementation(async (_archiveUri: unknown, force: boolean) => {
+          forceValues.push(force);
+        });
+
+      await service.start(DEFAULT_CONFIG);
+      void service.runArchiveCycle(true);
+
+      resolveFirst!();
+      await flushMicrotasks();
+
+      expect(forceValues.some((f) => f === true)).toBe(true);
+      service.dispose();
+    });
+
+    it('two concurrent start() calls with different configs result in service running the second config (stash-and-replay)', async () => {
+      const configA = { ...DEFAULT_CONFIG, intervalMinutes: 2 };
+      const configB = { ...DEFAULT_CONFIG, intervalMinutes: 3 };
+
+      let resolveDeferred: (() => void) | undefined;
+      const deferredPromise = new Promise<void>((resolve) => {
+        resolveDeferred = resolve;
+      });
+
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      vi.spyOn(service as any, 'archiveFromProviders').mockImplementation(async () => {
+        await deferredPromise;
+      });
+      vi.spyOn(service as any, 'deduplicateAndHydrate').mockResolvedValue(undefined);
+
+      // start(configA) begins — _starting becomes true, archiveFromProviders is stuck
+      const p1 = service.start(configA);
+      // start(configB) while _starting is true — stashes configB and returns immediately
+      void service.start(configB);
+
+      resolveDeferred!();
+      await p1;
+      await flushMicrotasks();
+
+      expect(service.currentConfig).toEqual(configB);
+      service.dispose();
+    });
+
+    it('dispose() resets _pendingStartConfig', () => {
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (service as any)._pendingStartConfig = DEFAULT_CONFIG;
+
+      service.dispose();
+
+      expect((service as any)._pendingStartConfig).toBeUndefined();
+    });
+  });
+
+  describe('archiveSession — write-first-then-delete', () => {
+    it('writes the new archive file before deleting the old one when archiveName changes', async () => {
+      const session = createMockSession({ mtime: 2000, ctime: 900 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+
+      // Prime lastArchivedMap with an old archiveFileName
+      const oldArchiveFileName = '2026/05/202605010000-test-session.json';
+      (service as any).lastArchivedMap.set(session.archiveName, {
+        mtime: 1000,
+        archiveFileName: oldArchiveFileName,
+      });
+
+      // writeArchiveFile returns a new filename (timestamp will differ due to mtime change)
+      const newArchiveFileName = '2026/06/202606010000-test-session.json';
+      const writeArchiveFileSpy = vi
+        .spyOn(service as any, 'writeArchiveFile')
+        .mockResolvedValue(newArchiveFileName);
+
+      const callOrder: string[] = [];
+      writeArchiveFileSpy.mockImplementation(async () => {
+        callOrder.push('write');
+        return newArchiveFileName;
+      });
+      workspace.fs.delete = vi.fn().mockImplementation(async () => {
+        callOrder.push('delete');
+      });
+
+      await service.runArchiveCycle(true);
+
+      expect(callOrder[0]).toBe('write');
+      expect(callOrder[1]).toBe('delete');
+      expect(workspace.fs.delete).toHaveBeenCalledOnce();
+      const deletedUri = vi.mocked(workspace.fs.delete).mock.calls[0]![0] as {
+        fsPath: string;
+      };
+      expect(deletedUri.fsPath).toContain(oldArchiveFileName);
+
+      service.dispose();
+    });
+
+    it('does not delete the old file when the archive filename is unchanged', async () => {
+      const session = createMockSession({ mtime: 2000, ctime: 900 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+
+      // Same archiveFileName in both map and writeArchiveFile return
+      const sameArchiveFileName = '2026/06/202606010000-test-session.json';
+      (service as any).lastArchivedMap.set(session.archiveName, {
+        mtime: 1000,
+        archiveFileName: sameArchiveFileName,
+      });
+
+      vi.spyOn(service as any, 'writeArchiveFile').mockResolvedValue(sameArchiveFileName);
+      workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
+
+      await service.runArchiveCycle(true);
+
+      expect(workspace.fs.delete).not.toHaveBeenCalled();
+
+      service.dispose();
+    });
+  });
+
+  describe('deduplicateAndHydrate — real mtime hydration', () => {
+    it('seeds lastArchivedMap with the stat mtime of each archive file, not mtime:0', async () => {
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([['2026', FileType.Directory]]);
+          if (p.endsWith('/2026')) return Promise.resolve([['06', FileType.Directory]]);
+          if (p.endsWith('/2026/06'))
+            return Promise.resolve([['202606010000-stat-session.json', FileType.File]]);
+          return Promise.resolve([]);
+        });
+      workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 9999 });
+
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+      (service as unknown as { _needsDedup: boolean })._needsDedup = true;
+
+      await service.runArchiveCycle();
+
+      const entry = (service as any).lastArchivedMap.get('stat-session') as
+        | { mtime: number }
+        | undefined;
+      expect(entry).toBeDefined();
+      expect(entry!.mtime).toBe(9999);
+
+      service.dispose();
+    });
+
+    it('falls back to mtime:0 when stat throws for an archive file', async () => {
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          const p = uri.fsPath;
+          if (p.endsWith('/agent-sessions'))
+            return Promise.resolve([['2026', FileType.Directory]]);
+          if (p.endsWith('/2026')) return Promise.resolve([['06', FileType.Directory]]);
+          if (p.endsWith('/2026/06'))
+            return Promise.resolve([['202606010000-nostat-session.json', FileType.File]]);
+          return Promise.resolve([]);
+        });
+      workspace.fs.stat = vi.fn().mockRejectedValue(new Error('ENOENT'));
+
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+      (service as unknown as { _needsDedup: boolean })._needsDedup = true;
+
+      await service.runArchiveCycle();
+
+      const entry = (service as any).lastArchivedMap.get('nostat-session') as
+        | { mtime: number }
+        | undefined;
+      expect(entry).toBeDefined();
+      expect(entry!.mtime).toBe(0);
+
+      service.dispose();
+    });
+  });
+
+  describe('cycle observability', () => {
+    it('runArchiveCycle logs archive root absolute path at INFO level at cycle start', async () => {
+      const provider = createMockProvider([]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      await service.start(DEFAULT_CONFIG);
+      await service.runArchiveCycle();
+
+      const infoCalls = vi.mocked(logger.info).mock.calls.map((c) => String(c[0]));
+      const cycleStartCall = infoCalls.find(
+        (msg) =>
+          msg.includes('Archive cycle starting') &&
+          msg.includes('/workspace/docs/archive/agent-sessions')
+      );
+      expect(cycleStartCall).toBeDefined();
+
+      service.dispose();
+    });
+  });
+
+  describe('archiveSession — empty archiveFileName guard', () => {
+    it('archiveSession with empty archiveFileName in existing entry does not call delete on archiveUri directly', async () => {
+      const session = createMockSession({ mtime: 2000, ctime: 900 });
+      const provider = createMockProvider([session]);
+      const service = new AgentSessionArchiveService(
+        workspaceRootUri,
+        [provider],
+        logger as any
+      );
+      (
+        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+      )._currentConfig = DEFAULT_CONFIG;
+
+      // Prime lastArchivedMap with empty archiveFileName (empty-session skip records '')
+      (service as any).lastArchivedMap.set(session.archiveName, {
+        mtime: 1000,
+        archiveFileName: '',
+      });
+
+      const newArchiveFileName = '2026/06/202606010000-test-session.json';
+      vi.spyOn(service as any, 'writeArchiveFile').mockResolvedValue(newArchiveFileName);
+      workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
+
+      await service.runArchiveCycle(true);
+
+      expect(workspace.fs.delete).not.toHaveBeenCalled();
+
+      service.dispose();
     });
   });
 });

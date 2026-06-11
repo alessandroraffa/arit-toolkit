@@ -8,12 +8,18 @@ export class Logger {
   private readonly outputChannel: vscode.OutputChannel;
   private level: LogLevel = 'info';
 
-  private constructor() {
-    this.outputChannel = vscode.window.createOutputChannel('Tangyr Workbench');
+  private constructor(opts?: { workspaceFolderName?: string }) {
+    const folderSuffix = opts?.workspaceFolderName
+      ? ' (' + opts.workspaceFolderName + ')'
+      : '';
+    this.outputChannel = vscode.window.createOutputChannel(
+      'Tangyr Workbench' + folderSuffix
+    );
   }
 
-  public static getInstance(): Logger {
-    Logger.instance ??= new Logger();
+  /** Returns the singleton Logger instance. The opts parameter is honoured only on first call; subsequent calls with opts are no-ops (singleton semantics). */
+  public static getInstance(opts?: { workspaceFolderName?: string }): Logger {
+    Logger.instance ??= new Logger(opts);
     return Logger.instance;
   }
 

@@ -7,6 +7,7 @@ import type { SessionParser, ParseResult } from './markdown';
 import { getParserForProvider, renderSessionToMarkdown } from './markdown';
 import { checkAndPromptGitignore } from './gitignorePrompt';
 import { validateArchivePath } from './archivePathValidation';
+import { ArchiveCycleGuard } from './archiveCycleGuard';
 
 interface ArchivedEntry {
   mtime: number;
@@ -38,6 +39,8 @@ export class AgentSessionArchiveService implements vscode.Disposable {
    * lastArchivedMap.
    */
   private _reconfiguring = false;
+  private readonly _cycleGuard = new ArchiveCycleGuard();
+  private _pendingStartConfig: AgentSessionsArchivingConfig | undefined;
 
   constructor(
     private readonly workspaceRootUri: vscode.Uri,
@@ -49,27 +52,44 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     return this._currentConfig;
   }
 
-  public start(config: AgentSessionsArchivingConfig): void {
-    this.stop();
-    this.ensuredDirectories.clear();
-    this._currentConfig = config;
-    const intervalMs = config.intervalMinutes * 60_000;
-    this._needsDedup = true;
-    this.logger.info(
-      `Agent sessions archiving started (interval: ${String(config.intervalMinutes)}m)`
-    );
-    void this.runArchiveCycle();
-    this.intervalHandle = setInterval(() => {
+  public async start(config: AgentSessionsArchivingConfig): Promise<void> {
+    if (!this._cycleGuard.beginStart()) {
+      this.logger.debug('start(): stashing config for deferred start');
+      this._pendingStartConfig = config;
+      return;
+    }
+    this._pendingStartConfig = undefined;
+    try {
+      await this.stop();
+      this.ensuredDirectories.clear();
+      this._currentConfig = config;
+      const intervalMs = config.intervalMinutes * 60_000;
+      this._needsDedup = true;
+      this.logger.info(
+        `Agent sessions archiving started (interval: ${String(config.intervalMinutes)}m)`
+      );
       void this.runArchiveCycle();
-    }, intervalMs);
+      this.intervalHandle = setInterval(() => {
+        void this.runArchiveCycle();
+      }, intervalMs);
+    } finally {
+      this._cycleGuard.endStart();
+      const pending = this._pendingStartConfig;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (pending !== undefined) {
+        this._pendingStartConfig = undefined;
+        await this.start(pending);
+      }
+    }
   }
 
-  public stop(): void {
+  public async stop(): Promise<void> {
     if (this.intervalHandle) {
       clearInterval(this.intervalHandle);
       this.intervalHandle = undefined;
       this.logger.info('Agent sessions archiving stopped');
     }
+    await this._cycleGuard.awaitAndReset();
   }
 
   public async reconfigure(
@@ -87,12 +107,12 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     try {
       if (!oldConfig) {
         if (newConfig.enabled) {
-          this.start(newConfig);
+          await this.start(newConfig);
         }
         return;
       }
       if (!newConfig.enabled) {
-        this.stop();
+        await this.stop();
         this._currentConfig = newConfig;
         return;
       }
@@ -106,13 +126,17 @@ export class AgentSessionArchiveService implements vscode.Disposable {
           updateConfig
         );
       }
-      this.start(newConfig);
+      await this.start(newConfig);
     } finally {
       this._reconfiguring = false;
     }
   }
 
   public async runArchiveCycle(force = false): Promise<void> {
+    return this._cycleGuard.run((f) => this._runCycleInternal(f), force);
+  }
+
+  private async _runCycleInternal(force = false): Promise<void> {
     if (!this._currentConfig) {
       return;
     }
@@ -123,11 +147,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       );
       return;
     }
-    this.logger.debug('Archive cycle starting');
     const archiveUri = vscode.Uri.joinPath(
       this.workspaceRootUri,
       this._currentConfig.archivePath
     );
+    this.logger.info('Archive cycle starting — archive root: ' + archiveUri.fsPath);
     if (this._needsDedup) {
       await this.deduplicateAndHydrate(archiveUri);
       this._needsDedup = false;
@@ -165,7 +189,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   }
 
   public dispose(): void {
-    this.stop();
+    void this.stop();
+    this._cycleGuard.endStart();
+    this._pendingStartConfig = undefined;
   }
 
   private async archiveSession(
@@ -184,12 +210,14 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     await this.ensureDirectory(archiveUri);
     const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.ctime));
 
-    if (entry) {
-      await this.deleteFile(vscode.Uri.joinPath(archiveUri, entry.archiveFileName));
-    }
-
     const archiveFileName = await this.writeArchiveFile(session, archiveUri, timestamp);
     if (archiveFileName) {
+      // L2 guard: empty-session skip records '' as archiveFileName; joinPath(archiveUri, '') equals archiveUri itself
+      if (entry?.archiveFileName && entry.archiveFileName !== archiveFileName) {
+        await this.deleteOldArchive(
+          vscode.Uri.joinPath(archiveUri, entry.archiveFileName)
+        );
+      }
       this.lastArchivedMap.set(session.archiveName, {
         mtime: session.mtime,
         archiveFileName,
@@ -200,6 +228,17 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         mtime: session.mtime,
         archiveFileName: '',
       });
+    }
+  }
+
+  private async deleteOldArchive(uri: vscode.Uri): Promise<void> {
+    try {
+      await vscode.workspace.fs.delete(uri);
+    } catch (err) {
+      this.logger.warn(
+        'deleteOldArchive failed — orphan duplicate left; dedup will recover on next startup: ' +
+          String(err)
+      );
     }
   }
 
@@ -551,7 +590,18 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       }
       const best = files[0];
       if (best && !this.lastArchivedMap.has(archiveName)) {
-        this.lastArchivedMap.set(archiveName, { mtime: 0, archiveFileName: best.name });
+        let mtime = 0;
+        try {
+          const statResult = await vscode.workspace.fs.stat(
+            vscode.Uri.joinPath(archiveUri, best.name)
+          );
+          mtime = statResult.mtime;
+        } catch {
+          this.logger.debug(
+            'Hydration stat failed for ' + best.name + ' — using mtime 0'
+          );
+        }
+        this.lastArchivedMap.set(archiveName, { mtime, archiveFileName: best.name });
       }
     }
   }

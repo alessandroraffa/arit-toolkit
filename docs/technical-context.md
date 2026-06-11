@@ -13,11 +13,11 @@
 | System             | Tangyr Workbench -- VS Code Extension                                                                                                       |
 | Repository         | <https://github.com/alessandroraffa/tangyr-vscode>                                                                                          |
 | Identifier         | `alessandroraffa.tangyr`                                                                                                                    |
-| Current version    | 1.10.2 (versionCode `1001010002`)                                                                                                           |
+| Current version    | 2.3.0 (versionCode `1002003000`)                                                                                                            |
 | Licence            | MIT                                                                                                                                         |
 | Architecture style | Feature-based modular architecture, dependency injection                                                                                    |
 | Runtime deps       | None at runtime (VS Code API only). `js-tiktoken` and `@anthropic-ai/tokenizer` are dev dependencies bundled into the extension by esbuild. |
-| Last updated       | 2026-05-28                                                                                                                                  |
+| Last updated       | 2026-06-10                                                                                                                                  |
 
 ---
 
@@ -372,6 +372,8 @@ state into the existing `_fullConfig`, preserving all custom sections.
 **External edit detection:** A `FileSystemWatcher` on the config file
 re-reads on change/create and fires `onDidChangeState`.
 
+**Self-write suppression:** Self-writes are suppressed via content-equality: `writeFullConfig` stores the exact formatted content string it wrote in `_lastWrittenConfigContent`; the watcher reload handler reads the file, decodes it, and on an exact string match clears the field and returns early without firing — preventing the extension's own config writes from triggering restart churn. A read error or content mismatch causes normal reload processing, bounding false-negative suppression to a single redundant reload.
+
 ### 8.2 Config Migration
 
 The migration system enables forward-compatible config evolution:
@@ -389,6 +391,7 @@ ConfigSectionRegistry          ConfigMigrationService
   extension is globally enabled).
 - The merge is non-destructive: existing values are never overwritten.
 - `version` and `versionCode` are always updated.
+- Concurrent `runMigration` invocations coalesce: an in-flight migration guard ensures at most one `migrate()` call is in progress at any time, preventing duplicate section prompts when `initialize` and `checkup` race during startup.
 
 ### 8.3 Version Code Encoding
 
@@ -406,11 +409,11 @@ Each segment (major, minor, patch) supports values 0--999.
 
 Features coordinate through events, not direct calls:
 
-| Event                         | Emitter                 | Consumers                                 |
-| ----------------------------- | ----------------------- | ----------------------------------------- |
-| `onDidChangeState(boolean)`   | `ExtensionStateManager` | Status bar, Agent archiving, Text Stats   |
-| `onConfigSectionChanged(key)` | `ExtensionStateManager` | Agent archiving (reconfigure), Text Stats |
-| `onConfigChange()`            | `ConfigManager`         | Logger (update log level)                 |
+| Event                         | Emitter                 | Consumers                                                                                                                     |
+| ----------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `onDidChangeState(boolean)`   | `ExtensionStateManager` | Status bar, Agent archiving (idempotent — skips `start()` when service is already running with deep-equal config), Text Stats |
+| `onConfigSectionChanged(key)` | `ExtensionStateManager` | Agent archiving (reconfigure), Text Stats                                                                                     |
+| `onConfigChange()`            | `ConfigManager`         | Logger (update log level)                                                                                                     |
 
 This ensures features remain decoupled: they react to state changes
 rather than calling each other.
@@ -473,6 +476,8 @@ write is skipped and the skip is logged at `info` level. The session's
 `archiveFileName`) so the session is not reprocessed on subsequent
 archive cycles.
 
+**Codex provider session-ID sanitization:** The Codex provider sanitizes `meta.id` using an allowlist regex (`^[A-Za-z0-9._-]+$`) before constructing `archiveName`: any value that does not match (including path-traversal sequences such as `../evil` or IDs containing backslashes) is rejected and the session is skipped with a `warn` log. Single-component dot segments (`.` and `..`) are additionally rejected by a direct equality check before the regex test.
+
 **Codex parser multi-turn handling:** The Codex parser detects each
 `user_message` event as a turn boundary. When a new user message arrives,
 the parser emits the accumulated turn pair (user turn plus any assistant
@@ -497,8 +502,12 @@ same archive file.
 
 **Replacement semantics (not accumulation):** Each source session has
 exactly one archived file at any time. When the source's `mtime`
-changes, the old archive file is deleted and a new one with an updated
-timestamp prefix is created.
+changes, a new archive file with an updated timestamp prefix is written first;
+if the new filename differs from the old one, the old file is then deleted.
+When the filename is unchanged (same `ctime`-based prefix), `writeFile`
+overwrites in place and no delete is issued. This write-first-then-delete
+ordering eliminates the data-loss window that would exist if a delete
+succeeded but the subsequent write failed.
 
 **Orphan archive retention:** Replacement only applies to session IDs
 returned by the current provider scan. If a historical archive file no
@@ -508,17 +517,16 @@ the archive append-preserving for historical sessions even when the
 source store has already dropped them.
 
 **One-shot re-archive on startup:** On each extension startup,
-`deduplicateAndHydrate` reads all archive files from disk and stores
-`mtime: 0` for each one in `lastArchivedMap`. Because real source file
-`mtime` values are always positive integers, the skip guard
-(`entry?.mtime === session.mtime`) never triggers for any session
-hydrated from disk — every session is re-processed on the first archive
-cycle after startup. After that cycle completes, `lastArchivedMap` is
-updated with the actual source `mtime` values, and subsequent cycles
-resume normal mtime-based skip behavior. This design ensures that a
-patched extension automatically re-archives previously affected sessions
-on its first cycle without requiring any persistent flag or manual
-intervention.
+`deduplicateAndHydrate` reads all archive files from disk and stat-reads
+each one to obtain its real filesystem `mtime`, storing it in
+`lastArchivedMap`. Sessions whose source `mtime` already matches the
+stored archive `mtime` are skipped on the first cycle; only sessions
+modified since archiving are reprocessed. When `vscode.workspace.fs.stat`
+throws for a given archive file (missing or permission error), that entry
+falls back to `mtime: 0` — the fallback causes only that session to be
+reprocessed on the next cycle, not the entire archive. A patched extension
+therefore re-archives only the sessions that were genuinely affected,
+without requiring any persistent flag or manual intervention.
 
 **Idempotent flat-layout migration sweep:** On every cold start and
 after every `reconfigure` (any time `_needsDedup` is reset to `true`),
@@ -548,9 +556,7 @@ full path relative to `archiveUri` (e.g.,
 resolve correctly via
 `vscode.Uri.joinPath(archiveUri, entry.archiveFileName)`.
 
-**Cycle observability:** `runArchiveCycle()` emits `debug`-level log
-entries at cycle start and end. `archiveSession()` emits a `debug`-level
-entry when it skips a session due to an unchanged `mtime`.
+**Cycle observability:** `runArchiveCycle()` emits an INFO-level log line at cycle start that includes the absolute `archiveUri.fsPath`, making it unambiguous which workspace's archive directory is targeted and visible at the default log level. `archiveSession()` emits a `debug`-level entry when it skips a session due to an unchanged `mtime`.
 
 **Force re-archive:** `runArchiveCycle()` accepts an optional `force`
 boolean parameter. When `true`, the `mtime` guard in `archiveSession()`
@@ -558,6 +564,21 @@ is bypassed, causing all sessions to be reprocessed regardless of their
 cached `mtime`. The "Archive Now" command passes `force = true`; the
 automatic timer and file-watcher callbacks use the default
 `force = false`.
+
+**Concurrency guard:** `runArchiveCycle` is serialized by an in-flight
+promise managed by `ArchiveCycleGuard`. If a cycle is already running
+when `runArchiveCycle` is called again, the second call ORs its `force`
+flag into a pending-force slot and returns the in-flight promise; when
+the cycle completes, exactly one follow-up cycle runs using the
+strongest `force` value seen during coalescing. `start()` uses
+stash-and-replay re-entrancy: a concurrent `start(configB)` call while
+a start is in progress stashes `configB` in a pending-config slot
+(latest wins) and returns immediately; when the in-progress start
+completes, it re-invokes `start()` with the stashed config — the
+service always ends running the most-recently-requested config. `stop()`
+awaits the in-flight cycle before clearing the interval, so no orphaned
+cycle can run after `stop` returns. The guard logic lives in
+`src/features/agentSessionsArchiving/archiveCycleGuard.ts`.
 
 **`archivePath` validation:** The `archivePath` field of
 `AgentSessionsArchivingConfig` is validated by `validateArchivePath()`
@@ -657,6 +678,8 @@ filtering:
 
 The level is configurable via `tangyr.logLevel` (VS Code setting) and
 updates reactively when the setting changes.
+
+When the extension activates in a single-root workspace, the output channel name includes the workspace folder name in parentheses (e.g., `Tangyr Workbench (my-project)`) to distinguish concurrent windows. To attribute a log line to the correct window during multi-window triage, match the `archiveUri.fsPath` in the INFO-level cycle-start log line to the workspace root shown in the window title bar (the cycle-start log is visible at the default `info` level — no debug mode required).
 
 ### 8.9 Testing Strategy
 

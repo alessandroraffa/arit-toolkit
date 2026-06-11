@@ -37,3 +37,42 @@
   finding_count: 0
   blocking_count: 0
   produced_at: "2026-05-29"
+
+- gate: "pre-implementation"
+  artifact_type: "workstream"
+  artifact_version: "WS-0020 draft @ 2026-06-10"
+  verdict: "PASS_WITH_CONDITIONS"
+  risk_classification: "high"
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 20
+  blocking_count: 1
+  produced_at: "2026-06-10"
+
+# Relocated 2026-06-10: gate 2 (rev 2) originally wrote this record to the
+# monorepo-root review-gate-history.yaml in error (wrong project ledger). It
+# belongs here, with WS-0020's rev-1 record above. Content unchanged.
+- gate: "pre-implementation"
+  artifact_type: "workstream"
+  artifact_version: "WS-0020 draft @ 2026-06-10 (revision 2, re-review of remediated artifact)"
+  verdict: "PASS_WITH_CONDITIONS"
+  risk_classification: "high"
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 9
+  blocking_count: 1
+  produced_at: "2026-06-10"
+
+# Narrow re-review (rev 3): black+green on the revised suppression mechanism
+# (content-equality self-write suppression replacing the rejected counter).
+# Condition note: BK-301 (two-events-from-one-write regression test) was
+# applied to the draft same-day. The workstream-vs-stepledger artifact_type
+# schema divergence remains flagged for separate reconciliation (artifact_type
+# kept as "workstream" per PM disposition, consistent with prior records).
+- gate: "pre-implementation"
+  artifact_type: "workstream"
+  artifact_version: "WS-0020 draft @ 2026-06-10 (revision 3, narrow re-review — black+green on suppression mechanism)"
+  verdict: "PASS_WITH_CONDITIONS"
+  risk_classification: "high"
+  perspectives_activated: [black, green]
+  finding_count: 5
+  blocking_count: 1
+  produced_at: "2026-06-10"

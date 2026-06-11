@@ -14,8 +14,8 @@ const {
   mockSessionFileWatcherConstructor,
 } = vi.hoisted(() => {
   const service = {
-    start: vi.fn(),
-    stop: vi.fn(),
+    start: vi.fn().mockResolvedValue(undefined),
+    stop: vi.fn().mockResolvedValue(undefined),
     reconfigure: vi.fn(),
     runArchiveCycle: vi.fn().mockResolvedValue(undefined),
     currentConfig: undefined as unknown,
@@ -208,5 +208,54 @@ describe('registerAgentSessionsArchivingFeature', () => {
         ],
       })
     );
+  });
+
+  describe('onDidChangeState idempotency guard', () => {
+    const fixedConfig = {
+      enabled: true,
+      archivePath: 'docs/archive/agent-sessions',
+      intervalMinutes: 5,
+    };
+
+    it('onDidChangeState does not call service.start when service is already running with equal config', () => {
+      vi.mocked(ctx.stateManager.getConfigSection).mockReturnValue(fixedConfig);
+      mockService.currentConfig = fixedConfig;
+      const startSpy = vi.spyOn(mockService, 'start');
+
+      registerAgentSessionsArchivingFeature(ctx);
+
+      const onDidChangeStateCalls = vi.mocked(ctx.stateManager.onDidChangeState).mock
+        .calls;
+      const stateCallback = onDidChangeStateCalls[0]?.[0] as
+        | ((globalEnabled: boolean) => void)
+        | undefined;
+      expect(stateCallback).toBeDefined();
+
+      startSpy.mockClear();
+      stateCallback!(true);
+
+      expect(startSpy).not.toHaveBeenCalled();
+    });
+
+    it('onDidChangeState calls service.start when service is running with a different config', () => {
+      const differentConfig = { ...fixedConfig, intervalMinutes: 10 };
+      vi.mocked(ctx.stateManager.getConfigSection).mockReturnValue(differentConfig);
+      mockService.currentConfig = fixedConfig;
+      const startSpy = vi.spyOn(mockService, 'start');
+
+      registerAgentSessionsArchivingFeature(ctx);
+
+      const onDidChangeStateCalls = vi.mocked(ctx.stateManager.onDidChangeState).mock
+        .calls;
+      const stateCallback = onDidChangeStateCalls[0]?.[0] as
+        | ((globalEnabled: boolean) => void)
+        | undefined;
+      expect(stateCallback).toBeDefined();
+
+      startSpy.mockClear();
+      stateCallback!(true);
+
+      expect(startSpy).toHaveBeenCalledOnce();
+    });
   });
 });

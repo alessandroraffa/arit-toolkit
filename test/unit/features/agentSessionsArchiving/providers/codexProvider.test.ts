@@ -169,6 +169,66 @@ describe('CodexProvider', () => {
     expect(sessions).toHaveLength(0);
   });
 
+  describe('archiveName sanitization', () => {
+    it('toSessionFile rejects a session whose meta.id fails the allowlist', async () => {
+      const traversalMeta = JSON.stringify({
+        type: 'session_meta',
+        payload: { id: '../../../evil', cwd: '/my/project' },
+      });
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockResolvedValueOnce([['2026', FileType.Directory]])
+        .mockResolvedValueOnce([['02', FileType.Directory]])
+        .mockResolvedValueOnce([['28', FileType.Directory]])
+        .mockResolvedValueOnce([['rollout-traversal.jsonl', FileType.File]]);
+      workspace.fs.readFile = makeReadFileMock(traversalMeta);
+      workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
+
+      const sessions = await provider.findSessions('/my/project');
+
+      expect(sessions).toHaveLength(0);
+    });
+
+    it('toSessionFile rejects a session whose meta.id contains a backslash', async () => {
+      const backslashMeta = JSON.stringify({
+        type: 'session_meta',
+        payload: { id: 'foo\\bar', cwd: '/my/project' },
+      });
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockResolvedValueOnce([['2026', FileType.Directory]])
+        .mockResolvedValueOnce([['02', FileType.Directory]])
+        .mockResolvedValueOnce([['28', FileType.Directory]])
+        .mockResolvedValueOnce([['rollout-backslash.jsonl', FileType.File]]);
+      workspace.fs.readFile = makeReadFileMock(backslashMeta);
+      workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
+
+      const sessions = await provider.findSessions('/my/project');
+
+      expect(sessions).toHaveLength(0);
+    });
+
+    it('toSessionFile accepts a valid meta.id matching the allowlist', async () => {
+      const validMeta = JSON.stringify({
+        type: 'session_meta',
+        payload: { id: 'abc-123', cwd: '/my/project' },
+      });
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockResolvedValueOnce([['2026', FileType.Directory]])
+        .mockResolvedValueOnce([['02', FileType.Directory]])
+        .mockResolvedValueOnce([['28', FileType.Directory]])
+        .mockResolvedValueOnce([['rollout-valid.jsonl', FileType.File]]);
+      workspace.fs.readFile = makeReadFileMock(validMeta);
+      workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
+
+      const sessions = await provider.findSessions('/my/project');
+
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0]!.archiveName).toBe('codex-abc-123');
+    });
+  });
+
   it('should handle multiple year/month/day directories', async () => {
     workspace.fs.readDirectory = vi
       .fn()
