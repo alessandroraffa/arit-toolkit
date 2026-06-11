@@ -1,3 +1,16 @@
+## [2.4.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.3.0...v2.4.0) (2026-06-11)
+
+### Features
+
+* **archiving:** add archive-root log line and workspace-name output channel ([614b43a](https://github.com/alessandroraffa/tangyr-vscode/commit/614b43af0c5da18bb5a45aa9f9eccd2066492b80))
+
+### Bug Fixes
+
+* **archiving:** path-traversal sanitization, empty-archivename guard, runmigration in-flight guard ([6940bb4](https://github.com/alessandroraffa/tangyr-vscode/commit/6940bb47079094cce03f1a3cd8d3fb7db15f239e))
+* **archiving:** serialize archive cycles with in-flight concurrency guard ([656aeec](https://github.com/alessandroraffa/tangyr-vscode/commit/656aeecaba1f309180c21bcebda147001fc361dc))
+* **archiving:** suppress config watcher self-write feedback loop ([c2708c4](https://github.com/alessandroraffa/tangyr-vscode/commit/c2708c4e7eaba4dd998afcb1d092956b0c134c39))
+* **archiving:** write-before-delete and real-mtime hydration ([0fa9b52](https://github.com/alessandroraffa/tangyr-vscode/commit/0fa9b52595a8113d48c50a6c88223401e8a41889))
+
 ## [2.3.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.2.1...v2.3.0) (2026-05-29)
 
 ### Features
