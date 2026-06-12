@@ -294,7 +294,7 @@
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.1",
     "conventional-changelog-conventionalcommits": "^9.2.0",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.28.1",
     "eslint": "^10.4.0",
     "fflate": "^0.8.3",
     "globals": "^15.15.0",
