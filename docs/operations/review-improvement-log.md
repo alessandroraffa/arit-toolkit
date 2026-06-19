@@ -128,3 +128,36 @@ Append-only record of process improvement entries produced by review gates. Entr
   owner: "PM"
   status: "open"
   created: "2026-06-10"
+
+- id: "KZ-2026-06-19-001"
+  gate: "pre-release"
+  artifact_type: "all"
+  pattern: "A change-detection guard compares a value sourced from one file against a value persisted from a different file. In the archiving core, deduplicateAndHydrate seeds lastArchivedMap with the archive OUTPUT file's stat.mtime (archiveService.ts:595-607), while the skip-guard compares it against effectiveMtime = compositeMtime ?? source-mtime (archiveService.ts:203-205) — a source-side value. The two mtimes belong to different files and are only equal by coincidence, so every session re-archives once on each extension restart. The defect predates v2.5.0 (the hydration vs source-mtime mismatch already existed) but v2.5.0 widened the gap by substituting compositeMtime for source-mtime. A cross-file mtime comparison is the root anti-pattern; it survived multiple gates because each gate examined the companion hunks in isolation rather than the end-to-end hydrate→compare→record contract."
+  occurrences: 1
+  proposed_change: "Add a review-gate checklist item for any change touching a change-detection / cache-invalidation guard: 'Trace the guard end-to-end — the value WRITTEN into the cache (hydration/record path) and the value COMPARED against it (skip path) must be derived from the same source by the same function. A reviewer must confirm both sides reference the same clock/file. When the two values are mtimes, confirm they are mtimes of the same file. A cross-file or cross-clock comparison is a defect even when functionally self-correcting.'"
+  target: "skills/review-gate/SKILL.md (checklist-update)"
+  owner: "PM"
+  status: "open"
+  created: "2026-06-19"
+
+- id: "KZ-2026-06-19-002"
+  gate: "pre-release"
+  artifact*type: "all"
+  pattern: "A feature expands a multi-channel FileSystemWatcher (here from 1 glob to 3:*.jsonl, _/subagents/_.jsonl, \_/tool-results/\*) and wires only the onDidChange/onDidCreate channels (sessionFileWatcher.ts:39-44), omitting onDidDelete. Companion artifacts that are DELETED (e.g., subagent JSONL removed by compaction) fire no watched event and do not advance source mtime, so the archived output retains stale companion sections indefinitely with no detection path. This is the deletion-channel analogue of the previously-logged event-coalescing gap (KZ-2026-06-10-004/005): the watcher's event model is assumed complete but a real-world event class is unhandled."
+  occurrences: 1
+  proposed_change: "Add a coding-standards note for VS Code extension watchers: 'When a feature derives content from a set of files and re-renders on change, the watcher must subscribe to onDidDelete in addition to onDidChange/onDidCreate for every glob whose files can be removed by the upstream tool. Omitting onDidDelete produces stale derived output with no detection path. A multi-channel watcher review must enumerate all three channels per glob and justify any omission.'"
+  target: "skills/coding-standards/SKILL.md (instruction-update)"
+  owner: "agent-role:efesto-coder"
+  status: "open"
+  created: "2026-06-19"
+
+- id: "KZ-2026-06-19-003"
+  gate: "pre-release"
+  artifact_type: "all"
+  pattern: "A multi-branch fallback chain (here agentType resolution: meta.agentType → first-event agentId → first-event subagentType → 'unknown') ships with test coverage for only the head and default branches; the intermediate subagentType branch (claudeCodeParserCompanion.ts:75) has no dedicated test. Untested intermediate fallback branches are the most fragile under refactor because they only fire on specific real-world inputs not present in the happy-path fixtures, and a regression that collapses the chain passes every existing test."
+  occurrences: 1
+  proposed_change: "Add a TDD-workflow checklist item: 'When a function implements a priority/fallback chain of three or more branches (A → B → … → default), every intermediate branch requires a dedicated test asserting it fires for an input that exercises only that branch. Coverage of head + default is insufficient — the StepLedger is not complete until each intermediate branch has a test.'"
+  target: "skills/tdd-workflow/SKILL.md (checklist-update)"
+  owner: "agent-role:efesto-coder"
+  status: "open"
+  created: "2026-06-19"
