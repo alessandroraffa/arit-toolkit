@@ -308,7 +308,7 @@
     "semantic-release-vsce": "^6.0.24",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.60.0",
-    "vite": "^6.4.2",
+    "vite": "^7.3.5",
     "vitest": "^4.1.5"
   },
   "pnpm": {
@@ -342,7 +342,7 @@
       "turbo": "2.9.14",
       "undici": ">=7.24.4",
       "underscore": ">=1.13.8",
-      "vite": "7.3.2",
+      "vite": "7.3.5",
       "yaml": "2.8.3",
       "yauzl": ">=3.2.1"
     },
