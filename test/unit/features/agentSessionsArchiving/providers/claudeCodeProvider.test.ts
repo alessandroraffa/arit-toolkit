@@ -105,8 +105,10 @@ describe('ClaudeCodeProvider', () => {
   it('should return watch patterns for project directory', () => {
     const patterns = provider.getWatchPatterns('/Users/dev/my-project');
 
-    expect(patterns).toHaveLength(1);
+    expect(patterns).toHaveLength(3);
     expect(patterns[0]!.baseUri.fsPath).toContain('-Users-dev-my-project');
     expect(patterns[0]!.glob).toBe('*.jsonl');
+    expect(patterns[1]!.glob).toBe('*/subagents/*.jsonl');
+    expect(patterns[2]!.glob).toBe('*/tool-results/*');
   });
 });
