@@ -2,7 +2,7 @@
 title: 'Full session archiving — parser extension for subagent and companion data'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0005
-status: idle
+status: completed
 workspaces: []
 dependencies: [WS-0003, WS-0004]
 created: 2026-03-18

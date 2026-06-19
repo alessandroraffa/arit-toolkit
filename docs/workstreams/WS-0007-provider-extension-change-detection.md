@@ -2,7 +2,7 @@
 title: 'Full session archiving — provider extension and change detection'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0007
-status: idle
+status: completed
 workspaces: []
 dependencies: [WS-0004]
 created: 2026-03-18
