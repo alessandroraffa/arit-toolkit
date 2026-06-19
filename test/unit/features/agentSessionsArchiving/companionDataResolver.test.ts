@@ -115,7 +115,7 @@ describe('resolveCompanionData', () => {
     expect(result.compactionEntries[0]?.content).toBe(compactionContent);
   });
 
-  it('returns tool-result content keyed by filename without extension', async () => {
+  it('returns tool-result content keyed by full filename including extension', async () => {
     const toolOutput = 'tool output';
     workspace.fs.readDirectory = vi
       .fn()
@@ -127,7 +127,32 @@ describe('resolveCompanionData', () => {
 
     const result = await resolveCompanionData(SESSION_URI, logger as any);
 
-    expect(result.toolResultMap.get('toolu_abc')).toBe(toolOutput);
+    expect(result.toolResultMap.get('toolu_abc.txt')).toBe(toolOutput);
+    expect(result.toolResultMap.get('toolu_abc')).toBeUndefined();
+  });
+
+  it('resolves same-stem-different-extension files to distinct map entries', async () => {
+    const txtOutput = 'txt content';
+    const jsonOutput = 'json content';
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([
+        ['toolu_abc.txt', FileType.File],
+        ['toolu_abc.json', FileType.File],
+      ]) // tool-results/
+      .mockResolvedValueOnce([]); // subagents/ for compaction
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValueOnce(encode(txtOutput))
+      .mockResolvedValueOnce(encode(jsonOutput));
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.toolResultMap.size).toBe(2);
+    expect(result.toolResultMap.get('toolu_abc.txt')).toBe(txtOutput);
+    expect(result.toolResultMap.get('toolu_abc.json')).toBe(jsonOutput);
   });
 
   it('logs warning and includes entry with unreadable flag when subagent file is unreadable', async () => {

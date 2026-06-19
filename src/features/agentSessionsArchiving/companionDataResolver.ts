@@ -79,9 +79,15 @@ async function readToolResults(
   const result = new Map<string, string>();
   for (const [name] of entries) {
     const fileUri = vscode.Uri.joinPath(toolResultsDirUri, name);
+    if (result.has(name)) {
+      logger.warn(
+        `Tool-result map key collision detected for "${name}" — duplicate entry ignored`
+      );
+      continue;
+    }
     try {
       const bytes = await vscode.workspace.fs.readFile(fileUri);
-      result.set(path.parse(name).name, decoder.decode(bytes));
+      result.set(name, decoder.decode(bytes));
     } catch (err) {
       logger.warn(`Failed to read tool-result file ${name}: ${String(err)}`);
     }

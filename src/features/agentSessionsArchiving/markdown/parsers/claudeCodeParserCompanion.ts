@@ -8,8 +8,8 @@ export function resolveToolResultMarkers(
   return content.replace(
     /<persisted-output>([\s\S]*?)<\/persisted-output>/g,
     (match, inner) => {
-      const key = path.parse((inner as string).trim()).name;
-      return toolResultMap.get(key) ?? match;
+      const filename = path.basename((inner as string).trim());
+      return toolResultMap.get(filename) ?? match;
     }
   );
 }

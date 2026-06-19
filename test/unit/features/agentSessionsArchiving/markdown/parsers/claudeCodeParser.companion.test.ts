@@ -78,7 +78,7 @@ describe('ClaudeCodeParser — companion data', () => {
     );
     const ctx: CompanionDataContext = {
       subagentEntries: [],
-      toolResultMap: new Map([['toolu_abc', 'actual tool output']]),
+      toolResultMap: new Map([['toolu_abc.txt', 'actual tool output']]),
       compactionEntries: [],
     };
     const session = expectParsed(parser.parse(content, 'session-1', ctx));
