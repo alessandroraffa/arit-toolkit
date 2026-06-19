@@ -2,7 +2,7 @@
 title: 'Full session archiving — companion data resolution layer'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0004
-status: idle
+status: completed
 workspaces: []
 dependencies: [WS-0003]
 created: 2026-03-18

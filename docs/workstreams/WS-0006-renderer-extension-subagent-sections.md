@@ -2,7 +2,7 @@
 title: 'Full session archiving — renderer extension for subagent sections and compaction summaries'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0006
-status: idle
+status: completed
 workspaces: []
 dependencies: [WS-0003, WS-0005]
 created: 2026-03-18

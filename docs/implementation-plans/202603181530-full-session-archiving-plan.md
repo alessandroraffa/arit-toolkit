@@ -1,7 +1,7 @@
 ---
 title: 'Full session archiving for Claude Code provider'
 initiative: INIT-002-full-session-archiving
-status: in-progress
+status: completed
 workspaces: []
 created: 2026-03-18
 references:
@@ -222,4 +222,6 @@ Per SPEC-002 and INIT-002, the plan must satisfy:
 
 ## Open items at completion
 
-_No open items — to be filled during Plan Completion Verification._
+Re-integrated onto current `main` on 2026-06-19 via branch `feat/full-session-archiving-integration`. The original `feat/full-session-archiving` branch (tip 2026-03-18) was never merged and was superseded by three months of archiving-subsystem refactors (concurrency guard, write-before-delete, YYYY/MM layout with flat-layout migration, Codex/Copilot parser-correctness fixes, path validation, gitignore prompt). The companion-data feature (subagent transcripts, externalized tool-result markers, compaction summaries) was ported additively on top of main's current architecture, preserving all of it. `archiveServiceHelpers.ts` from the original branch was dropped because main's inline logic supersedes it.
+
+Verification on the integration branch: `tsc --noEmit` clean; `eslint src test` reports 0 errors (36 pre-existing warnings); `vitest run` passes 909/909 unit tests across 79 files, including 37 new companion-data tests. The VS Code Extension Host (F5) manual smoke test cannot run headless and is deferred to interactive verification before merge, consistent with the WS-0018/WS-0019 precedent. Landing on `main` is pending PR review and `/merge` authorization.

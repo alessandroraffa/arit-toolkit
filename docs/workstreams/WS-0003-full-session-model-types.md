@@ -2,7 +2,7 @@
 title: 'Full session archiving — normalized model extension and companion data types'
 plan: 202603181530-full-session-archiving-plan
 workstream: WS-0003
-status: idle
+status: completed
 workspaces: []
 dependencies: []
 created: 2026-03-18
