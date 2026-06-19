@@ -155,12 +155,17 @@ export async function resolveCompanionData(
   const subagentEntries = await readSubagents(companionDirUri, logger);
   const toolResultMap = await readToolResults(companionDirUri, logger);
   const compactionEntries = await readCompactionFiles(companionDirUri, logger);
+  const hasUnreadable = subagentEntries.some((e) => e.unreadable === true);
 
   logger.debug(
     `Companion data resolved: ${String(subagentEntries.length)} subagent(s), ` +
       `${String(toolResultMap.size)} tool-result(s), ` +
-      `${String(compactionEntries.length)} compaction(s)`
+      `${String(compactionEntries.length)} compaction(s)` +
+      (hasUnreadable ? ' [partial — unreadable subagent(s)]' : '')
   );
 
+  if (hasUnreadable) {
+    return { subagentEntries, toolResultMap, compactionEntries, companionPartial: true };
+  }
   return { subagentEntries, toolResultMap, compactionEntries };
 }
