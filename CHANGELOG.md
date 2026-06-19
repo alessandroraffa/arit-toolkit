@@ -1,3 +1,12 @@
+## [2.5.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.4.0...v2.5.0) (2026-06-19)
+
+### Features
+
+* **archiving:** add companion processing to claude code parser ([ebdd750](https://github.com/alessandroraffa/tangyr-vscode/commit/ebdd750dbac97d7ec9bcc0499b8f27ecbe84a2df))
+* **archiving:** add companion-data types and resolver ([d03f206](https://github.com/alessandroraffa/tangyr-vscode/commit/d03f206abf96f487d5b6f23622e4b465f8c27d44))
+* **archiving:** render subagent sections and compaction summaries ([f2eade5](https://github.com/alessandroraffa/tangyr-vscode/commit/f2eade51a4bc87ed6c138859dc84a7a7285d938d))
+* **archiving:** wire companion-data into provider and archive service ([c56dc59](https://github.com/alessandroraffa/tangyr-vscode/commit/c56dc59cb0c3b8889fd0d2e5544c65dfb2a0b12d))
+
 ## [2.4.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.3.0...v2.4.0) (2026-06-11)
 
 ### Features
