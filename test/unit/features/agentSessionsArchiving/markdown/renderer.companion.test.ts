@@ -181,6 +181,28 @@ describe('renderSessionToMarkdown — subagent sections', () => {
     expect(output).toContain('Context summary.');
   });
 
+  it('compaction summary text with HTML special characters is escaped', () => {
+    const session: NormalizedSession = {
+      providerName: 'claude-code',
+      providerDisplayName: 'Claude Code',
+      sessionId: 'test',
+      turns: [],
+      compactionSummaries: [
+        {
+          summaryText: 'Result: a < b && x > y with <script>alert("xss")</script>',
+          timestamp: '2026-01-01T00:00:00.000Z',
+        },
+      ],
+    };
+
+    const output = renderSessionToMarkdown(session);
+
+    expect(output).toContain('&lt;');
+    expect(output).toContain('&gt;');
+    expect(output).toContain('&amp;');
+    expect(output).not.toContain('<script>');
+  });
+
   it('Agent tool call output replaced with reference when subagents present', () => {
     const session: NormalizedSession = {
       providerName: 'claude-code',
