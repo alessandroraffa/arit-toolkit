@@ -96,6 +96,11 @@ describe('parseFirstEventAgentType', () => {
     expect(parseFirstEventAgentType(content)).toBe('reviewer-agent');
   });
 
+  it('falls back to subagentType in kebab-case when agentId is absent', () => {
+    const content = JSON.stringify({ type: 'user', subagentType: 'CodeReviewer' });
+    expect(parseFirstEventAgentType(content)).toBe('code-reviewer');
+  });
+
   it('returns unknown when neither agentId nor subagentType present', () => {
     const content = JSON.stringify({ type: 'user' });
     expect(parseFirstEventAgentType(content)).toBe('unknown');
