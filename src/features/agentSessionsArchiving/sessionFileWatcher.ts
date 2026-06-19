@@ -42,6 +42,9 @@ export class SessionFileWatcher implements vscode.Disposable {
     watcher.onDidCreate(() => {
       this.scheduleCallback();
     });
+    watcher.onDidDelete(() => {
+      this.scheduleCallback();
+    });
     this.watchers.push(watcher);
   }
 
