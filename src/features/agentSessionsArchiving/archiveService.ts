@@ -8,6 +8,7 @@ import { getParserForProvider, renderSessionToMarkdown } from './markdown';
 import { checkAndPromptGitignore } from './gitignorePrompt';
 import { validateArchivePath } from './archivePathValidation';
 import { ArchiveCycleGuard } from './archiveCycleGuard';
+import { resolveCompanionData } from './companionDataResolver';
 
 interface ArchivedEntry {
   mtime: number;
@@ -199,10 +200,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     archiveUri: vscode.Uri,
     force = false
   ): Promise<void> {
+    const effectiveMtime = session.compositeMtime ?? session.mtime;
     const entry = this.lastArchivedMap.get(session.archiveName);
-    if (!force && entry?.mtime === session.mtime) {
+    if (!force && entry?.mtime === effectiveMtime) {
       this.logger.debug(
-        `Skipped ${session.displayName} — mtime unchanged (${String(session.mtime)})`
+        `Skipped ${session.displayName} — mtime unchanged (${String(effectiveMtime)})`
       );
       return;
     }
@@ -219,13 +221,13 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         );
       }
       this.lastArchivedMap.set(session.archiveName, {
-        mtime: session.mtime,
+        mtime: effectiveMtime,
         archiveFileName,
       });
       this.logger.debug(`Archived ${session.displayName} → ${archiveFileName}`);
     } else {
       this.lastArchivedMap.set(session.archiveName, {
-        mtime: session.mtime,
+        mtime: effectiveMtime,
         archiveFileName: '',
       });
     }
@@ -304,7 +306,8 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   ): Promise<ParseResult> {
     const rawBytes = await vscode.workspace.fs.readFile(session.uri);
     const rawContent = new TextDecoder().decode(rawBytes);
-    return parser.parse(rawContent, session.archiveName);
+    const companionContext = await resolveCompanionData(session.uri, this.logger);
+    return parser.parse(rawContent, session.archiveName, companionContext);
   }
 
   private async copyRawArchive(
