@@ -1,7 +1,7 @@
 ---
 title: 'Parser correctness for Codex and Copilot Chat archiving'
 initiative: INIT-003-archiving-parser-correctness
-status: accepted
+status: completed
 workspaces: []
 created: 2026-03-23
 references:

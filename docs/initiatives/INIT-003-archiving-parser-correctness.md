@@ -1,7 +1,7 @@
 ---
 title: 'Agent session archiving parser correctness for Codex and Copilot Chat'
 initiative: INIT-003-archiving-parser-correctness
-status: active
+status: completed
 created: 2026-03-23
 references:
   - docs/reports/20260323-agent-session-archiving-inconsistencies.md
