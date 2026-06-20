@@ -1,7 +1,7 @@
 ---
 title: 'Agent session archiving — enriched turn metadata'
 spec: SPEC-001
-status: 'draft'
+status: 'approved'
 workspaces: []
 created: 2026-03-15
 references:
