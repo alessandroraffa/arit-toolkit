@@ -1,6 +1,10 @@
 import type { CompactionSummary, SubagentSession } from './types';
 import { formatTimestamp, renderTurnLines } from './renderer';
 
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export function renderSubagentSections(
   subagentSessions: readonly SubagentSession[]
 ): string[] {
@@ -43,7 +47,7 @@ export function renderCompactionSummaries(
     lines.push('<details>');
     lines.push(`  <summary>Compaction Summary — ${formattedTimestamp}</summary>`);
     lines.push('');
-    lines.push(`  ${summary.summaryText}`);
+    lines.push(`  ${escapeHtml(summary.summaryText)}`);
     lines.push('</details>');
   }
 

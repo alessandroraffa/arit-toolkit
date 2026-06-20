@@ -21,6 +21,7 @@ describe('SessionFileWatcher', () => {
   let onChanged: ReturnType<typeof vi.fn>;
   let changeHandler: (() => void) | undefined;
   let createHandler: (() => void) | undefined;
+  let deleteHandler: (() => void) | undefined;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -28,6 +29,7 @@ describe('SessionFileWatcher', () => {
     onChanged = vi.fn();
     changeHandler = undefined;
     createHandler = undefined;
+    deleteHandler = undefined;
 
     const mockWatcher = {
       onDidChange: vi.fn((cb: () => void) => {
@@ -36,6 +38,10 @@ describe('SessionFileWatcher', () => {
       }),
       onDidCreate: vi.fn((cb: () => void) => {
         createHandler = cb;
+        return { dispose: vi.fn() };
+      }),
+      onDidDelete: vi.fn((cb: () => void) => {
+        deleteHandler = cb;
         return { dispose: vi.fn() };
       }),
       dispose: vi.fn(),
@@ -104,6 +110,7 @@ describe('SessionFileWatcher', () => {
     const mockWatcher = {
       onDidChange: vi.fn(() => ({ dispose: vi.fn() })),
       onDidCreate: vi.fn(() => ({ dispose: vi.fn() })),
+      onDidDelete: vi.fn(() => ({ dispose: vi.fn() })),
       dispose: vi.fn(),
     };
     workspace.createFileSystemWatcher = vi.fn(() => mockWatcher);
@@ -151,6 +158,20 @@ describe('SessionFileWatcher', () => {
     watcher.start('/workspace');
 
     expect(workspace.createFileSystemWatcher).toHaveBeenCalledTimes(2);
+    watcher.dispose();
+  });
+
+  it('should fire callback on file delete events', () => {
+    const patterns = [{ baseUri: Uri.file('/sessions'), glob: '*.json' }];
+    const provider = createProvider(patterns);
+    const watcher = new SessionFileWatcher([provider], onChanged);
+
+    watcher.start('/workspace');
+    deleteHandler?.();
+
+    vi.advanceTimersByTime(10_000);
+    expect(onChanged).toHaveBeenCalledTimes(1);
+
     watcher.dispose();
   });
 });

@@ -76,3 +76,26 @@
   finding_count: 5
   blocking_count: 1
   produced_at: "2026-06-10"
+
+# POST-MERGE review of PR #68 (full-session-archiving / companion-data
+# integration). The artifact was already merged to main (merge commit f52cae3)
+# and released as v2.5.0 before this gate ran. This is therefore a fix-forward
+# verdict: blocking findings map to a recommended v2.5.1 patch, not a merge
+# block. CI on the merge is red only on the Security Audit job (pre-existing
+# dependency vulnerabilities, out of scope for this code review); tsc, eslint,
+# and 909 unit tests are green.
+# artifact_type schema note: Phase 1 classified this as "code_change", which is
+# NOT a member of the review-packet artifact_type enum. Recorded below under the
+# closest valid type "security_review" is rejected as inaccurate; instead the
+# custom value "code_change" is retained for fidelity and flagged for schema
+# reconciliation, consistent with the prior "workstream" non-enum precedent and
+# PM disposition. gate "pre-release" IS a valid enum member.
+- gate: "pre-release"
+  artifact_type: "code_change"
+  artifact_version: "f52cae3 (v2.5.0)"
+  verdict: "PASS_WITH_CONDITIONS"
+  risk_classification: "high"
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 17
+  blocking_count: 1
+  produced_at: "2026-06-19"

@@ -212,7 +212,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     await this.ensureDirectory(archiveUri);
     const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.ctime));
 
-    const archiveFileName = await this.writeArchiveFile(session, archiveUri, timestamp);
+    const { fileName: archiveFileName, companionPartial } = await this.writeArchiveFile(
+      session,
+      archiveUri,
+      timestamp
+    );
     if (archiveFileName) {
       // L2 guard: empty-session skip records '' as archiveFileName; joinPath(archiveUri, '') equals archiveUri itself
       if (entry?.archiveFileName && entry.archiveFileName !== archiveFileName) {
@@ -220,10 +224,21 @@ export class AgentSessionArchiveService implements vscode.Disposable {
           vscode.Uri.joinPath(archiveUri, entry.archiveFileName)
         );
       }
-      this.lastArchivedMap.set(session.archiveName, {
-        mtime: effectiveMtime,
-        archiveFileName,
-      });
+      if (companionPartial) {
+        this.logger.warn(
+          `Partial archive written for ${session.displayName} — unreadable subagent(s); ` +
+            `session will be retried on the next cycle`
+        );
+        this.lastArchivedMap.set(session.archiveName, {
+          mtime: 0,
+          archiveFileName,
+        });
+      } else {
+        this.lastArchivedMap.set(session.archiveName, {
+          mtime: effectiveMtime,
+          archiveFileName,
+        });
+      }
       this.logger.debug(`Archived ${session.displayName} → ${archiveFileName}`);
     } else {
       this.lastArchivedMap.set(session.archiveName, {
@@ -248,19 +263,28 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     session: SessionFile,
     archiveUri: vscode.Uri,
     timestamp: string
-  ): Promise<string | undefined> {
+  ): Promise<{ fileName: string | undefined; companionPartial: boolean }> {
     const parser = getParserForProvider(session.providerName);
     if (!parser) {
-      return await this.copyRawArchive(session, archiveUri, timestamp);
+      return {
+        fileName: await this.copyRawArchive(session, archiveUri, timestamp),
+        companionPartial: false,
+      };
     }
 
     try {
-      const result = await this.readAndParse(session, parser);
+      const { parseResult: result, companionPartial } = await this.readAndParse(
+        session,
+        parser
+      );
       if (result.status === 'unrecognized') {
         this.logger.warn(
           `Unrecognized format for ${session.displayName}: ${result.reason}`
         );
-        return await this.copyRawArchive(session, archiveUri, timestamp);
+        return {
+          fileName: await this.copyRawArchive(session, archiveUri, timestamp),
+          companionPartial,
+        };
       }
 
       const allTurnsEmpty = result.session.turns.every(
@@ -275,7 +299,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         this.logger.info(
           `Skipped empty session ${session.displayName} — zero non-empty turns`
         );
-        return undefined;
+        return { fileName: undefined, companionPartial };
       }
 
       const yyyy = timestamp.substring(0, 4);
@@ -291,23 +315,30 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       );
       const markdown = renderSessionToMarkdown(result.session);
       await vscode.workspace.fs.writeFile(mdUri, new TextEncoder().encode(markdown));
-      return mdFileName;
+      return { fileName: mdFileName, companionPartial };
     } catch (err) {
       this.logger.warn(
         `Failed to convert ${session.displayName} to markdown: ${String(err)}`
       );
-      return await this.copyRawArchive(session, archiveUri, timestamp);
+      return {
+        fileName: await this.copyRawArchive(session, archiveUri, timestamp),
+        companionPartial: false,
+      };
     }
   }
 
   private async readAndParse(
     session: SessionFile,
     parser: SessionParser
-  ): Promise<ParseResult> {
+  ): Promise<{ parseResult: ParseResult; companionPartial: boolean }> {
     const rawBytes = await vscode.workspace.fs.readFile(session.uri);
     const rawContent = new TextDecoder().decode(rawBytes);
     const companionContext = await resolveCompanionData(session.uri, this.logger);
-    return parser.parse(rawContent, session.archiveName, companionContext);
+    const companionPartial = companionContext.companionPartial === true;
+    return {
+      parseResult: parser.parse(rawContent, session.archiveName, companionContext),
+      companionPartial,
+    };
   }
 
   private async copyRawArchive(

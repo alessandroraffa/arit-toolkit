@@ -1273,12 +1273,12 @@ describe('AgentSessionArchiveService', () => {
       const newArchiveFileName = '2026/06/202606010000-test-session.json';
       const writeArchiveFileSpy = vi
         .spyOn(service as any, 'writeArchiveFile')
-        .mockResolvedValue(newArchiveFileName);
+        .mockResolvedValue({ fileName: newArchiveFileName, companionPartial: false });
 
       const callOrder: string[] = [];
       writeArchiveFileSpy.mockImplementation(async () => {
         callOrder.push('write');
-        return newArchiveFileName;
+        return { fileName: newArchiveFileName, companionPartial: false };
       });
       workspace.fs.delete = vi.fn().mockImplementation(async () => {
         callOrder.push('delete');
@@ -1316,7 +1316,10 @@ describe('AgentSessionArchiveService', () => {
         archiveFileName: sameArchiveFileName,
       });
 
-      vi.spyOn(service as any, 'writeArchiveFile').mockResolvedValue(sameArchiveFileName);
+      vi.spyOn(service as any, 'writeArchiveFile').mockResolvedValue({
+        fileName: sameArchiveFileName,
+        companionPartial: false,
+      });
       workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
 
       await service.runArchiveCycle(true);
@@ -1444,7 +1447,10 @@ describe('AgentSessionArchiveService', () => {
       });
 
       const newArchiveFileName = '2026/06/202606010000-test-session.json';
-      vi.spyOn(service as any, 'writeArchiveFile').mockResolvedValue(newArchiveFileName);
+      vi.spyOn(service as any, 'writeArchiveFile').mockResolvedValue({
+        fileName: newArchiveFileName,
+        companionPartial: false,
+      });
       workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
 
       await service.runArchiveCycle(true);

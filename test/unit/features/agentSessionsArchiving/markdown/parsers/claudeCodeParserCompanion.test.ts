@@ -7,10 +7,10 @@ import {
 } from '../../../../../../src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParserCompanion';
 
 describe('resolveToolResultMarkers', () => {
-  it('replaces marker with matching key from map', () => {
+  it('replaces marker with full filename key from map', () => {
     const result = resolveToolResultMarkers(
       'before <persisted-output>/path/to/toolu_abc.txt</persisted-output> after',
-      new Map([['toolu_abc', 'resolved content']])
+      new Map([['toolu_abc.txt', 'resolved content']])
     );
     expect(result).toBe('before resolved content after');
   });
@@ -26,6 +26,18 @@ describe('resolveToolResultMarkers', () => {
   it('returns content unchanged when no markers are present', () => {
     const result = resolveToolResultMarkers('no markers here', new Map([['key', 'val']]));
     expect(result).toBe('no markers here');
+  });
+
+  it('resolves same-stem-different-extension markers to correct content', () => {
+    const content =
+      '<persisted-output>/path/toolu_abc.txt</persisted-output> and ' +
+      '<persisted-output>/path/toolu_abc.json</persisted-output>';
+    const map = new Map([
+      ['toolu_abc.txt', 'txt content'],
+      ['toolu_abc.json', 'json content'],
+    ]);
+    const result = resolveToolResultMarkers(content, map);
+    expect(result).toBe('txt content and json content');
   });
 });
 
@@ -82,6 +94,11 @@ describe('parseFirstEventAgentType', () => {
   it('returns agentId in kebab-case when first line has agentId', () => {
     const content = JSON.stringify({ type: 'user', agentId: 'ReviewerAgent' });
     expect(parseFirstEventAgentType(content)).toBe('reviewer-agent');
+  });
+
+  it('falls back to subagentType in kebab-case when agentId is absent', () => {
+    const content = JSON.stringify({ type: 'user', subagentType: 'CodeReviewer' });
+    expect(parseFirstEventAgentType(content)).toBe('code-reviewer');
   });
 
   it('returns unknown when neither agentId nor subagentType present', () => {

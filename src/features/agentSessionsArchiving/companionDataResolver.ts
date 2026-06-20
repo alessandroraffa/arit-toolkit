@@ -79,9 +79,15 @@ async function readToolResults(
   const result = new Map<string, string>();
   for (const [name] of entries) {
     const fileUri = vscode.Uri.joinPath(toolResultsDirUri, name);
+    if (result.has(name)) {
+      logger.warn(
+        `Tool-result map key collision detected for "${name}" — duplicate entry ignored`
+      );
+      continue;
+    }
     try {
       const bytes = await vscode.workspace.fs.readFile(fileUri);
-      result.set(path.parse(name).name, decoder.decode(bytes));
+      result.set(name, decoder.decode(bytes));
     } catch (err) {
       logger.warn(`Failed to read tool-result file ${name}: ${String(err)}`);
     }
@@ -149,12 +155,17 @@ export async function resolveCompanionData(
   const subagentEntries = await readSubagents(companionDirUri, logger);
   const toolResultMap = await readToolResults(companionDirUri, logger);
   const compactionEntries = await readCompactionFiles(companionDirUri, logger);
+  const hasUnreadable = subagentEntries.some((e) => e.unreadable === true);
 
   logger.debug(
     `Companion data resolved: ${String(subagentEntries.length)} subagent(s), ` +
       `${String(toolResultMap.size)} tool-result(s), ` +
-      `${String(compactionEntries.length)} compaction(s)`
+      `${String(compactionEntries.length)} compaction(s)` +
+      (hasUnreadable ? ' [partial — unreadable subagent(s)]' : '')
   );
 
+  if (hasUnreadable) {
+    return { subagentEntries, toolResultMap, compactionEntries, companionPartial: true };
+  }
   return { subagentEntries, toolResultMap, compactionEntries };
 }

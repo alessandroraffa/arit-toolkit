@@ -14,4 +14,10 @@ export interface CompanionDataContext {
   readonly subagentEntries: readonly SubagentEntry[];
   readonly toolResultMap: ReadonlyMap<string, string>;
   readonly compactionEntries: readonly CompactionEntry[];
+  /**
+   * True when at least one subagent file was unreadable during the resolve
+   * pass. An archive produced with a partial companion dataset must not lock
+   * in the session's effectiveMtime so the next cycle retries it.
+   */
+  readonly companionPartial?: true;
 }
