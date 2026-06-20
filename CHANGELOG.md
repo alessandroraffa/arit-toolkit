@@ -1,3 +1,12 @@
+## [2.5.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.0...v2.5.1) (2026-06-20)
+
+### Bug Fixes
+
+* **archiving:** html-escape compaction summary text before rendering ([0a8f405](https://github.com/alessandroraffa/tangyr-vscode/commit/0a8f40528e9173eb473cff92de1e313fe6fb99be))
+* **archiving:** key tool-result map on full filename to prevent stem collision ([620c9ee](https://github.com/alessandroraffa/tangyr-vscode/commit/620c9ee4a8aa033c906f0f0be623711b1ecf45d9))
+* **archiving:** skip effectivemtime recording when companion data is partial ([57cfaef](https://github.com/alessandroraffa/tangyr-vscode/commit/57cfaefe14e7dc6d84ce7afb692607c66542c99f))
+* **archiving:** subscribe watcher to ondiddelete to re-trigger on file removal ([f52ca88](https://github.com/alessandroraffa/tangyr-vscode/commit/f52ca888dd9b718519eb79320bab97b869e9ec45))
+
 ## [2.5.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.4.0...v2.5.0) (2026-06-19)
 
 ### Features
