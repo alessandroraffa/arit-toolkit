@@ -1,3 +1,26 @@
+## [2.5.3](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.2...v2.5.3) (2026-06-21)
+
+### Bug Fixes
+
+* **archiving:** add observability for silently-degraded companion data (l-07) ([44331e7](https://github.com/alessandroraffa/tangyr-vscode/commit/44331e785e26cce87f7e80fbabdad8a598c898e2))
+* **archiving:** broaden partial flag to cover all companion read failures ([27a926e](https://github.com/alessandroraffa/tangyr-vscode/commit/27a926e5d5bbb981af92bbfcfb8902be963a78b3))
+* **archiving:** collapse three companion watch globs into one recursive pattern ([12a73c5](https://github.com/alessandroraffa/tangyr-vscode/commit/12a73c553d3506f6281ffecc0d866363ada33550))
+* **archiving:** empty-session skip must honour partial companion flag ([aafd0f4](https://github.com/alessandroraffa/tangyr-vscode/commit/aafd0f477ec5a762a9410832da5cbc309433aaf4))
+* **archiving:** fence-safe code blocks in renderer (l-05) ([6d95190](https://github.com/alessandroraffa/tangyr-vscode/commit/6d951900a050ac1acfc3228d5c7b816e9ee1e132))
+* **archiving:** indent every line of multi-line compaction summaries in details ([8e0cd20](https://github.com/alessandroraffa/tangyr-vscode/commit/8e0cd20d6c2e84e8e9c79e35b7d5d3d28cf3afc4))
+* **archiving:** lazy tool-result loading, per-file byte cap, max-archive ceiling ([9c0251d](https://github.com/alessandroraffa/tangyr-vscode/commit/9c0251d13ea853cb9f629f9d9fb37c9ccf30f07c))
+* **archiving:** normalize windows path separators and colon in project dir name ([60f0b40](https://github.com/alessandroraffa/tangyr-vscode/commit/60f0b400d6047d0916f912ac7fa62043649a1b0b))
+* **archiving:** replace scalar max-mtime with compound fingerprint (h-04, h-02) ([bec77b0](https://github.com/alessandroraffa/tangyr-vscode/commit/bec77b0d31dbaecd10e03e60e69c27e05f767f3b))
+* **archiving:** resolve tool-result markers post-parse, not on raw jsonl ([1fc7803](https://github.com/alessandroraffa/tangyr-vscode/commit/1fc7803caf71afd1562b6b6a1ad279561a31a889))
+* **archiving:** restore per-file stat for fingerprint and fix path encoding ([55ff53e](https://github.com/alessandroraffa/tangyr-vscode/commit/55ff53e864526cf10f66999bc70cb1da8729ec37))
+* **archiving:** scan first 5 non-blank lines for jsonl recognition ([c070a58](https://github.com/alessandroraffa/tangyr-vscode/commit/c070a580860b517ef28d76337d71d7e71cb3ac75))
+* **archiving:** separator-agnostic marker basename and file-type filtering ([dcfac3f](https://github.com/alessandroraffa/tangyr-vscode/commit/dcfac3f993bcce2006dca3e57adf946261f17e15))
+* **archiving:** skip byte-identical rewrites and fix empty-session guard (h-03, h-05) ([0c71fbf](https://github.com/alessandroraffa/tangyr-vscode/commit/0c71fbf1f97ba2dbc71c4905e09a4726bdbadf5c))
+* **archiving:** tighten subagent regex and unify subagents/ directory read ([94173ef](https://github.com/alessandroraffa/tangyr-vscode/commit/94173ef8e301f881b38dd8abe2e85e494b539fd4))
+* **archiving:** truncate markdown at block boundary to preserve structure ([8d9b016](https://github.com/alessandroraffa/tangyr-vscode/commit/8d9b01627cca5e201a372e6a706ffee05f8793e9))
+* **archiving:** unify agenttype resolution (l-03) and compaction timestamp (l-04) ([0fe91ab](https://github.com/alessandroraffa/tangyr-vscode/commit/0fe91abde48a540ebe4d1937587f9acff1ba6452))
+* **archiving:** warn when compaction scan budget exhausted without result ([381ec5b](https://github.com/alessandroraffa/tangyr-vscode/commit/381ec5bdf766cf4b80faa2c43bf4148505dd1318))
+
 ## [2.5.2](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.1...v2.5.2) (2026-06-21)
 
 ### Bug Fixes
