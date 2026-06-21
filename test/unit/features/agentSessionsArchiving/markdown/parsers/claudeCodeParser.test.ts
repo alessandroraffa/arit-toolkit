@@ -322,4 +322,64 @@ describe('ClaudeCodeParser', () => {
 
     expect(session.turns[0]!.filesModified).toContain('new.ts');
   });
+
+  // L-06 / WT-005: per-line malformed-JSONL recovery
+
+  it('WT-005: invalid-JSON line among valid lines yields turns only for valid events', () => {
+    // Three valid events sandwiching one bad line — all three valid events parse,
+    // the bad line is silently skipped (continue).
+    const validUser = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Turn 1' }] },
+    });
+    const validAssistant = JSON.stringify({
+      type: 'assistant',
+      message: { role: 'assistant', content: [{ type: 'text', text: 'Turn 2' }] },
+    });
+    const validUser2 = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Turn 3' }] },
+    });
+    const content = [validUser, 'INVALID JSON LINE', validAssistant, validUser2].join(
+      '\n'
+    );
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(3);
+    expect(session.turns[0]!.content).toBe('Turn 1');
+    expect(session.turns[1]!.content).toBe('Turn 2');
+    expect(session.turns[2]!.content).toBe('Turn 3');
+  });
+
+  it('WT-005: truncated final line is skipped while prior turns survive', () => {
+    // A truncated line at the end (e.g. partial write mid-flush) must not
+    // crash the parser or drop earlier recoverable events.
+    const validUser = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Safe turn' }] },
+    });
+    // Simulate a truncated JSON line (ends abruptly mid-object)
+    const truncated = '{"type":"assistant","message":{"role":"assistant","content":[{';
+    const content = [validUser, truncated].join('\n');
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.content).toBe('Safe turn');
+  });
+
+  it('WT-005: looksLikeJsonl still recognizes file with mixed valid/invalid lines', () => {
+    // The valid typed event on line 1 ensures looksLikeJsonl returns true,
+    // so the file is parsed (not raw-copied) even with bad lines present.
+    const validFirst = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+    });
+    const content = [validFirst, '<<<BAD>>>', '{"not":"typed"}'].join('\n');
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(1);
+  });
 });
