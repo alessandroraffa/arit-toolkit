@@ -47,7 +47,15 @@ export function renderCompactionSummaries(
     lines.push('<details>');
     lines.push(`  <summary>Compaction Summary — ${formattedTimestamp}</summary>`);
     lines.push('');
-    lines.push(`  ${escapeHtml(summary.summaryText)}`);
+    // H-11: indent EVERY line of a multi-line summary so the <details> block
+    // renders correctly regardless of embedded newlines or markdown-significant
+    // leading characters ('#', '-', '>').  escapeHtml already neutralises a
+    // literal </details> in the body (BK-005 regression preserved).
+    const indentedBody = escapeHtml(summary.summaryText)
+      .split('\n')
+      .map((l) => `  ${l}`)
+      .join('\n');
+    lines.push(indentedBody);
     lines.push('</details>');
   }
 
