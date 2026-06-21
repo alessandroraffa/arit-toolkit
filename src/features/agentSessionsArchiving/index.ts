@@ -10,6 +10,7 @@ import * as vscode from 'vscode';
 import {
   CONFIG_KEY,
   DEFAULT_ARCHIVE_PATH,
+  HISTORICAL_DEFAULT_ARCHIVE_PATH,
   DEFAULT_INTERVAL_MINUTES,
   COMMAND_ID_TOGGLE,
   COMMAND_ID_ARCHIVE_NOW,
@@ -30,6 +31,17 @@ function registerWithCore(
       intervalMinutes: DEFAULT_INTERVAL_MINUTES,
     },
     introducedAtVersionCode: INTRODUCED_AT_VERSION_CODE,
+    migrateValue(existing: unknown): unknown {
+      if (existing === null || existing === undefined || typeof existing !== 'object') {
+        return existing;
+      }
+      const section = existing as Record<string, unknown>;
+      const current = section.archivePath;
+      if (!current || current === HISTORICAL_DEFAULT_ARCHIVE_PATH) {
+        return { ...section, archivePath: DEFAULT_ARCHIVE_PATH };
+      }
+      return section;
+    },
   });
   stateManager.registerService({
     key: CONFIG_KEY,

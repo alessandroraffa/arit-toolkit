@@ -78,6 +78,14 @@ export class ConfigMigrationService {
       }
     }
 
+    // Apply per-section value-migration transforms to already-present sections.
+    const allSections = this.registry.getAllSections();
+    for (const section of allSections) {
+      if (section.key in merged && section.migrateValue !== undefined) {
+        merged[section.key] = section.migrateValue(merged[section.key]);
+      }
+    }
+
     merged.version = newVersion;
     merged.versionCode = computeVersionCode(newVersion);
 

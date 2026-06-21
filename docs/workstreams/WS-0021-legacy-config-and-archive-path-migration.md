@@ -110,11 +110,11 @@ Run the quality gate; confirm Task 2.1 tests pass and no existing test regresses
 
 Update the `docs/technical-context.md` legacy-config subsection (the one documenting `verifyLegacyConfigMigration`, §8.13) to describe `consolidateLegacyConfig`: the both-files-vs-legacy-only branches, the git-aware removal rule, the authoritative-`.tangyr.jsonc` invariant, and the single-root scope/limitation. Update the `initialize()` call-tree diagram. Commit with the implementation or as a `docs(...)` commit.
 
-### [ ] Activity 3: Default archive path, config value-migration, and archive relocation
+### [x] Activity 3: Default archive path, config value-migration, and archive relocation
 
 Implement architectural decisions 3 and 4. Read `constants.ts`, `index.ts`, `archiveService.ts`, `configMigration/types.ts`, `configMigration/migrationService.ts`, and `configMigration/registry.ts` first.
 
-#### [ ] Task 3.1: Write failing tests
+#### [x] Task 3.1: Write failing tests
 
 - **Constant/default:** a newly added archiving section / new config receives `archivePath: ".tangyr/agent-sessions"`.
 - **Value-migration:** `migrateValue` rewrites `docs/archive/agent-sessions` → `.tangyr/agent-sessions`; rewrites empty/unset → `.tangyr/agent-sessions`; **preserves** any other value; is idempotent on the new default. Add to the `ConfigMigrationService` tests that, after `mergeIntoConfig`, a registered section's `migrateValue` has been applied to the existing value.
@@ -122,17 +122,17 @@ Implement architectural decisions 3 and 4. Read `constants.ts`, `index.ts`, `arc
 
 Confirm the new tests fail before implementation.
 
-#### [ ] Task 3.2: Change the default and add the historical-default constant
+#### [x] Task 3.2: Change the default and add the historical-default constant
 
 In `constants.ts`: set `DEFAULT_ARCHIVE_PATH = '.tangyr/agent-sessions'` and add `export const HISTORICAL_DEFAULT_ARCHIVE_PATH = 'docs/archive/agent-sessions';` with a comment noting it exists for the one-release relocation and may be retired once the field has converged.
 
-#### [ ] Task 3.3: Add the `migrateValue` value-migration mechanism
+#### [x] Task 3.3: Add the `migrateValue` value-migration mechanism
 
 - Extend `ConfigSectionDefinition` (`configMigration/types.ts`) with an optional `migrateValue?: (existing: unknown) => unknown`.
 - In `ConfigMigrationService.mergeIntoConfig`, after merging missing sections and before stamping the version, for each registered section whose key is present in `merged` and which defines `migrateValue`, apply `merged[section.key] = section.migrateValue(merged[section.key])`. Keep this generic — no archiving-specific logic in the service.
 - In the archiving feature registration (`index.ts` `registerWithCore`), add `migrateValue` to the registered section: given the current section value, return it with `archivePath` rewritten to `DEFAULT_ARCHIVE_PATH` when the current `archivePath` equals `HISTORICAL_DEFAULT_ARCHIVE_PATH` or is absent/empty; otherwise return it unchanged. Handle a non-object/undefined existing value safely.
 
-#### [ ] Task 3.4: Add idempotent archive-location reconciliation to the service
+#### [x] Task 3.4: Add idempotent archive-location reconciliation to the service
 
 In `archiveService.ts`, add a one-shot `reconcileArchiveLocation()` invoked at the start of the first cycle (gate with a private `_locationReconciled` flag, or fold into the existing `_needsDedup` one-shot, running before `deduplicateAndHydrate`). It must: return early unless `currentConfig.archivePath === DEFAULT_ARCHIVE_PATH`; check that the configured path differs from `HISTORICAL_DEFAULT_ARCHIVE_PATH`; read the historical directory and return if it is missing or empty; otherwise call the existing `moveArchive(HISTORICAL_DEFAULT_ARCHIVE_PATH, currentConfig.archivePath)`. It must be silent and must not throw out of the cycle. Reuse `moveArchive`'s loss-safe copy-then-delete; do not introduce a new deletion path.
 

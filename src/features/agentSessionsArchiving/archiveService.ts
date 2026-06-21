@@ -10,7 +10,11 @@ import { checkAndPromptGitignore } from './gitignorePrompt';
 import { validateArchivePath } from './archivePathValidation';
 import { ArchiveCycleGuard } from './archiveCycleGuard';
 import { resolveCompanionData } from './companionDataResolver';
-import { MAX_ARCHIVE_BYTES } from './constants';
+import {
+  MAX_ARCHIVE_BYTES,
+  DEFAULT_ARCHIVE_PATH,
+  HISTORICAL_DEFAULT_ARCHIVE_PATH,
+} from './constants';
 
 interface ArchivedEntry {
   /**
@@ -54,6 +58,8 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   private _reconfiguring = false;
   private readonly _cycleGuard = new ArchiveCycleGuard();
   private _pendingStartConfig: AgentSessionsArchivingConfig | undefined;
+  /** One-shot guard: reconcileArchiveLocation runs only on the first cycle. */
+  private _locationReconciled = false;
 
   constructor(
     private readonly workspaceRootUri: vscode.Uri,
@@ -78,6 +84,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this._currentConfig = config;
       const intervalMs = config.intervalMinutes * 60_000;
       this._needsDedup = true;
+      this._locationReconciled = false;
       this.logger.info(
         `Agent sessions archiving started (interval: ${String(config.intervalMinutes)}m)`
       );
@@ -165,6 +172,10 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this._currentConfig.archivePath
     );
     this.logger.info('Archive cycle starting — archive root: ' + archiveUri.fsPath);
+    if (!this._locationReconciled) {
+      await this.reconcileArchiveLocation();
+      this._locationReconciled = true;
+    }
     if (this._needsDedup) {
       await this.deduplicateAndHydrate(archiveUri);
       this._needsDedup = false;
@@ -606,6 +617,43 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       }
     }
     return allOK;
+  }
+
+  /**
+   * One-shot, idempotent relocation of the historical archive tree to the new
+   * default location. Runs silently (no dedicated prompt). Only executes when:
+   * - currentConfig.archivePath equals DEFAULT_ARCHIVE_PATH (new default); AND
+   * - the historical default directory exists and is non-empty; AND
+   * - the historical and configured paths differ.
+   *
+   * Reuses moveArchive's loss-safe copy-then-delete-on-full-success mechanism.
+   * Errors are caught and logged; they do not propagate out of the cycle.
+   */
+  private async reconcileArchiveLocation(): Promise<void> {
+    if (!this._currentConfig) {
+      return;
+    }
+    if (this._currentConfig.archivePath !== DEFAULT_ARCHIVE_PATH) {
+      return;
+    }
+    try {
+      const historicalUri = vscode.Uri.joinPath(
+        this.workspaceRootUri,
+        HISTORICAL_DEFAULT_ARCHIVE_PATH
+      );
+      let entries: [string, vscode.FileType][];
+      try {
+        entries = await vscode.workspace.fs.readDirectory(historicalUri);
+      } catch {
+        return; // historical directory absent or unreadable — nothing to move
+      }
+      if (entries.length === 0) {
+        return; // empty — nothing to move
+      }
+      await this.moveArchive(HISTORICAL_DEFAULT_ARCHIVE_PATH, DEFAULT_ARCHIVE_PATH);
+    } catch (err) {
+      this.logger.warn(`reconcileArchiveLocation: unexpected error — ${String(err)}`);
+    }
   }
 
   private async moveArchive(oldPath: string, newPath: string): Promise<void> {
