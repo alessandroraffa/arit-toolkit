@@ -15,6 +15,7 @@ import {
   processToolUseBlock,
   processToolResult,
   extractToolMetadata,
+  sanitizeName,
 } from './claudeCodeParserUtils';
 import type { CompanionDataContext, CompactionEntry } from '../companionDataTypes';
 import {
@@ -23,6 +24,61 @@ import {
   extractCompactionSummaryText,
   parseFirstEventAgentType,
 } from './claudeCodeParserCompanion';
+
+/**
+ * L-03: Unified agentType resolver — chains meta → first-event → filename-derived
+ * fallback so the heading is never 'unknown' when the entry.agentId is available.
+ *
+ * Resolution order:
+ * 1. meta.agentType (sanitized via extractSubagentMeta → sanitizeName)
+ * 2. first-event agentId / subagentType (parseFirstEventAgentType)
+ * 3. filename-derived label from entry.agentId when non-empty
+ * 4. 'unknown' only as the last resort (agentId also empty)
+ */
+function resolveAgentType(
+  metaContent: string | undefined,
+  rawContent: string,
+  agentId: string
+): string {
+  const meta = extractSubagentMeta(metaContent);
+  if (meta.agentType !== 'unknown') return meta.agentType;
+
+  const fromFirstEvent = parseFirstEventAgentType(rawContent);
+  if (fromFirstEvent !== 'unknown') return fromFirstEvent;
+
+  // Final fallback: derive a label from the filename-embedded agentId.
+  // sanitizeName converts CamelCase/PascalCase to kebab-case and drops
+  // all-symbol names to undefined — in that case fall back to 'unknown'.
+  if (agentId.length > 0) {
+    const derived = sanitizeName(agentId);
+    return derived ?? agentId; // keep raw agentId if sanitizeName strips it entirely
+  }
+
+  return 'unknown';
+}
+
+/**
+ * L-04: Extract the displayed compaction timestamp from the assistant event's
+ * own `timestamp` field when present; fall back to the file mtime otherwise.
+ */
+function resolveCompactionTimestamp(content: string, mtime: number): string {
+  // Scan the first few lines for an assistant event with a timestamp field.
+  const lines = content.split('\n');
+  const window = lines.slice(0, 10); // small window — timestamp is usually near the top
+  for (const line of window) {
+    if (!line.trim()) continue;
+    try {
+      const ev = JSON.parse(line) as Record<string, unknown>;
+      if (ev.type === 'assistant' && typeof ev.timestamp === 'string' && ev.timestamp) {
+        const d = new Date(ev.timestamp);
+        if (!isNaN(d.getTime())) return ev.timestamp;
+      }
+    } catch {
+      // non-JSON line — continue
+    }
+  }
+  return new Date(mtime).toISOString();
+}
 
 export class ClaudeCodeParser implements SessionParser {
   public readonly providerName = 'claude-code';
@@ -225,11 +281,9 @@ export class ClaudeCodeParser implements SessionParser {
       if (pending.toolCalls.length > 0 || pending.thinking) {
         turns.push(makeTurn({ role: 'assistant', content: '', ...pending }));
       }
+      // L-03: use the unified resolver (meta → first-event → filename-derived fallback)
+      const agentType = resolveAgentType(entry.metaContent, entry.content, entry.agentId);
       const meta = extractSubagentMeta(entry.metaContent);
-      const agentType =
-        meta.agentType === 'unknown'
-          ? parseFirstEventAgentType(entry.content)
-          : meta.agentType;
       const session: {
         agentId: string;
         agentType: string;
@@ -245,12 +299,24 @@ export class ClaudeCodeParser implements SessionParser {
   private processCompactionEntries(
     entries: readonly CompactionEntry[]
   ): CompactionSummary[] {
-    const sorted = [...entries].sort((a, b) => a.mtime - b.mtime);
+    // L-04: sort by mtime ascending; use filename as a deterministic tiebreaker
+    // for same-tick entries so archive output is stable across runs.
+    const sorted = [...entries].sort((a, b) => {
+      const mtimeDiff = a.mtime - b.mtime;
+      if (mtimeDiff !== 0) return mtimeDiff;
+      // Secondary key: source filename (embeds an ordering token)
+      const fa = a.filename ?? '';
+      const fb = b.filename ?? '';
+      return fa < fb ? -1 : fa > fb ? 1 : 0;
+    });
     const result: CompactionSummary[] = [];
     for (const entry of sorted) {
       const summaryText = extractCompactionSummaryText(entry.content);
       if (summaryText !== undefined) {
-        result.push({ summaryText, timestamp: new Date(entry.mtime).toISOString() });
+        // L-04: derive displayed timestamp from the assistant event's own timestamp
+        // field when present; fall back to the file mtime when absent.
+        const timestamp = resolveCompactionTimestamp(entry.content, entry.mtime);
+        result.push({ summaryText, timestamp });
       }
     }
     return result;

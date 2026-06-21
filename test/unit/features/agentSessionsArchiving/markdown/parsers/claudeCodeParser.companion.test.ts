@@ -218,4 +218,159 @@ describe('ClaudeCodeParser — companion data', () => {
     expect(session.subagentSessions![0]!.turns).toHaveLength(0);
     expect(session.subagentSessions![0]!.unreadable).toBe(true);
   });
+
+  // L-03 tests: unified agentType resolution with filename-derived fallback
+
+  it('L-03: meta agentType present → used as agentType', () => {
+    const ctx: CompanionDataContext = {
+      subagentEntries: [
+        {
+          agentId: 'sub-1',
+          content: jsonl(userEvent),
+          metaContent: '{"agentType":"CodeReview"}',
+        },
+      ],
+      toolResultMap: new Map(),
+      compactionEntries: [],
+    };
+    const session = expectParsed(parser.parse(baseContent, 'session-1', ctx));
+    expect(session.subagentSessions![0]!.agentType).toBe('code-review');
+  });
+
+  it('L-03: meta unknown but first event has subagentType → used as agentType', () => {
+    const subContent = jsonl({
+      type: 'user',
+      subagentType: 'SecurityAudit',
+      message: { role: 'user', content: 'hi' },
+    });
+    const ctx: CompanionDataContext = {
+      subagentEntries: [{ agentId: 'sub-1', content: subContent }],
+      toolResultMap: new Map(),
+      compactionEntries: [],
+    };
+    const session = expectParsed(parser.parse(baseContent, 'session-1', ctx));
+    expect(session.subagentSessions![0]!.agentType).toBe('security-audit');
+  });
+
+  it('L-03: both meta and first-event unknown but agentId non-empty → agentId-derived label', () => {
+    // No metaContent, no agentId/subagentType in first event → fall back to entry.agentId
+    const subContent = jsonl({ type: 'user', message: { role: 'user', content: 'hi' } });
+    const ctx: CompanionDataContext = {
+      subagentEntries: [{ agentId: 'ReviewerAgent', content: subContent }],
+      toolResultMap: new Map(),
+      compactionEntries: [],
+    };
+    const session = expectParsed(parser.parse(baseContent, 'session-1', ctx));
+    // Should be 'reviewer-agent' (kebab-case of ReviewerAgent), not 'unknown'
+    expect(session.subagentSessions![0]!.agentType).toBe('reviewer-agent');
+    expect(session.subagentSessions![0]!.agentType).not.toBe('unknown');
+  });
+
+  it('L-03: all-symbol agentId that sanitizes to empty still yields a non-empty value', () => {
+    // sanitizeName('!!!') returns undefined → resolveAgentType keeps the raw agentId
+    const subContent = jsonl({ type: 'user', message: { role: 'user', content: 'hi' } });
+    const ctx: CompanionDataContext = {
+      subagentEntries: [{ agentId: '!!!', content: subContent }],
+      toolResultMap: new Map(),
+      compactionEntries: [],
+    };
+    const session = expectParsed(parser.parse(baseContent, 'session-1', ctx));
+    // Falls back to raw agentId '!!!' rather than dropping identity silently
+    expect(session.subagentSessions![0]!.agentType).toBe('!!!');
+  });
+
+  // L-04 tests: compaction timestamp from event field + deterministic sort tiebreaker
+
+  it('L-04: two entries with equal mtime but different filenames sort deterministically', () => {
+    const makeCompaction = (text: string) =>
+      jsonl({
+        type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'text', text }] },
+      });
+    const ctx: CompanionDataContext = {
+      subagentEntries: [],
+      toolResultMap: new Map(),
+      compactionEntries: [
+        {
+          content: makeCompaction('second'),
+          mtime: 1000,
+          filename: 'agent-acompact-z.jsonl',
+        },
+        {
+          content: makeCompaction('first'),
+          mtime: 1000,
+          filename: 'agent-acompact-a.jsonl',
+        },
+      ],
+    };
+    const session = expectParsed(parser.parse(baseContent, 'session-1', ctx));
+    // filename 'agent-acompact-a' < 'agent-acompact-z' → 'first' renders before 'second'
+    expect(session.compactionSummaries![0]!.summaryText).toBe('first');
+    expect(session.compactionSummaries![1]!.summaryText).toBe('second');
+  });
+
+  it('L-04: rendered timestamp uses assistant event timestamp when present', () => {
+    const eventTimestamp = '2025-01-15T10:30:00.000Z';
+    const compactionContent = jsonl({
+      type: 'assistant',
+      timestamp: eventTimestamp,
+      message: { role: 'assistant', content: [{ type: 'text', text: 'Summary.' }] },
+    });
+    const ctx: CompanionDataContext = {
+      subagentEntries: [],
+      toolResultMap: new Map(),
+      compactionEntries: [{ content: compactionContent, mtime: 9999999999999 }],
+    };
+    const session = expectParsed(parser.parse(baseContent, 'session-1', ctx));
+    // Should use the event timestamp, not the mtime
+    expect(session.compactionSummaries![0]!.timestamp).toBe(eventTimestamp);
+    expect(session.compactionSummaries![0]!.timestamp).not.toBe(
+      new Date(9999999999999).toISOString()
+    );
+  });
+
+  it('L-04: falls back to mtime timestamp when event has no timestamp field', () => {
+    const compactionContent = jsonl({
+      type: 'assistant',
+      message: { role: 'assistant', content: [{ type: 'text', text: 'Summary.' }] },
+    });
+    const mtime = 1700000000000;
+    const ctx: CompanionDataContext = {
+      subagentEntries: [],
+      toolResultMap: new Map(),
+      compactionEntries: [{ content: compactionContent, mtime }],
+    };
+    const session = expectParsed(parser.parse(baseContent, 'session-1', ctx));
+    expect(session.compactionSummaries![0]!.timestamp).toBe(
+      new Date(mtime).toISOString()
+    );
+  });
+
+  it('L-04: distinct mtimes still sort ascending by mtime (regression)', () => {
+    const makeCompaction = (text: string) =>
+      jsonl({
+        type: 'assistant',
+        message: { role: 'assistant', content: [{ type: 'text', text }] },
+      });
+    const ctx: CompanionDataContext = {
+      subagentEntries: [],
+      toolResultMap: new Map(),
+      compactionEntries: [
+        {
+          content: makeCompaction('later'),
+          mtime: 2000,
+          filename: 'agent-acompact-a.jsonl',
+        },
+        {
+          content: makeCompaction('earlier'),
+          mtime: 1000,
+          filename: 'agent-acompact-b.jsonl',
+        },
+      ],
+    };
+    const session = expectParsed(parser.parse(baseContent, 'session-1', ctx));
+    // mtime 1000 < 2000 → 'earlier' renders first
+    expect(session.compactionSummaries![0]!.summaryText).toBe('earlier');
+    expect(session.compactionSummaries![1]!.summaryText).toBe('later');
+  });
 });
