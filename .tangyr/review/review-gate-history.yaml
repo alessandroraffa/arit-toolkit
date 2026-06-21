@@ -30,3 +30,13 @@
   finding_count: 9
   blocking_count: 0
   produced_at: 2026-06-22
+
+- gate: pre-approval
+  artifact_type: initiative
+  artifact_version: INIT-005 draft (docs/initiatives/INIT-005-opencode-provider.md; created 2026-06-22; governed by approved SPEC-003)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 13
+  blocking_count: 0
+  produced_at: 2026-06-22

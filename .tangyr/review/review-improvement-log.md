@@ -205,4 +205,63 @@ This log captures process-level improvements proposed during multi-perspective r
     override specification.
   target: skills/review-gate (checklist) and skills/authoring-standards
   owner: Human
+
+- id: KZ-2026-06-22-005
+  created: 2026-06-22
+  gate: pre-approval
+  artifact_type: initiative
+  status: open
+  classification: checklist-update
+  pattern: >
+    When an INITIATIVE is authored AFTER its governing specification is already
+    approved (INIT-005 written after SPEC-003 PASSed), the initiative tends to
+    inherit the spec's mechanism vocabulary instead of staying at strategic
+    altitude. INIT-005 carried specific implementation/data-model terms into its
+    Scope and Success-criteria sections — "XDG data directory", "message/parts
+    session structure", "parts-based structure", "journaled store", "reads one
+    flat file as a string", "a DB reader" — each of which belongs in the spec, not
+    the initiative. Green flagged these as altitude leaks; White and Orange
+    independently noted the same sections paraphrase the spec's ACs. Spec-first,
+    initiative-second authoring order is the structural cause: the easiest source
+    text to compress is the approved spec, so spec terminology bleeds upward.
+  proposed_change: >
+    Add an initiative review-gate checklist item for the spec-already-approved
+    case: scan every Scope and Success-criteria line for mechanism vocabulary
+    (filesystem-standard names like XDG, storage-engine names like SQLite/WAL,
+    internal data-model terms, exact env-var names, and "reads/writes X as Y"
+    pipeline-internal phrasing). Any such term must be replaced with
+    behavior/value framing and the mechanism detail left to the governing spec
+    (cross-referenced, not restated). The trigger is structural — apply it
+    whenever the initiative post-dates its governing spec.
+  target: skills/review-gate (checklist) and skills/authoring-standards
+  owner: Human
+
+- id: KZ-2026-06-22-006
+  created: 2026-06-22
+  gate: pre-approval
+  artifact_type: initiative
+  status: open
+  classification: checklist-update
+  pattern: >
+    On INIT-005 the reviewers split on the same Scope-Included and Success-criteria
+    text: Green judged the sections to RESTATE the spec and wanted them reduced/
+    abstracted; White wanted them EXPANDED (a missing failure-isolation criterion;
+    an absent-store/out-of-scope scope-to-criterion asymmetry). The conflict is not
+    a defect in either reviewer but a missing shared rule for what an initiative's
+    Scope and Success-criteria sections are FOR relative to the governing spec:
+    bounding-and-tracing (each scope item has >=1 success criterion and vice versa;
+    each criterion is a strategic OUTCOME that traces to — but does not duplicate —
+    a spec AC) versus mirroring-the-spec. Absent that rule, "reduce" and "expand"
+    are both locally reasonable and the gate cannot converge without escalation.
+  proposed_change: >
+    Add an initiative authoring/review rule defining the Scope/Success-criteria
+    contract: (a) every Scope-Included item maps to at least one success criterion
+    and every success criterion traces to at least one Scope-Included item
+    (catches asymmetries like absent-store-in-criteria-but-not-scope and
+    isolation-in-scope-but-not-criteria); (b) each success criterion is phrased as
+    a strategic OUTCOME that references — never paraphrases — a governing-spec
+    acceptance criterion. This gives reviewers a single altitude standard so
+    "reduce vs expand" disagreements resolve against the rule rather than escalating.
+  target: skills/review-gate (checklist) and skills/authoring-standards
+  owner: Human
 ```
