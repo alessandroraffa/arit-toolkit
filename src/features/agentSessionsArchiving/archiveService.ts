@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import type { AgentSessionsArchivingConfig } from '../../types';
 import type { SessionProvider, SessionFile } from './types';
@@ -222,11 +223,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     await this.ensureDirectory(archiveUri);
     const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.ctime));
 
-    const { fileName: archiveFileName, companionPartial } = await this.writeArchiveFile(
-      session,
-      archiveUri,
-      timestamp
-    );
+    const {
+      fileName: archiveFileName,
+      companionPartial,
+      contentHash,
+    } = await this.writeArchiveFile(session, archiveUri, timestamp, entry);
     if (archiveFileName) {
       // L2 guard: empty-session skip records '' as archiveFileName; joinPath(archiveUri, '') equals archiveUri itself
       if (entry?.archiveFileName && entry.archiveFileName !== archiveFileName) {
@@ -242,11 +243,13 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         this.lastArchivedMap.set(session.archiveName, {
           mtime: '0',
           archiveFileName,
+          ...(contentHash !== undefined ? { contentHash } : {}),
         });
       } else {
         this.lastArchivedMap.set(session.archiveName, {
           mtime: effectiveMtime,
           archiveFileName,
+          ...(contentHash !== undefined ? { contentHash } : {}),
         });
       }
       this.logger.debug(`Archived ${session.displayName} → ${archiveFileName}`);
@@ -269,11 +272,24 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     }
   }
 
+  /**
+   * Compute a stable SHA-1 hex fingerprint of the rendered markdown string.
+   * Used by H-03 to detect byte-identical re-renders and skip the writeFile call.
+   */
+  private computeContentHash(markdown: string): string {
+    return crypto.createHash('sha1').update(markdown, 'utf8').digest('hex');
+  }
+
   private async writeArchiveFile(
     session: SessionFile,
     archiveUri: vscode.Uri,
-    timestamp: string
-  ): Promise<{ fileName: string | undefined; companionPartial: boolean }> {
+    timestamp: string,
+    priorEntry?: ArchivedEntry
+  ): Promise<{
+    fileName: string | undefined;
+    companionPartial: boolean;
+    contentHash?: string;
+  }> {
     const parser = getParserForProvider(session.providerName);
     if (!parser) {
       return {
@@ -297,14 +313,22 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         };
       }
 
-      const allTurnsEmpty = result.session.turns.every(
-        (turn) =>
-          !turn.content.trim() &&
-          turn.toolCalls.length === 0 &&
-          !turn.thinking &&
-          turn.filesRead.length === 0 &&
-          turn.filesModified.length === 0
-      );
+      const allTurnsEmpty =
+        result.session.turns.every(
+          (turn) =>
+            !turn.content.trim() &&
+            turn.toolCalls.length === 0 &&
+            !turn.thinking &&
+            turn.filesRead.length === 0 &&
+            turn.filesModified.length === 0
+        ) &&
+        !(
+          result.session.subagentSessions && result.session.subagentSessions.length > 0
+        ) &&
+        !(
+          result.session.compactionSummaries &&
+          result.session.compactionSummaries.length > 0
+        );
       if (allTurnsEmpty) {
         this.logger.info(
           `Skipped empty session ${session.displayName} — zero non-empty turns`
@@ -324,8 +348,36 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         `${timestamp}-${session.archiveName}.md`
       );
       const markdown = renderSessionToMarkdown(result.session);
+      const contentHash = this.computeContentHash(markdown);
+
+      // H-03: skip writeFile when the rendered markdown is byte-identical to the prior
+      // archive AND the archive file still exists on disk. Still update lastArchivedMap
+      // mtime to effectiveMtime via the returned contentHash (archiveSession handles that).
+      const priorHash = priorEntry?.contentHash;
+      const priorFileName = priorEntry?.archiveFileName;
+      if (
+        priorHash !== undefined &&
+        priorHash === contentHash &&
+        priorFileName === mdFileName
+      ) {
+        // Verify the archive file still exists before declaring a no-op skip
+        let archiveExists = false;
+        try {
+          await vscode.workspace.fs.stat(mdUri);
+          archiveExists = true;
+        } catch {
+          // File absent — fall through to write it
+        }
+        if (archiveExists) {
+          this.logger.debug(
+            `No-op write skip for ${session.displayName} — content hash unchanged`
+          );
+          return { fileName: mdFileName, companionPartial, contentHash };
+        }
+      }
+
       await vscode.workspace.fs.writeFile(mdUri, new TextEncoder().encode(markdown));
-      return { fileName: mdFileName, companionPartial };
+      return { fileName: mdFileName, companionPartial, contentHash };
     } catch (err) {
       this.logger.warn(
         `Failed to convert ${session.displayName} to markdown: ${String(err)}`
