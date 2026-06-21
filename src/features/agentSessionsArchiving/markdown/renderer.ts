@@ -133,11 +133,33 @@ function renderSkillAnnotation(skillName: string | undefined): string[] {
   return [`> **Skill:** ${skillName}`, ''];
 }
 
+/**
+ * L-05: compute the fence length needed to safely wrap `text`.
+ * CommonMark requires the closing fence to be at least as long as the
+ * longest backtick run inside the content, so we use one longer (min 3).
+ */
+function computeFenceLength(text: string): number {
+  let maxRun = 0;
+  let currentRun = 0;
+  for (const ch of text) {
+    if (ch === '`') {
+      currentRun++;
+      if (currentRun > maxRun) maxRun = currentRun;
+    } else {
+      currentRun = 0;
+    }
+  }
+  return Math.max(3, maxRun + 1);
+}
+
 function renderCodeBlock(text: string, indent: string): string[] {
+  // L-05: use a fence one backtick longer than any embedded run (min 3)
+  // so content containing ``` does not break out of the code fence.
+  const fence = '`'.repeat(computeFenceLength(text));
   return [
-    `${indent}\`\`\``,
+    `${indent}${fence}`,
     `${indent}${text.split('\n').join(`\n${indent}`)}`,
-    `${indent}\`\`\``,
+    `${indent}${fence}`,
   ];
 }
 
