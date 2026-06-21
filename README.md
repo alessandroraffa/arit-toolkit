@@ -2,7 +2,7 @@
 
 > This extension was previously published as `alessandroraffa.arit-toolkit`.
 > If you have the old version installed, VS Code will show a Migrate button once Marketplace deprecation is processed.
-> Your settings are copied automatically on first activation of this extension.
+> Your settings are copied automatically on first activation of this extension. The legacy `.arit-toolkit.jsonc` configuration file is migrated to `.tangyr.jsonc`, and the old file is then removed safely.
 
 # Tangyr `▏▎▍▌▍▎▏` Workbench
 
@@ -40,6 +40,7 @@ Missing your assistant? Contact the maintainer to request support.
 - Each session maps to exactly one archived file — when the source changes, the old archive is replaced
 - Archive files are organized by year and month: `{archivePath}/{YYYY}/{MM}/{YYYYMMDDHHmm}-{name}.md`
 - Existing flat-layout archives from earlier versions are migrated into the year/month structure automatically on activation
+- The default archive path is `.tangyr/agent-sessions`. Workspaces still on the earlier default (`docs/archive/agent-sessions`) are migrated automatically — the configuration is updated and existing archives are relocated to the new path without loss; a custom `archivePath` you set yourself is preserved
 - Only sessions belonging to the current workspace are archived
 - Session file changes are detected automatically via file system watchers (with 10-second debounce), in addition to the periodic interval
 - In a Git repository, you are prompted once per archive path to add it to `.gitignore`. The decision is remembered and re-evaluated when the archive path changes
@@ -50,7 +51,7 @@ Missing your assistant? Contact the maintainer to request support.
 {
   "agentSessionsArchiving": {
     "enabled": true,
-    "archivePath": "docs/archive/agent-sessions",
+    "archivePath": ".tangyr/agent-sessions",
     "intervalMinutes": 5,
     "ignoreSessionsBefore": "20250101",
   },
