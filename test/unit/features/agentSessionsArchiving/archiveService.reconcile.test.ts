@@ -56,7 +56,15 @@ describe('reconcileArchiveLocation', () => {
     workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
     workspace.fs.readDirectory = vi.fn().mockResolvedValue([]);
     workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
-    workspace.fs.stat = vi.fn().mockResolvedValue({});
+    // BK-004: stat is used to check whether a destination file already exists
+    // before copying. Reject for new-default destination paths so the copy
+    // proceeds (destination absent = safe to copy).
+    workspace.fs.stat = vi.fn().mockImplementation((uri: { fsPath: string }) => {
+      if (uri.fsPath.includes(NEW_DEFAULT_PATH)) {
+        return Promise.reject(new Error('not found'));
+      }
+      return Promise.resolve({});
+    });
   });
 
   afterEach(() => {

@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { workspace, window, mockFileSystemWatcher } from '../mocks/vscode';
 import { ExtensionStateManager } from '../../../src/core/extensionStateManager';
 
+// C4 annotation: archivePath here intentionally carries the historical default
+// 'docs/archive/agent-sessions' rather than the new default '.tangyr/agent-sessions'.
+// This fixture tests config-preservation and reload behavior — not the migration
+// rewrite. The migrateValue transform (which rewrites this path) is exercised in
+// migrationService.migrateValue.test.ts and archiveServiceRegistration.test.ts.
 const FULL_CONFIG = JSON.stringify({
   enabled: true,
   versionCode: 1001000000,

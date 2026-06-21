@@ -628,6 +628,9 @@ describe('AgentSessionArchiveService', () => {
             return Promise.resolve([['2026', 2 /* Directory */]]);
           return Promise.resolve([]);
         });
+      // BK-004: stat is used to check whether a destination file already exists.
+      // Reject for destination paths so the copy proceeds (destination absent).
+      workspace.fs.stat = vi.fn().mockRejectedValue(new Error('not found'));
       const provider = createMockProvider();
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
