@@ -135,14 +135,62 @@ export function processToolUseBlock(block: ContentBlock, pending: PendingState):
   extractFileRefs(block, pending);
 }
 
-export function processToolResult(block: ContentBlock, pending: PendingState): void {
+export function processToolResult(
+  block: ContentBlock,
+  pending: PendingState,
+  toolResultMap?: ReadonlyMap<string, string>,
+  logger?: { debug: (msg: string) => void }
+): void {
   if (!block.tool_use_id) return;
-  const resultText = extractText(block.content);
+  let resultText = extractText(block.content);
+  // B-01: resolve markers on the already-extracted text so substituted values
+  // (which may contain newlines, quotes, or backslashes) never have to survive
+  // JSON.parse.  Import is inlined to avoid circular module deps.
+  if (toolResultMap !== undefined && resultText) {
+    resultText = resolveToolResultMarkersInline(resultText, toolResultMap, logger);
+  }
   const existing = pending.toolCalls.find((tc) => !tc.output);
   if (existing && resultText) {
     const idx = pending.toolCalls.indexOf(existing);
     pending.toolCalls[idx] = { ...existing, output: resultText };
   }
+}
+
+/**
+ * B-01: Inline marker resolver — mirrors resolveToolResultMarkers from
+ * claudeCodeParserCompanion.ts without importing that module (which would
+ * create a circular dependency through claudeCodeParser.ts).
+ * Exact-case lookup first; case-insensitive fallback for macOS/Windows.
+ */
+function resolveToolResultMarkersInline(
+  text: string,
+  toolResultMap: ReadonlyMap<string, string>,
+  logger?: { debug: (msg: string) => void }
+): string {
+  const lowerMap = new Map<string, string>();
+  for (const [key, value] of toolResultMap) {
+    lowerMap.set(key.toLowerCase(), value);
+  }
+  return text.replace(
+    /<persisted-output>([\s\S]*?)<\/persisted-output>/g,
+    (match, inner: string) => {
+      const trimmed = inner.trim();
+      const parts = trimmed.split(/[\\/]/).filter(Boolean);
+      const filename = parts.length > 0 ? parts[parts.length - 1] : undefined;
+      if (filename === undefined) {
+        logger?.debug(`resolveToolResultMarkersInline: empty marker payload — skipping`);
+        return match;
+      }
+      const exact = toolResultMap.get(filename);
+      if (exact !== undefined) return exact;
+      const lower = lowerMap.get(filename.toLowerCase());
+      if (lower !== undefined) return lower;
+      logger?.debug(
+        `resolveToolResultMarkersInline: unresolved marker for "${filename}" — retained verbatim`
+      );
+      return match;
+    }
+  );
 }
 
 export function extractToolMetadata(block: ContentBlock, pending: PendingState): void {

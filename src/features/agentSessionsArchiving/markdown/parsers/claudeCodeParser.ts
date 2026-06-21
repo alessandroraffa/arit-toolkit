@@ -19,7 +19,6 @@ import {
 } from './claudeCodeParserUtils';
 import type { CompanionDataContext, CompactionEntry } from '../companionDataTypes';
 import {
-  resolveToolResultMarkers,
   extractSubagentMeta,
   extractCompactionSummaryText,
   parseFirstEventAgentType,
@@ -95,11 +94,10 @@ export class ClaudeCodeParser implements SessionParser {
     sessionId: string,
     companionContext?: CompanionDataContext
   ): ParseResult {
-    const resolvedContent = companionContext
-      ? resolveToolResultMarkers(content, companionContext.toolResultMap, this.logger)
-      : content;
-
-    const lines = resolvedContent.split('\n').filter((line) => line.trim());
+    // B-01: do NOT call resolveToolResultMarkers on the raw JSONL string.
+    // Marker values may contain newlines/quotes/backslashes that would corrupt
+    // the JSON; resolution is deferred to processToolResult (post-parse).
+    const lines = content.split('\n').filter((line) => line.trim());
     if (!this.looksLikeJsonl(lines)) {
       return { status: 'unrecognized', reason: 'content is not valid JSONL events' };
     }
@@ -117,7 +115,7 @@ export class ClaudeCodeParser implements SessionParser {
         skippedLines++;
         continue;
       }
-      pending = this.processEvent(event, turns, pending);
+      pending = this.processEvent(event, turns, pending, companionContext);
     }
     // L-07: emit tally when at least one line was skipped
     if (skippedLines > 0) {
@@ -180,7 +178,8 @@ export class ClaudeCodeParser implements SessionParser {
   private processEvent(
     event: JsonlEvent,
     turns: NormalizedTurn[],
-    pending: PendingState
+    pending: PendingState,
+    companionContext?: CompanionDataContext
   ): PendingState {
     if (event.type === 'user') {
       this.processUserEvent(event, turns);
@@ -194,7 +193,7 @@ export class ClaudeCodeParser implements SessionParser {
       return pending;
     }
     if (event.type === 'tool_result') {
-      this.processToolResultEvent(event, pending);
+      this.processToolResultEvent(event, pending, companionContext);
     }
     return pending;
   }
@@ -260,9 +259,16 @@ export class ClaudeCodeParser implements SessionParser {
     }
   }
 
-  private processToolResultEvent(event: JsonlEvent, pending: PendingState): void {
+  private processToolResultEvent(
+    event: JsonlEvent,
+    pending: PendingState,
+    companionContext?: CompanionDataContext
+  ): void {
     for (const b of getBlocks(event.message?.content)) {
-      if (b.type === 'tool_result') processToolResult(b, pending);
+      if (b.type === 'tool_result') {
+        // B-01: pass toolResultMap so marker resolution happens post-parse
+        processToolResult(b, pending, companionContext?.toolResultMap, this.logger);
+      }
     }
   }
 
@@ -281,12 +287,9 @@ export class ClaudeCodeParser implements SessionParser {
         });
         continue;
       }
-      const resolved = resolveToolResultMarkers(
-        entry.content,
-        context.toolResultMap,
-        this.logger
-      );
-      const lines = resolved.split('\n').filter((line) => line.trim());
+      // B-01: do NOT call resolveToolResultMarkers on the raw JSONL string.
+      // Parse first, then resolve markers post-parse via processEvent → processToolResult.
+      const lines = entry.content.split('\n').filter((line) => line.trim());
       const turns: NormalizedTurn[] = [];
       let pending = emptyPending();
       // L-07: tally malformed lines for observability
@@ -299,7 +302,7 @@ export class ClaudeCodeParser implements SessionParser {
           skippedSubagentLines++;
           continue;
         }
-        pending = this.processEvent(event, turns, pending);
+        pending = this.processEvent(event, turns, pending, context);
       }
       if (skippedSubagentLines > 0) {
         this.logger?.debug(

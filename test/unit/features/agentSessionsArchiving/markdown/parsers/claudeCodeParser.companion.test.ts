@@ -433,4 +433,193 @@ describe('ClaudeCodeParser — companion data', () => {
       .filter((m) => m.includes('skipped'));
     expect(skipCalls).toHaveLength(0);
   });
+
+  // B-01 regression tests: post-parse marker resolution does not drop turns
+
+  it('B-01: tool-result value containing a literal newline resolves without dropping the turn', () => {
+    // The resolved value contains a raw newline and a double-quote — characters
+    // that would break JSON parsing if substituted into the raw JSONL string.
+    const valueWithNewlineAndQuote = 'line one\nline two with "quotes" inside';
+    const content = jsonl(
+      {
+        type: 'tool_use',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Read',
+              id: 'tool-nl',
+              input: { file_path: 'b.ts' },
+            },
+          ],
+        },
+      },
+      {
+        type: 'tool_result',
+        message: {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'tool-nl',
+              content: '<persisted-output>/path/to/toolu_nl.txt</persisted-output>',
+            },
+          ],
+        },
+      },
+      assistantEvent
+    );
+    const ctx: CompanionDataContext = {
+      subagentEntries: [],
+      toolResultMap: new Map([['toolu_nl.txt', valueWithNewlineAndQuote]]),
+      compactionEntries: [],
+    };
+    // The tool_use + tool_result + assistant events collapse into one assistant turn
+    // that carries the toolCall with its resolved output.  The turn must not be
+    // dropped even though the resolved value contains raw newlines and quotes.
+    const session = expectParsed(parser.parse(content, 'session-nl', ctx));
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls[0]!.output).toBe(valueWithNewlineAndQuote);
+  });
+
+  it('B-01: tool-result value containing a backslash resolves without dropping the turn', () => {
+    const valueWithBackslash = 'path\\to\\file and trailing\\';
+    const content = jsonl(
+      {
+        type: 'tool_use',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Read',
+              id: 'tool-bs',
+              input: { file_path: 'c.ts' },
+            },
+          ],
+        },
+      },
+      {
+        type: 'tool_result',
+        message: {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'tool-bs',
+              content: '<persisted-output>/path/to/toolu_bs.txt</persisted-output>',
+            },
+          ],
+        },
+      },
+      assistantEvent
+    );
+    const ctx: CompanionDataContext = {
+      subagentEntries: [],
+      toolResultMap: new Map([['toolu_bs.txt', valueWithBackslash]]),
+      compactionEntries: [],
+    };
+    const session = expectParsed(parser.parse(content, 'session-bs', ctx));
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls[0]!.output).toBe(valueWithBackslash);
+  });
+
+  it('B-01: large tool-result (>256KB) renders elided output and does not drop the turn', () => {
+    // Simulate a tool-result that exceeded the byte cap and got the elision note.
+    // The elision note starts with '\n', which would have broken pre-parse substitution.
+    const bigValue =
+      'A'.repeat(256 * 1024) + '\n… 1000 bytes elided, see tool-results/toolu_big.txt';
+    const content = jsonl(
+      {
+        type: 'tool_use',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Read',
+              id: 'tool-big',
+              input: { file_path: 'd.ts' },
+            },
+          ],
+        },
+      },
+      {
+        type: 'tool_result',
+        message: {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'tool-big',
+              content: '<persisted-output>/path/to/toolu_big.txt</persisted-output>',
+            },
+          ],
+        },
+      },
+      assistantEvent
+    );
+    const ctx: CompanionDataContext = {
+      subagentEntries: [],
+      toolResultMap: new Map([['toolu_big.txt', bigValue]]),
+      compactionEntries: [],
+    };
+    // The turn must not be dropped despite the embedded newline in the elision note.
+    const session = expectParsed(parser.parse(content, 'session-big', ctx));
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls).toHaveLength(1);
+    expect(session.turns[0]!.toolCalls[0]!.output).toContain('… 1000 bytes elided');
+    expect(session.turns[0]!.toolCalls[0]!.output).toContain('AAAA');
+  });
+
+  it('B-01: subagent tool-result marker containing newline resolves without dropping the subagent turn', () => {
+    const valueWithNewline = 'first line\nsecond line';
+    const subagentContent = jsonl(
+      {
+        type: 'tool_use',
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'tool_use',
+              name: 'Read',
+              id: 'sub-tool-1',
+              input: { file_path: 'x.ts' },
+            },
+          ],
+        },
+      },
+      {
+        type: 'tool_result',
+        message: {
+          role: 'tool',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: 'sub-tool-1',
+              content: '<persisted-output>/path/to/toolu_sub.txt</persisted-output>',
+            },
+          ],
+        },
+      },
+      assistantEvent
+    );
+    const ctx: CompanionDataContext = {
+      subagentEntries: [{ agentId: 'sub-b01', content: subagentContent }],
+      toolResultMap: new Map([['toolu_sub.txt', valueWithNewline]]),
+      compactionEntries: [],
+    };
+    const session = expectParsed(parser.parse(baseContent, 'session-sub-b01', ctx));
+    expect(session.subagentSessions).toHaveLength(1);
+    // tool_use + tool_result + assistantEvent collapse into one assistant turn
+    // that carries the toolCall with its resolved output.
+    expect(session.subagentSessions![0]!.turns).toHaveLength(1);
+    expect(session.subagentSessions![0]!.turns[0]!.toolCalls).toHaveLength(1);
+    expect(session.subagentSessions![0]!.turns[0]!.toolCalls[0]!.output).toBe(
+      valueWithNewline
+    );
+  });
 });
