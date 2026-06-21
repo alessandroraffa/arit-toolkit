@@ -5,21 +5,16 @@ import type { SessionFile, SessionProvider, WatchPattern } from '../types';
 import { getFileTimes } from './providerUtils';
 
 /**
- * H-12: Encode a workspace root path as the Claude Code project directory name.
+ * H-12 / B-04: Encode a workspace root path as the Claude Code project directory name.
  *
- * Claude Code's own logic (cross-platform) replaces every path separator
- * (forward-slash and backslash) with '-' and strips the Windows drive colon.
- * Examples:
- *   '/home/user/proj'     → '-home-user-proj'
- *   'C:\\Users\\me\\proj' → 'C--Users--me--proj'  (colon → '-', backslash → '-')
- *
- * We match that encoding so the derived directory name always resolves to the
- * same on-disk path that Claude Code created, regardless of the host platform.
+ * Claude Code's actual on-disk encoding replaces EVERY non-alphanumeric character
+ * with '-' (verified on macOS: '/Users/.../api.icgene.com' → '-Users-...-api-icgene-com').
+ * This subsumes path separators (/ \), the Windows drive colon (:), dots, spaces,
+ * and any other punctuation so that dotted-segment paths (e.g. 'api.icgene.com')
+ * resolve to the correct directory instead of a non-existent one.
  */
 function encodeProjectDirName(workspaceRootPath: string): string {
-  return workspaceRootPath
-    .replace(/:/g, '-') // strip Windows drive colon (e.g. 'C:' → 'C-')
-    .replace(/[\\/]/g, '-'); // forward-slash and backslash → '-'
+  return workspaceRootPath.replace(/[^a-zA-Z0-9]/g, '-');
 }
 
 export class ClaudeCodeProvider implements SessionProvider {
@@ -95,14 +90,23 @@ export class ClaudeCodeProvider implements SessionProvider {
   }
 
   /**
-   * Build a compound fingerprint from the companion tree without per-file stat walks.
+   * Build a compound fingerprint from the companion tree.
    *
-   * The fingerprint is a stable string: "mainMtime:subagentsDirMtime:toolResultsDirMtime:fileCount"
+   * Fingerprint: "mainMtime:maxCompanionFileMtime:totalSize:fileCount"
    *
-   * - mainMtime       — mtime of the main .jsonl (in-place edit detection)
-   * - subagentsDirMtime   — mtime of the subagents/ directory itself (advances on add/delete)
-   * - toolResultsDirMtime — mtime of the tool-results/ directory itself (advances on add/delete)
-   * - fileCount       — total count of entries across both subdirs (catches same-tick mtime collisions)
+   * - mainMtime             — mtime of the main .jsonl (in-place edit detection)
+   * - maxCompanionFileMtime — maximum mtime over all companion files (detects in-place
+   *                           appends to subagent transcripts even when the parent
+   *                           directory mtime is unchanged)
+   * - totalSize             — sum of file sizes across all companion files (catches
+   *                           in-place rewrites on filesystems with 1s mtime granularity
+   *                           where the mtime does not advance within the same second)
+   * - fileCount             — total count of companion files (catches same-tick add/remove
+   *                           when both mtime and size are unchanged)
+   *
+   * Per-file stats are collected with bounded-concurrency Promise.all over each
+   * subdir's listing, replacing the former directory-level stat that could not detect
+   * in-place content changes.
    *
    * When the companion dir does not exist, returns a fingerprint of just the main mtime so
    * normal (no-companion) sessions still advance when the main file changes.
@@ -118,8 +122,8 @@ export class ClaudeCodeProvider implements SessionProvider {
       return String(mainMtime);
     }
 
-    let subagentsDirMtime = 0;
-    let toolResultsDirMtime = 0;
+    let maxCompanionFileMtime = 0;
+    let totalSize = 0;
     let fileCount = 0;
 
     for (const [entryName, entryType] of topEntries) {
@@ -131,34 +135,36 @@ export class ClaudeCodeProvider implements SessionProvider {
       }
       const subdirUri = vscode.Uri.joinPath(companionDirUri, entryName);
 
-      // Use the subdirectory's own mtime as the primary change signal.
-      // A child add or delete advances the directory mtime on most filesystems.
-      let subdirMtime = 0;
+      let subEntries: [string, vscode.FileType][];
       try {
-        const subdirStat = await vscode.workspace.fs.stat(subdirUri);
-        subdirMtime = subdirStat.mtime;
+        subEntries = await vscode.workspace.fs.readDirectory(subdirUri);
       } catch {
-        // Subdir not readable — leave mtime 0 (will differ from any real value)
+        continue;
       }
 
-      // Count entries in this subdir to catch same-tick mtime collisions.
-      let subdirCount = 0;
-      try {
-        const subEntries = await vscode.workspace.fs.readDirectory(subdirUri);
-        subdirCount = subEntries.length;
-      } catch {
-        // Ignore
-      }
+      // B-02: stat every companion file in parallel to fold mtime+size into the
+      // fingerprint — directory mtime alone does not advance on in-place writes.
+      const fileEntries = subEntries.filter(([, ft]) => ft === vscode.FileType.File);
+      fileCount += fileEntries.length;
 
-      fileCount += subdirCount;
+      const stats = await Promise.all(
+        fileEntries.map(async ([name]) => {
+          const fileUri = vscode.Uri.joinPath(subdirUri, name);
+          try {
+            return await vscode.workspace.fs.stat(fileUri);
+          } catch {
+            return undefined;
+          }
+        })
+      );
 
-      if (entryName === 'subagents') {
-        subagentsDirMtime = subdirMtime;
-      } else {
-        toolResultsDirMtime = subdirMtime;
+      for (const stat of stats) {
+        if (stat === undefined) continue;
+        if (stat.mtime > maxCompanionFileMtime) maxCompanionFileMtime = stat.mtime;
+        totalSize += stat.size;
       }
     }
 
-    return `${String(mainMtime)}:${String(subagentsDirMtime)}:${String(toolResultsDirMtime)}:${String(fileCount)}`;
+    return `${String(mainMtime)}:${String(maxCompanionFileMtime)}:${String(totalSize)}:${String(fileCount)}`;
   }
 }
