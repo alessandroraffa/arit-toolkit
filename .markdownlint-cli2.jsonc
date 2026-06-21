@@ -15,6 +15,7 @@
     ".vscode-test/**",
     "docs/archive/**",
     ".claude/**",
+    ".tangyr/**",
     "private/**",
     "CHANGELOG.md",
   ],

@@ -20,6 +20,10 @@ docs/archive/
 
 .claude/
 
+# Tangyr runtime / machinery output (review log, gate history, etc.)
+
+.tangyr/
+
 # Private / non-published content
 
 private/
