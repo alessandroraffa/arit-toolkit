@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { workspace, FileType } from '../../mocks/vscode';
+import { workspace, FileType, FileSystemError } from '../../mocks/vscode';
 import { resolveCompanionData } from '../../../../src/features/agentSessionsArchiving/companionDataResolver';
 import type * as vscode from 'vscode';
 
@@ -186,5 +186,94 @@ describe('resolveCompanionData', () => {
 
     expect(logger.warn).toHaveBeenCalled();
     expect(result.toolResultMap.size).toBe(0);
+  });
+
+  // H-01 tests: broaden companionPartial to cover tool-result and compaction failures
+
+  it('H-01: tool-result readFile rejects EACCES → companionPartial:true, failing entry absent from map', async () => {
+    const accessError = Object.assign(new Error('EACCES'), { code: 'EACCES' });
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]) // tool-results/
+      .mockResolvedValueOnce([]); // subagents/ for compaction
+    workspace.fs.readFile = vi.fn().mockRejectedValue(accessError);
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.companionPartial).toBe(true);
+    expect(result.toolResultMap.size).toBe(0);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it('H-01: compaction readOneCompactionFile rejects → companionPartial:true, entry dropped', async () => {
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([]) // tool-results/
+      .mockResolvedValueOnce([['agent-acompact-abc.jsonl', FileType.File]]); // subagents/ for compaction
+    workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('read error'));
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.companionPartial).toBe(true);
+    expect(result.compactionEntries).toHaveLength(0);
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it('H-01: tool-results/ readDirectory rejects with FileNotFound → companionPartial stays false (benign-absent)', async () => {
+    const notFoundErr = FileSystemError.FileNotFound('tool-results not found');
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockRejectedValueOnce(notFoundErr) // tool-results/ — benign absence
+      .mockResolvedValueOnce([]); // subagents/ for compaction
+    workspace.fs.readFile = vi.fn().mockResolvedValue(encode(''));
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.companionPartial).toBeUndefined();
+    expect(result.toolResultMap.size).toBe(0);
+  });
+
+  it('H-01: tool-results/ readDirectory rejects with NoPermissions → companionPartial:true', async () => {
+    const permErr = Object.assign(new Error('NoPermissions'), { code: 'NoPermissions' });
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockRejectedValueOnce(permErr) // tool-results/ — permission error → partial
+      .mockResolvedValueOnce([]); // subagents/ for compaction
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.companionPartial).toBe(true);
+    expect(result.toolResultMap.size).toBe(0);
+  });
+
+  it('H-01: all readers succeed → companionPartial is not set', async () => {
+    const toolOutput = 'tool output';
+    const jsonlContent = '{"type":"human","text":"hello"}\n';
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]) // subagents/
+      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]) // tool-results/
+      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]); // subagents/ for compaction
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValueOnce(encode(jsonlContent)) // subagent content
+      .mockRejectedValueOnce(new Error('meta not found')) // meta file absent (not an error)
+      .mockResolvedValueOnce(encode(toolOutput)); // tool-result
+    workspace.fs.stat = vi
+      .fn()
+      .mockResolvedValue({ mtime: 100, ctime: 0, size: 10, type: FileType.File });
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.companionPartial).toBeUndefined();
   });
 });

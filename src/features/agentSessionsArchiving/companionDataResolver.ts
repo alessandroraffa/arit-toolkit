@@ -9,6 +9,23 @@ import type { Logger } from '../../core/logger';
 
 const decoder = new TextDecoder();
 
+/**
+ * Returns true when the caught error is a benign "directory/file not found"
+ * condition (FileNotFound from vscode.FileSystemError, or ENOENT from Node).
+ * Any other error code (NoPermissions, Unavailable, EBUSY, EACCES …) means
+ * the target may exist but be transiently unreadable — those should set
+ * companionPartial so the session is retried on the next cycle.
+ */
+function isBenignAbsent(err: unknown): boolean {
+  if (err instanceof Error) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'FileNotFound' || code === 'ENOENT') {
+      return true;
+    }
+  }
+  return false;
+}
+
 async function readMetaContent(
   subagentsDirUri: vscode.Uri,
   agentId: string
@@ -67,19 +84,24 @@ async function readSubagents(
 async function readToolResults(
   companionDirUri: vscode.Uri,
   logger: Logger
-): Promise<Map<string, string>> {
+): Promise<{ map: Map<string, string>; partial: boolean }> {
   const toolResultsDirUri = vscode.Uri.joinPath(companionDirUri, 'tool-results');
   let entries: [string, vscode.FileType][];
   try {
     entries = await vscode.workspace.fs.readDirectory(toolResultsDirUri);
-  } catch {
-    return new Map();
+  } catch (err) {
+    if (isBenignAbsent(err)) {
+      return { map: new Map(), partial: false };
+    }
+    logger.warn(`Failed to read tool-results directory: ${String(err)}`);
+    return { map: new Map(), partial: true };
   }
 
-  const result = new Map<string, string>();
+  const map = new Map<string, string>();
+  let partial = false;
   for (const [name] of entries) {
     const fileUri = vscode.Uri.joinPath(toolResultsDirUri, name);
-    if (result.has(name)) {
+    if (map.has(name)) {
       logger.warn(
         `Tool-result map key collision detected for "${name}" — duplicate entry ignored`
       );
@@ -87,12 +109,13 @@ async function readToolResults(
     }
     try {
       const bytes = await vscode.workspace.fs.readFile(fileUri);
-      result.set(name, decoder.decode(bytes));
+      map.set(name, decoder.decode(bytes));
     } catch (err) {
       logger.warn(`Failed to read tool-result file ${name}: ${String(err)}`);
+      partial = true;
     }
   }
-  return result;
+  return { map, partial };
 }
 
 async function readOneCompactionFile(
@@ -115,25 +138,28 @@ async function readOneCompactionFile(
 async function readCompactionFiles(
   companionDirUri: vscode.Uri,
   logger: Logger
-): Promise<CompactionEntry[]> {
+): Promise<{ entries: CompactionEntry[]; partial: boolean }> {
   const subagentsDirUri = vscode.Uri.joinPath(companionDirUri, 'subagents');
   let entries: [string, vscode.FileType][];
   try {
     entries = await vscode.workspace.fs.readDirectory(subagentsDirUri);
   } catch {
-    return [];
+    return { entries: [], partial: false };
   }
 
   const result: CompactionEntry[] = [];
+  let partial = false;
   for (const [name] of entries) {
     if (/^agent-acompact-.*\.jsonl$/.test(name)) {
       const entry = await readOneCompactionFile(subagentsDirUri, name, logger);
       if (entry !== undefined) {
         result.push(entry);
+      } else {
+        partial = true;
       }
     }
   }
-  return result;
+  return { entries: result, partial };
 }
 
 export async function resolveCompanionData(
@@ -148,23 +174,32 @@ export async function resolveCompanionData(
 
   try {
     await vscode.workspace.fs.readDirectory(companionDirUri);
-  } catch {
+  } catch (err) {
+    if (!isBenignAbsent(err)) {
+      logger.warn(`Failed to read companion directory: ${String(err)}`);
+    }
     return { subagentEntries: [], toolResultMap: new Map(), compactionEntries: [] };
   }
 
   const subagentEntries = await readSubagents(companionDirUri, logger);
-  const toolResultMap = await readToolResults(companionDirUri, logger);
-  const compactionEntries = await readCompactionFiles(companionDirUri, logger);
+  const { map: toolResultMap, partial: toolResultPartial } = await readToolResults(
+    companionDirUri,
+    logger
+  );
+  const { entries: compactionEntries, partial: compactionPartial } =
+    await readCompactionFiles(companionDirUri, logger);
+
   const hasUnreadable = subagentEntries.some((e) => e.unreadable === true);
+  const companionPartial = hasUnreadable || toolResultPartial || compactionPartial;
 
   logger.debug(
     `Companion data resolved: ${String(subagentEntries.length)} subagent(s), ` +
       `${String(toolResultMap.size)} tool-result(s), ` +
       `${String(compactionEntries.length)} compaction(s)` +
-      (hasUnreadable ? ' [partial — unreadable subagent(s)]' : '')
+      (companionPartial ? ' [partial]' : '')
   );
 
-  if (hasUnreadable) {
+  if (companionPartial) {
     return { subagentEntries, toolResultMap, compactionEntries, companionPartial: true };
   }
   return { subagentEntries, toolResultMap, compactionEntries };
