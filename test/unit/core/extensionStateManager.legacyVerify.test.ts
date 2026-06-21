@@ -31,14 +31,21 @@ describe('verifyLegacyConfigMigration', () => {
     return new ExtensionStateManager(mockLogger as any, mockMigrationService as any);
   }
 
-  it('should do nothing when .tangyr.jsonc already exists', async () => {
+  it('should do nothing when .tangyr.jsonc exists and .arit-toolkit.jsonc is absent', async () => {
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValue(
         new TextEncoder().encode('{ "enabled": true, "versionCode": 1001019000 }')
       );
-    workspace.fs.stat = vi.fn().mockResolvedValue({});
+    // Only .tangyr.jsonc is present; .arit-toolkit.jsonc is absent
+    workspace.fs.stat = vi.fn().mockImplementation((uri: { fsPath: string }) => {
+      if (uri.fsPath.endsWith('.arit-toolkit.jsonc')) {
+        return Promise.reject(new Error('not found'));
+      }
+      return Promise.resolve({});
+    });
     workspace.fs.rename = vi.fn().mockResolvedValue(undefined);
+    workspace.fs.delete = vi.fn().mockResolvedValue(undefined);
     workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
     window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
     window.showWarningMessage = vi.fn().mockResolvedValue(undefined);
@@ -47,6 +54,11 @@ describe('verifyLegacyConfigMigration', () => {
     await manager.initialize('1.19.0');
 
     expect(workspace.fs.rename).not.toHaveBeenCalled();
+    const deleteCalls = vi.mocked(workspace.fs.delete).mock.calls;
+    const legacyDeleted = deleteCalls.some((call) =>
+      (call[0] as { fsPath: string }).fsPath.endsWith('.arit-toolkit.jsonc')
+    );
+    expect(legacyDeleted).toBe(false);
     expect(window.showInformationMessage).not.toHaveBeenCalledWith(
       expect.stringContaining('migrated')
     );

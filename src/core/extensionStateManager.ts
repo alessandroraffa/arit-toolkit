@@ -4,6 +4,7 @@ import type { Logger } from './logger';
 import type { ConfigMigrationService } from './configMigration/migrationService';
 import type { ConfigAutoCommitService } from './configAutoCommit';
 import { parseJsonc, formatJsonc, computeVersionCode } from '../utils';
+import { isGitTracked } from './git';
 
 const CONFIG_FILENAME = '.tangyr.jsonc';
 const LEGACY_CONFIG_FILENAME = '.arit-toolkit.jsonc';
@@ -41,6 +42,13 @@ export class ExtensionStateManager {
   private _loadedLegacyConfigFile = false;
   private _lastWrittenConfigContent: string | undefined;
   private _migrationInFlight: Promise<boolean> | undefined;
+  /**
+   * BK-006: set to true after runMigration() is called for the first time during
+   * initialize(), so that consolidateLegacyConfig Path A does not show a duplicate
+   * migration prompt when the user declined the first one and .tangyr.jsonc was
+   * not yet created. A single activation, a single prompt.
+   */
+  private _migrationAttemptedThisSession = false;
 
   constructor(
     private readonly logger: Logger,
@@ -121,7 +129,12 @@ export class ExtensionStateManager {
   public async initialize(extensionVersion: string): Promise<void> {
     this._extensionVersion = extensionVersion;
     if (!this.isSingleRoot || !this._workspaceRoot) {
-      this.logger.debug('Skipping initialization for non-single-root workspace');
+      // SPEC-002 Constraint 1: automatic consolidation and path migration are
+      // scoped to single-root workspaces only. Multi-root and no-workspace
+      // activations are out of scope and are a safe no-op here.
+      this.logger.info(
+        `Skipping initialization for ${this._workspaceMode} workspace — legacy-config consolidation and archive-path migration require a single-root workspace`
+      );
       return;
     }
     await this.readStateFromFile();
@@ -130,6 +143,7 @@ export class ExtensionStateManager {
       this._onDidChangeState.fire(this._isEnabled);
       if (this._isEnabled) {
         await this.runMigration();
+        this._migrationAttemptedThisSession = true;
       } else {
         await this.ensureCurrentConfigFile();
       }
@@ -137,9 +151,10 @@ export class ExtensionStateManager {
       const accepted = await this.showOnboardingNotification();
       if (accepted) {
         await this.runMigration();
+        this._migrationAttemptedThisSession = true;
       }
     }
-    await this.verifyLegacyConfigMigration();
+    await this.consolidateLegacyConfig();
   }
 
   public async checkup(): Promise<CheckupResult> {
@@ -390,59 +405,87 @@ export class ExtensionStateManager {
     return vscode.Uri.file(`${originalFsPath}.${suffix}`);
   }
 
-  private async verifyLegacyConfigMigration(): Promise<void> {
+  /**
+   * Consolidates any coexisting legacy .arit-toolkit.jsonc after the normal
+   * config-read and migration flow has already produced or confirmed .tangyr.jsonc.
+   *
+   * Branching:
+   * - Legacy absent → no-op (idempotent).
+   * - Both files present → .tangyr.jsonc is authoritative; remove legacy (git-aware).
+   * - Legacy only, parseable → migrate to .tangyr.jsonc (Path A), then remove legacy.
+   * - Legacy only, malformed → rename to .malformed.bak, warn, do NOT write .tangyr.jsonc.
+   *
+   * Scope: single-root workspaces only.
+   */
+  private async consolidateLegacyConfig(): Promise<void> {
     if (!this._workspaceRoot) {
       return;
     }
-    const newConfigUri = this.getConfigUri();
-    if (!newConfigUri) {
-      return;
-    }
-    try {
-      await vscode.workspace.fs.stat(newConfigUri);
-      this.logger.info(
-        `verifyLegacyConfigMigration: ${CONFIG_FILENAME} already present — no action needed`
-      );
-      return;
-    } catch {
-      // .tangyr.jsonc absent — continue check
-    }
+    const workspaceRoot = this._workspaceRoot;
     const legacyUri = this.getConfigUri(LEGACY_CONFIG_FILENAME);
     if (!legacyUri) {
       return;
     }
+    // Check whether legacy file exists; if not, this is a no-op.
     try {
       await vscode.workspace.fs.stat(legacyUri);
     } catch {
       this.logger.info(
-        `verifyLegacyConfigMigration: neither ${CONFIG_FILENAME} nor ${LEGACY_CONFIG_FILENAME} found — no action needed`
+        `consolidateLegacyConfig: ${LEGACY_CONFIG_FILENAME} absent — no action needed`
       );
       return;
     }
-    this.logger.info(
-      `verifyLegacyConfigMigration: ${CONFIG_FILENAME} absent, ${LEGACY_CONFIG_FILENAME} present — attempting migration`
-    );
+    // Check whether .tangyr.jsonc is present.
+    const newConfigUri = this.getConfigUri();
+    let newConfigPresent = false;
+    if (newConfigUri) {
+      try {
+        await vscode.workspace.fs.stat(newConfigUri);
+        newConfigPresent = true;
+      } catch {
+        // .tangyr.jsonc absent
+      }
+    }
+    if (newConfigPresent) {
+      // Both files present: .tangyr.jsonc is authoritative — remove legacy only.
+      this.logger.info(
+        `consolidateLegacyConfig: both files present — ${CONFIG_FILENAME} is authoritative, removing legacy`
+      );
+      const removeResult = await this.removeLegacyConfigFile(legacyUri, workspaceRoot);
+      if (removeResult === 'deleted') {
+        void vscode.window.showInformationMessage(
+          `Tangyr: cleaned up legacy .arit-toolkit.jsonc (deleted).`
+        );
+      } else if (removeResult === 'renamed') {
+        void vscode.window.showInformationMessage(
+          `Tangyr: cleaned up legacy .arit-toolkit.jsonc (renamed to .arit-toolkit.jsonc.bak).`
+        );
+      } else {
+        void vscode.window.showWarningMessage(
+          `Tangyr: legacy .arit-toolkit.jsonc could not be removed — will retry next activation.`
+        );
+      }
+      return;
+    }
+    // Legacy only: attempt to parse.
     let parsed: Record<string, unknown>;
     try {
       parsed = await this.readConfigFile(LEGACY_CONFIG_FILENAME);
     } catch {
-      // Path B: malformed legacy
+      // Path B: malformed legacy — rename to .malformed.bak, warn, do NOT create .tangyr.jsonc.
       const malformedBackupUri = await this.findAvailableBackupPath(
-        vscode.Uri.joinPath(
-          this._workspaceRoot,
-          `${LEGACY_CONFIG_FILENAME}.malformed.bak`
-        )
+        vscode.Uri.joinPath(workspaceRoot, `${LEGACY_CONFIG_FILENAME}.malformed.bak`)
       );
       try {
         await vscode.workspace.fs.rename(legacyUri, malformedBackupUri, {
           overwrite: false,
         });
         this.logger.warn(
-          `verifyLegacyConfigMigration: renamed malformed ${LEGACY_CONFIG_FILENAME} to ${malformedBackupUri.fsPath}`
+          `consolidateLegacyConfig: renamed malformed ${LEGACY_CONFIG_FILENAME} to ${malformedBackupUri.fsPath}`
         );
       } catch (renameErr) {
         this.logger.warn(
-          `verifyLegacyConfigMigration: could not rename malformed legacy file: ${String(renameErr)}`
+          `consolidateLegacyConfig: could not rename malformed legacy file: ${String(renameErr)}`
         );
       }
       void vscode.window.showWarningMessage(
@@ -450,38 +493,82 @@ export class ExtensionStateManager {
       );
       return;
     }
-    // Path A: parseable legacy
-    this.applyConfig(parsed); // sets _fullConfig, _isInitialized,
-    // _isEnabled, _configVersionCode,
-    // calls notifySectionListeners
-    this._loadedLegacyConfigFile = true; // signal that we loaded from legacy
-    this._onDidChangeState.fire(this._isEnabled); // mirror initialize() upstream
-    // transition so feature services
-    // see the enable/disable signal
-    this.logger.info(
-      `verifyLegacyConfigMigration: applied legacy config to in-memory state`
-    );
-    await this.runMigration(); // brings config to current
-    // extension version AND writes
-    // .tangyr.jsonc via writeFullConfig
-    // OR via ensureCurrentConfigFile
-    this.logger.info(`verifyLegacyConfigMigration: ran migration after Path A apply`);
+    // Path A: parseable legacy — apply config, run migration to write .tangyr.jsonc, then remove legacy.
+    // BK-006: when runMigration() was already called during initialize() and the user
+    // declined (so .tangyr.jsonc was not written), skip a second migration prompt.
+    // A single activation must not prompt the user twice.
+    if (this._migrationAttemptedThisSession) {
+      this.logger.info(
+        `consolidateLegacyConfig: migration already attempted this session — skipping second runMigration() (user may have declined)`
+      );
+      return;
+    }
+    this.applyConfig(parsed);
+    this._loadedLegacyConfigFile = true;
+    this._onDidChangeState.fire(this._isEnabled);
+    this.logger.info(`consolidateLegacyConfig: applied legacy config to in-memory state`);
+    await this.runMigration();
+    this._migrationAttemptedThisSession = true;
+    this.logger.info(`consolidateLegacyConfig: ran migration after Path A apply`);
+    const removeResult = await this.removeLegacyConfigFile(legacyUri, workspaceRoot);
+    if (removeResult === 'deleted') {
+      void vscode.window.showInformationMessage(
+        `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy file deleted.`
+      );
+    } else if (removeResult === 'renamed') {
+      void vscode.window.showInformationMessage(
+        `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy file renamed to .arit-toolkit.jsonc.bak.`
+      );
+    } else {
+      void vscode.window.showWarningMessage(
+        `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy .arit-toolkit.jsonc could not be removed — will retry next activation.`
+      );
+    }
+  }
+
+  /**
+   * Git-aware removal of the legacy config file.
+   * - When tracked: deletes from the working tree (git history is the backup).
+   * - When not tracked (or git unavailable): renames to .arit-toolkit.jsonc.bak
+   *   with a timestamped suffix on collision via findAvailableBackupPath.
+   * Returns 'deleted' when deleted, 'renamed' when renamed to .bak, or 'failed'
+   * when the operation could not be completed. Failure is logged and does not throw.
+   */
+  private async removeLegacyConfigFile(
+    legacyUri: vscode.Uri,
+    workspaceRoot: vscode.Uri
+  ): Promise<'deleted' | 'renamed' | 'failed'> {
+    const tracked = await isGitTracked(legacyUri.fsPath, workspaceRoot.fsPath);
+    if (tracked) {
+      try {
+        await vscode.workspace.fs.delete(legacyUri);
+        this.logger.info(
+          `consolidateLegacyConfig: deleted git-tracked ${LEGACY_CONFIG_FILENAME}`
+        );
+        return 'deleted';
+      } catch (err) {
+        this.logger.warn(
+          `consolidateLegacyConfig: could not delete ${LEGACY_CONFIG_FILENAME}: ${String(err)}`
+        );
+        return 'failed';
+      }
+    }
+    // Not tracked: rename to .bak
     const bakUri = await this.findAvailableBackupPath(
-      vscode.Uri.joinPath(this._workspaceRoot, `${LEGACY_CONFIG_FILENAME}.bak`)
+      vscode.Uri.joinPath(workspaceRoot, `${LEGACY_CONFIG_FILENAME}.bak`)
     );
     try {
       await vscode.workspace.fs.rename(legacyUri, bakUri, { overwrite: false });
       this.logger.info(
-        `verifyLegacyConfigMigration: renamed ${LEGACY_CONFIG_FILENAME} to ${bakUri.fsPath}`
+        `consolidateLegacyConfig: renamed ${LEGACY_CONFIG_FILENAME} to ${bakUri.fsPath}`
       );
+      return 'renamed';
     } catch (renameErr) {
       this.logger.warn(
-        `verifyLegacyConfigMigration: could not rename legacy file after migration: ${String(renameErr)}`
+        `consolidateLegacyConfig: could not rename ${LEGACY_CONFIG_FILENAME}: ${String(renameErr)}`
       );
+      return 'failed';
     }
-    void vscode.window.showInformationMessage(
-      `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy file renamed to .arit-toolkit.jsonc.bak.`
-    );
   }
 
   private notifySectionListeners(

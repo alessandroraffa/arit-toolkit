@@ -1,5 +1,12 @@
 export const CONFIG_KEY = 'agentSessionsArchiving';
-export const DEFAULT_ARCHIVE_PATH = 'docs/archive/agent-sessions';
+export const DEFAULT_ARCHIVE_PATH = '.tangyr/agent-sessions';
+/**
+ * The archive path used by all installs before the v2.x default change.
+ * Retained for one release cycle to support the idempotent one-shot relocation
+ * in reconcileArchiveLocation and the migrateValue rewrite in registerWithCore.
+ * May be retired once all active installs have migrated.
+ */
+export const HISTORICAL_DEFAULT_ARCHIVE_PATH = 'docs/archive/agent-sessions';
 export const DEFAULT_INTERVAL_MINUTES = 5;
 export const COMMAND_ID_TOGGLE = 'tangyr.toggleAgentSessionsArchiving';
 export const COMMAND_ID_ARCHIVE_NOW = 'tangyr.archiveAgentSessionsNow';

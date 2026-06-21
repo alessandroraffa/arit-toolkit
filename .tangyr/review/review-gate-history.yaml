@@ -1,0 +1,12 @@
+# Review Gate History
+# Append-only summary records of multi-perspective review gates. Never overwrite prior records.
+
+- gate: pre-release
+  artifact_type: implementation_plan
+  artifact_version: feat/legacy-config-and-archive-path-migration (base main; commits f449173, e2d99ea, eeb2e56, 38c91a5)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 14
+  blocking_count: 3
+  produced_at: 2026-06-21

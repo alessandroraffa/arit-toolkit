@@ -10,7 +10,11 @@ import { checkAndPromptGitignore } from './gitignorePrompt';
 import { validateArchivePath } from './archivePathValidation';
 import { ArchiveCycleGuard } from './archiveCycleGuard';
 import { resolveCompanionData } from './companionDataResolver';
-import { MAX_ARCHIVE_BYTES } from './constants';
+import {
+  MAX_ARCHIVE_BYTES,
+  DEFAULT_ARCHIVE_PATH,
+  HISTORICAL_DEFAULT_ARCHIVE_PATH,
+} from './constants';
 
 interface ArchivedEntry {
   /**
@@ -54,6 +58,8 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   private _reconfiguring = false;
   private readonly _cycleGuard = new ArchiveCycleGuard();
   private _pendingStartConfig: AgentSessionsArchivingConfig | undefined;
+  /** One-shot guard: reconcileArchiveLocation runs only on the first cycle. */
+  private _locationReconciled = false;
 
   constructor(
     private readonly workspaceRootUri: vscode.Uri,
@@ -78,6 +84,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this._currentConfig = config;
       const intervalMs = config.intervalMinutes * 60_000;
       this._needsDedup = true;
+      this._locationReconciled = false;
       this.logger.info(
         `Agent sessions archiving started (interval: ${String(config.intervalMinutes)}m)`
       );
@@ -165,6 +172,10 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this._currentConfig.archivePath
     );
     this.logger.info('Archive cycle starting — archive root: ' + archiveUri.fsPath);
+    if (!this._locationReconciled) {
+      await this.reconcileArchiveLocation();
+      this._locationReconciled = true;
+    }
     if (this._needsDedup) {
       await this.deduplicateAndHydrate(archiveUri);
       this._needsDedup = false;
@@ -462,12 +473,22 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     newUri: vscode.Uri,
     name: string
   ): Promise<boolean> {
+    const srcUri = vscode.Uri.joinPath(oldUri, name);
+    const destUri = vscode.Uri.joinPath(newUri, name);
+    // BK-004: do not clobber a pre-existing destination with different content.
+    // Check whether the destination already exists before copying.
     try {
-      await vscode.workspace.fs.copy(
-        vscode.Uri.joinPath(oldUri, name),
-        vscode.Uri.joinPath(newUri, name),
-        { overwrite: true }
+      await vscode.workspace.fs.stat(destUri);
+      // Destination exists: treat as a copy failure so the source is preserved.
+      this.logger.warn(
+        `moveTopLevelFile: destination already exists for "${name}" — skipping to preserve existing content`
       );
+      return false;
+    } catch {
+      // Destination absent — safe to copy.
+    }
+    try {
+      await vscode.workspace.fs.copy(srcUri, destUri, { overwrite: false });
       return true;
     } catch (err) {
       this.logger.warn(`Failed to move file ${name}: ${String(err)}`);
@@ -493,12 +514,23 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       if (fileType !== vscode.FileType.File) {
         continue;
       }
+      const srcUri = vscode.Uri.joinPath(monthOldUri, fileName);
+      const destUri = vscode.Uri.joinPath(monthNewUri, fileName);
+      // BK-004: do not clobber a pre-existing destination with different content.
+      // Check whether the destination already exists before copying.
       try {
-        await vscode.workspace.fs.copy(
-          vscode.Uri.joinPath(monthOldUri, fileName),
-          vscode.Uri.joinPath(monthNewUri, fileName),
-          { overwrite: true }
+        await vscode.workspace.fs.stat(destUri);
+        // Destination exists: treat as a copy failure so the source is preserved.
+        this.logger.warn(
+          `moveMonthDirectory: destination already exists for "${label}/${fileName}" — skipping to preserve existing content`
         );
+        allOK = false;
+        continue;
+      } catch {
+        // Destination absent — safe to copy.
+      }
+      try {
+        await vscode.workspace.fs.copy(srcUri, destUri, { overwrite: false });
       } catch (err) {
         allOK = false;
         this.logger.warn(`Failed to move file ${label}/${fileName}: ${String(err)}`);
@@ -561,12 +593,12 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     oldPath: string,
     newPath: string,
     allCopiesSucceeded: boolean
-  ): Promise<void> {
+  ): Promise<boolean> {
     if (!allCopiesSucceeded) {
       this.logger.warn(
         `moveArchive completed with copy failures — left source archive in place at "${oldPath}" for manual cleanup after verifying "${newPath}" is complete. Do NOT delete "${oldPath}" until verifying the target tree is intact.`
       );
-      return;
+      return false;
     }
     try {
       await vscode.workspace.fs.delete(oldUri, { recursive: true });
@@ -576,6 +608,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       );
     }
     this.logger.info(`Moved archive from ${oldPath} to ${newPath}`);
+    return true;
   }
 
   private async moveEntry(
@@ -590,7 +623,12 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     if (type === vscode.FileType.Directory && /^\d{4}$/.test(name)) {
       return this.moveYearDirectory(oldUri, newUri, name);
     }
-    return true;
+    // Unrecognized entry (non-year directory, symlink, etc.): return false so
+    // the source tree is preserved and surfaced for manual reconciliation.
+    this.logger.warn(
+      `moveArchive: skipping unrecognized entry "${name}" (type ${String(type)}) — source will be left intact for manual reconciliation`
+    );
+    return false;
   }
 
   private async copyAllMoveEntries(
@@ -608,9 +646,68 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     return allOK;
   }
 
-  private async moveArchive(oldPath: string, newPath: string): Promise<void> {
-    if (!this.validateMovePaths(oldPath, newPath)) {
+  /**
+   * One-shot, idempotent relocation of the historical archive tree to the new
+   * default location. Only executes when:
+   * - currentConfig.archivePath equals DEFAULT_ARCHIVE_PATH (new default); AND
+   * - the historical default directory exists and is non-empty; AND
+   * - the historical and configured paths differ.
+   *
+   * Reuses moveArchive's loss-safe copy-then-delete-on-full-success mechanism.
+   * Surfaces ONE non-blocking VS Code notification after the move:
+   * - showInformationMessage on full success
+   * - showWarningMessage on partial failure (some archives remain at old location)
+   * No notification when there is nothing to move (SPEC-002 AC-10: not a prompt).
+   * Errors are caught and logged; they do not propagate out of the cycle.
+   */
+  private async reconcileArchiveLocation(): Promise<void> {
+    if (!this._currentConfig) {
       return;
+    }
+    if (this._currentConfig.archivePath !== DEFAULT_ARCHIVE_PATH) {
+      return;
+    }
+    try {
+      const historicalUri = vscode.Uri.joinPath(
+        this.workspaceRootUri,
+        HISTORICAL_DEFAULT_ARCHIVE_PATH
+      );
+      let entries: [string, vscode.FileType][];
+      try {
+        entries = await vscode.workspace.fs.readDirectory(historicalUri);
+      } catch {
+        return; // historical directory absent or unreadable — nothing to move
+      }
+      if (entries.length === 0) {
+        return; // empty — nothing to move
+      }
+      const allSucceeded = await this.moveArchive(
+        HISTORICAL_DEFAULT_ARCHIVE_PATH,
+        DEFAULT_ARCHIVE_PATH
+      );
+      if (allSucceeded) {
+        void vscode.window.showInformationMessage(
+          `Tangyr: relocated session archives to ${DEFAULT_ARCHIVE_PATH}.`
+        );
+      } else {
+        void vscode.window.showWarningMessage(
+          `Tangyr: some archives remain at ${HISTORICAL_DEFAULT_ARCHIVE_PATH} — reconcile manually.`
+        );
+      }
+    } catch (err) {
+      this.logger.warn(`reconcileArchiveLocation: unexpected error — ${String(err)}`);
+    }
+  }
+
+  /**
+   * Moves the archive tree from oldPath to newPath using a loss-safe
+   * copy-all-then-delete-source strategy. Returns true when all entries were
+   * copied and the source was deleted; returns false on any copy failure
+   * (source is left intact for manual reconciliation).
+   */
+  private async moveArchive(oldPath: string, newPath: string): Promise<boolean> {
+    if (!this.validateMovePaths(oldPath, newPath)) {
+      return false;
     }
     const oldUri = vscode.Uri.joinPath(this.workspaceRootUri, oldPath);
     const newUri = vscode.Uri.joinPath(this.workspaceRootUri, newPath);
@@ -619,11 +716,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       entries = await vscode.workspace.fs.readDirectory(oldUri);
     } catch {
       this.logger.debug(`Old archive directory not found, skipping move: ${oldPath}`);
-      return;
+      return true; // nothing to move is not a failure
     }
     await this.ensureDirectory(newUri);
     const allCopiesSucceeded = await this.copyAllMoveEntries(oldUri, newUri, entries);
-    await this.finalizeMoveArchive(oldUri, oldPath, newPath, allCopiesSucceeded);
+    return await this.finalizeMoveArchive(oldUri, oldPath, newPath, allCopiesSucceeded);
   }
 
   private async migrateFlatLayout(

@@ -17,7 +17,7 @@
 | Licence            | MIT                                                                                                                                         |
 | Architecture style | Feature-based modular architecture, dependency injection                                                                                    |
 | Runtime deps       | None at runtime (VS Code API only). `js-tiktoken` and `@anthropic-ai/tokenizer` are dev dependencies bundled into the extension by esbuild. |
-| Last updated       | 2026-06-10                                                                                                                                  |
+| Last updated       | 2026-06-21                                                                                                                                  |
 
 ---
 
@@ -301,7 +301,7 @@ activate(context)
         +-- if not initialised:
               +-- showOnboardingNotification()
               +-- if accepted: runMigration()
-        +-- verifyLegacyConfigMigration()  [backstop: no-op if .tangyr.jsonc present]
+        +-- consolidateLegacyConfig()  [unconditional: no-op if legacy absent; git-aware removal otherwise]
 
 stateManager.checkup()  [async, triggered by "Checkup" button]
   |
@@ -336,7 +336,7 @@ workspace-level state:
   "versionCode": 1001004000,
   "agentSessionsArchiving": {
     "enabled": true,
-    "archivePath": "docs/archive/agent-sessions",
+    "archivePath": ".tangyr/agent-sessions",
     "intervalMinutes": 5,
     "ignoreSessionsBefore": "20250101",
   },
@@ -437,13 +437,13 @@ flags are never modified by the global toggle.
 
 ```text
   Source                          Archive directory
-  (read-only)                     (workspace-relative)
+  (read-only)                     (workspace-relative, default: .tangyr/agent-sessions)
   +-----------------------+
-  | .aider.chat.history.md|       docs/archive/agent-sessions/
-  | ~/.claude/projects/   | --->  202602111319-aider-chat-history.md
-  | globalStorage/cline/  |       202602110800-claude-code-abc123.jsonl
-  | workspaceStorage/     |       202602111200-cline-task-xyz789.json
-  |   chatSessions/       |       202602111430-copilot-chat-sess01.json
+  | .aider.chat.history.md|       .tangyr/agent-sessions/
+  | ~/.claude/projects/   | --->  2026/02/202602111319-aider-chat-history.md
+  | globalStorage/cline/  |       2026/02/202602110800-claude-code-abc123.jsonl
+  | workspaceStorage/     |       2026/02/202602111200-cline-task-xyz789.json
+  |   chatSessions/       |       2026/02/202602111430-copilot-chat-sess01.json
   | ~/.continue/sessions/ |       ...
   +-----------------------+
 
@@ -648,6 +648,12 @@ timer state and runs `start()`.
 archive file is deleted and a new one (with the same ctime-based prefix)
 is created with updated content.
 
+**Default archive path and historical migration:** The default `archivePath` is `.tangyr/agent-sessions` (runtime directory, not tracked in version control). The historical default was `docs/archive/agent-sessions` (inside the versioned documentation tree). Installs that still carry the historical default are migrated transparently:
+
+1. **Value migration (`migrateValue`):** `ConfigSectionDefinition` supports an optional `migrateValue(existing) => unknown` transform. `ConfigMigrationService.mergeIntoConfig` applies it to every registered section that is present in the config being merged, before stamping the version. The archiving section's `migrateValue` rewrites `archivePath` from `docs/archive/agent-sessions` (or absent/empty) to `.tangyr/agent-sessions`; any other value (a custom path) is left unchanged. The transform is idempotent.
+
+2. **Archive relocation (`reconcileArchiveLocation`):** `AgentSessionArchiveService` runs a one-shot, silent `reconcileArchiveLocation()` at the start of the first archive cycle after each `start()`. The method returns early unless `currentConfig.archivePath === DEFAULT_ARCHIVE_PATH`; when that gate passes and a non-empty tree exists at `HISTORICAL_DEFAULT_ARCHIVE_PATH`, it calls the existing loss-safe `moveArchive` to relocate the tree to the new default. The move is silent (no confirmation prompt). The `_locationReconciled` flag prevents the method from running on subsequent cycles. Custom-path installs are never touched.
+
 **Date cutoff filtering:** The optional `ignoreSessionsBefore` field
 (format `YYYYMMDD`) sets a UTC date cutoff. Sessions whose creation time
 (`ctime`) is before midnight UTC of that date are skipped during the
@@ -802,15 +808,19 @@ to `Buffer.byteLength()` on the selection text.
 extension. The bundled vocabularies increase the extension size from
 ~72 KB to ~6 MB. No runtime network calls are made.
 
-### 8.13 Legacy Config Verify on Startup
+### 8.13 Legacy Config Consolidation on Startup
 
-`verifyLegacyConfigMigration()` is a private method on `ExtensionStateManager` invoked at the end of `initialize()`, after the normal `readStateFromFile` / `runMigration` / `ensureCurrentConfigFile` / `showOnboardingNotification` flow. It is a defensive backstop that fires only when `.tangyr.jsonc` is still absent at the end of activation.
+`consolidateLegacyConfig()` is a private method on `ExtensionStateManager` invoked at the end of `initialize()`, after the normal `readStateFromFile` / `runMigration` / `ensureCurrentConfigFile` / `showOnboardingNotification` flow. Unlike its predecessor `verifyLegacyConfigMigration`, it runs **unconditionally**: it probes for the legacy file first, not for `.tangyr.jsonc`, and handles the both-files case that the old method could not reach.
 
-**Detection:** the method probes `.tangyr.jsonc` via `vscode.workspace.fs.stat`. If the file is present, the method returns immediately (no-op). If absent, it probes `.arit-toolkit.jsonc` by the same mechanism. If the legacy file is also absent, the method returns immediately (no-op).
+**Detection:** the method first probes `.arit-toolkit.jsonc` via `vscode.workspace.fs.stat`. If the legacy file is absent, the method returns immediately (idempotent no-op). Otherwise it probes `.tangyr.jsonc`.
 
-**Path A — parseable legacy:** `readConfigFile(LEGACY_CONFIG_FILENAME)` succeeds. The parsed content is written to `.tangyr.jsonc` via `writeFullConfig`. The legacy file is renamed to `.arit-toolkit.jsonc.bak`. Internal state (`_fullConfig`, `_isInitialized`, `_isEnabled`, `_loadedLegacyConfigFile`) is updated and `_onDidChangeState` is fired. An information message is shown to the user.
+**Both files present — `.tangyr.jsonc` is authoritative:** `.tangyr.jsonc` values are never read from or overwritten by the legacy file. The legacy file is removed via the git-aware rule (see below). An information message is shown to the user.
 
-**Path B — malformed legacy:** `readConfigFile(LEGACY_CONFIG_FILENAME)` throws (JSON/JSONC parse failure). `.tangyr.jsonc` is NOT created. The legacy file is renamed to `.arit-toolkit.jsonc.malformed.bak`. A warning message is shown to the user, prompting them to create `.tangyr.jsonc` via the onboarding prompt.
+**Legacy only, Path A — parseable:** `readConfigFile(LEGACY_CONFIG_FILENAME)` succeeds. Internal state (`_fullConfig`, `_isInitialized`, `_isEnabled`, `_loadedLegacyConfigFile`) is updated, `_onDidChangeState` is fired, and `runMigration()` is called to write `.tangyr.jsonc` at the current extension version. The legacy file is then removed via the git-aware rule. An information message is shown.
+
+**Legacy only, Path B — malformed:** `readConfigFile(LEGACY_CONFIG_FILENAME)` throws (JSON/JSONC parse failure). `.tangyr.jsonc` is NOT created. The legacy file is renamed to `.arit-toolkit.jsonc.malformed.bak`. A warning message is shown, prompting the user to create `.tangyr.jsonc` via the onboarding prompt.
+
+**Git-aware removal (`removeLegacyConfigFile`):** calls `isGitTracked(legacyUri.fsPath, workspaceRoot.fsPath)` from `src/core/git.ts`. When tracked (exit 0), the file is deleted from the working tree (git history is the backup). When not tracked — including non-repo, git-unavailable, or any error — the file is renamed to `.arit-toolkit.jsonc.bak`. The extension never hard-deletes a file whose tracking status is not a definite "tracked". Failures in either branch are logged at `warn` and do not abort activation.
 
 **Backup collision:** if the target `.bak` (or `.malformed.bak`) path already exists, `findAvailableBackupPath()` appends a UTC timestamp suffix `YYYYMMDDHHmm` before returning the path (e.g., `.arit-toolkit.jsonc.bak.202605271045`).
 
