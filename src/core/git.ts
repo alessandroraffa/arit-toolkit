@@ -59,6 +59,21 @@ export async function hasGitChanges(filePath: string, cwd: string): Promise<bool
 }
 
 /**
+ * Returns true only when the file is definitely tracked by git (present in the
+ * index/HEAD). Returns false for an untracked file, a non-repository directory,
+ * or when git is unavailable — so callers never hard-delete a file whose
+ * tracking status is unknown.
+ */
+export async function isGitTracked(filePath: string, cwd: string): Promise<boolean> {
+  try {
+    await execFileAsync('git', ['ls-files', '--error-unmatch', '--', filePath], { cwd });
+    return true; // exit 0 → tracked
+  } catch {
+    return false; // exit 1 (untracked), 128 (not a repo), ENOENT (no git) → not definitely tracked
+  }
+}
+
+/**
  * Unstages a single file (reverses `git add`).
  * Throws if the git command fails.
  */

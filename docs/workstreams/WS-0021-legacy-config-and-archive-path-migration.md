@@ -2,7 +2,7 @@
 title: 'Definitive legacy config consolidation and default archive path migration'
 objective: Make legacy .arit-toolkit.jsonc removal reliable and git-aware, change the default archive path to .tangyr/agent-sessions, migrate existing configs off the historical default, and relocate existing session archives without loss — per SPEC-002.
 workstream: WS-0021
-status: 'idle'
+status: 'in-progress'
 workspaces: []
 dependencies: []
 created: 2026-06-21
@@ -43,15 +43,15 @@ These decisions are settled. Do not re-open them during execution; record any fo
 
 ## Activities, Tasks and Subtasks
 
-### [ ] Activity 1: Add the `isGitTracked` git helper
+### [x] Activity 1: Add the `isGitTracked` git helper
 
 Add a git-tracking probe to `src/core/git.ts`, mirroring the existing `isGitIgnored` structure and its conservative error handling.
 
-#### [ ] Task 1.1: Write failing unit tests for `isGitTracked`
+#### [x] Task 1.1: Write failing unit tests for `isGitTracked`
 
 In the existing git helper test file (follow the pattern already used for `isGitIgnored`/`isGitRepository`), add a `describe('isGitTracked')` block covering: (a) a tracked file → `true`; (b) an untracked file → `false`; (c) not a git repository → `false`; (d) git unavailable / command error → `false`. Use the same execFile/child_process stubbing approach the existing git tests use. Confirm the new tests fail before implementation.
 
-#### [ ] Task 1.2: Implement `isGitTracked`
+#### [x] Task 1.2: Implement `isGitTracked`
 
 Add to `src/core/git.ts`:
 

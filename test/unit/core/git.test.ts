@@ -20,8 +20,14 @@ vi.mock('node:util', () => ({
 }));
 
 // Must import after mocks are set up
-const { isGitIgnored, isGitRepository, gitStageAndCommit, gitUnstage, hasGitChanges } =
-  await import('../../../src/core/git');
+const {
+  isGitIgnored,
+  isGitRepository,
+  gitStageAndCommit,
+  gitUnstage,
+  hasGitChanges,
+  isGitTracked,
+} = await import('../../../src/core/git');
 
 describe('isGitIgnored', () => {
   beforeEach(() => {
@@ -427,6 +433,82 @@ describe('isGitRepository', () => {
     );
 
     const result = await isGitRepository('/workspace');
+    expect(result).toBe(false);
+  });
+});
+
+describe('isGitTracked', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return true when file is tracked by git (exit code 0)', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        cb(null, '.arit-toolkit.jsonc\n', '');
+      }
+    );
+
+    const result = await isGitTracked('.arit-toolkit.jsonc', '/workspace');
+    expect(result).toBe(true);
+  });
+
+  it('should return false when file is untracked (exit code 1)', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        const err = new Error('error: pathspec did not match any file(s) known to git');
+        (err as any).code = 1;
+        cb(err, '', '');
+      }
+    );
+
+    const result = await isGitTracked('.arit-toolkit.jsonc', '/workspace');
+    expect(result).toBe(false);
+  });
+
+  it('should return false when not a git repository (exit code 128)', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        const err = new Error('fatal: not a git repository');
+        (err as any).code = 128;
+        cb(err, '', '');
+      }
+    );
+
+    const result = await isGitTracked('.arit-toolkit.jsonc', '/workspace');
+    expect(result).toBe(false);
+  });
+
+  it('should return false when git is unavailable (ENOENT)', async () => {
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        const err = new Error('git: not found');
+        (err as any).code = 'ENOENT';
+        cb(err, '', '');
+      }
+    );
+
+    const result = await isGitTracked('.arit-toolkit.jsonc', '/workspace');
     expect(result).toBe(false);
   });
 });
