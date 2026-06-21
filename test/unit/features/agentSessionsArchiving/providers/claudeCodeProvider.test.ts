@@ -111,6 +111,42 @@ describe('ClaudeCodeProvider', () => {
     expect(patterns[0]!.glob).toBe('**/*');
   });
 
+  // H-12 tests: Windows path normalization in projectDirName encoding
+
+  it('H-12: Windows backslash path encodes backslashes to dashes', () => {
+    const patterns = provider.getWatchPatterns('C:\\Users\\me\\proj');
+
+    expect(patterns).toHaveLength(1);
+    // Backslashes replaced by dashes; colon also replaced
+    expect(patterns[0]!.baseUri.fsPath).toContain('C--Users-me-proj');
+    expect(patterns[0]!.baseUri.fsPath).not.toContain('\\');
+    expect(patterns[0]!.baseUri.fsPath).not.toContain(':');
+  });
+
+  it('H-12: mixed separators encode consistently (no raw backslash or colon)', () => {
+    const patterns = provider.getWatchPatterns('C:/Users/me/proj');
+
+    expect(patterns).toHaveLength(1);
+    const fsPath = patterns[0]!.baseUri.fsPath;
+    expect(fsPath).not.toContain('\\');
+    expect(fsPath).not.toContain(':');
+    // forward-slash and colon both replaced by dashes
+    expect(fsPath).toContain('C--Users-me-proj');
+  });
+
+  it('H-12: findSessions uses the same encoding as getWatchPatterns', async () => {
+    workspace.fs.readDirectory = vi.fn().mockResolvedValue([]);
+
+    await provider.findSessions('C:\\Users\\me\\proj');
+
+    const readDirCall = vi.mocked(workspace.fs.readDirectory).mock.calls[0]!;
+    // Both must produce the same encoded directory name
+    const fsPath = readDirCall[0].fsPath as string;
+    expect(fsPath).toContain('C--Users-me-proj');
+    expect(fsPath).not.toContain('\\');
+    expect(fsPath).not.toContain(':');
+  });
+
   // H-08 tests: collapsed recursive watcher pattern
 
   it('H-08: getWatchPatterns returns exactly one recursive pattern covering all companion paths', () => {

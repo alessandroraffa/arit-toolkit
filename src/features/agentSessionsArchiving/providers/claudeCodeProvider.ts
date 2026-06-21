@@ -4,13 +4,33 @@ import * as path from 'path';
 import type { SessionFile, SessionProvider, WatchPattern } from '../types';
 import { getFileTimes } from './providerUtils';
 
+/**
+ * H-12: Encode a workspace root path as the Claude Code project directory name.
+ *
+ * Claude Code's own logic (cross-platform) replaces every path separator
+ * (forward-slash and backslash) with '-' and strips the Windows drive colon.
+ * Examples:
+ *   '/home/user/proj'     → '-home-user-proj'
+ *   'C:\\Users\\me\\proj' → 'C--Users--me--proj'  (colon → '-', backslash → '-')
+ *
+ * We match that encoding so the derived directory name always resolves to the
+ * same on-disk path that Claude Code created, regardless of the host platform.
+ */
+function encodeProjectDirName(workspaceRootPath: string): string {
+  return workspaceRootPath
+    .replace(/:/g, '-') // strip Windows drive colon (e.g. 'C:' → 'C-')
+    .replace(/[\\/]/g, '-'); // forward-slash and backslash → '-'
+}
+
 export class ClaudeCodeProvider implements SessionProvider {
   public readonly name = 'claude-code';
   public readonly displayName = 'Claude Code';
 
   public getWatchPatterns(workspaceRootPath: string): WatchPattern[] {
-    const projectDirName = workspaceRootPath.replaceAll('/', '-');
-    const baseUri = vscode.Uri.file(`${os.homedir()}/.claude/projects/${projectDirName}`);
+    const projectDirName = encodeProjectDirName(workspaceRootPath);
+    const baseUri = vscode.Uri.file(
+      path.join(os.homedir(), '.claude', 'projects', projectDirName)
+    );
     // H-08: collapse the three per-pattern watchers into one recursive glob so
     // OS watch handles per provider are minimised.  A single '**/*' under the
     // project dir matches:
@@ -23,9 +43,9 @@ export class ClaudeCodeProvider implements SessionProvider {
   }
 
   public async findSessions(workspaceRootPath: string): Promise<SessionFile[]> {
-    const projectDirName = workspaceRootPath.replaceAll('/', '-');
+    const projectDirName = encodeProjectDirName(workspaceRootPath);
     const projectUri = vscode.Uri.file(
-      `${os.homedir()}/.claude/projects/${projectDirName}`
+      path.join(os.homedir(), '.claude', 'projects', projectDirName)
     );
 
     let entries: [string, vscode.FileType][];

@@ -380,4 +380,26 @@ describe('resolveCompanionData', () => {
 
     expect(result.companionPartial).toBeUndefined();
   });
+
+  // H-12 tests: companion-dir construction parity with toSessionFile
+
+  it('H-12: companionDirUri is derived with path.join matching the toSessionFile construction', async () => {
+    // resolveCompanionData must call readDirectory with the same URI that
+    // toSessionFile would construct: Uri.file(path.join(dirname, sessionId)).
+    // The session fsPath is /home/.claude/projects/proj/abc123.jsonl
+    // → dirname = /home/.claude/projects/proj
+    // → sessionId = abc123
+    // → companionDirUri.fsPath = /home/.claude/projects/proj/abc123
+
+    workspace.fs.readDirectory = vi.fn().mockRejectedValue(new Error('not found'));
+
+    await resolveCompanionData(SESSION_URI, logger as any);
+
+    const firstCall = vi.mocked(workspace.fs.readDirectory).mock.calls[0]!;
+    const calledPath = firstCall[0].fsPath as string;
+
+    // Must be the session id joined with dirname via path.join, not Uri.joinPath
+    // (same result on POSIX, but avoids UNC edge cases on Windows)
+    expect(calledPath).toBe('/home/.claude/projects/proj/abc123');
+  });
 });

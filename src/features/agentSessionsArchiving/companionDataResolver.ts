@@ -224,9 +224,10 @@ export async function resolveCompanionData(
   rawSessionContent?: string
 ): Promise<CompanionDataContext> {
   const sessionId = path.parse(sessionUri.fsPath).name;
-  const companionDirUri = vscode.Uri.joinPath(
-    vscode.Uri.file(path.dirname(sessionUri.fsPath)),
-    sessionId
+  // H-12: use vscode.Uri.file(path.join(...)) to match toSessionFile's construction
+  // exactly — Uri.joinPath has UNC-root edge cases on Windows that path.join avoids.
+  const companionDirUri = vscode.Uri.file(
+    path.join(path.dirname(sessionUri.fsPath), sessionId)
   );
 
   try {
