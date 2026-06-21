@@ -89,14 +89,20 @@ export class ClaudeCodeParser implements SessionParser {
   }
 
   private looksLikeJsonl(lines: string[]): boolean {
-    const firstLine = lines[0];
-    if (!firstLine) return false;
-    try {
-      const first = JSON.parse(firstLine) as Record<string, unknown>;
-      return typeof first.type === 'string';
-    } catch {
-      return false;
+    // H-10: scan the first ~5 non-blank lines and return true if ANY parses
+    // to an object with a string `type` field.  This handles files whose
+    // leading record is a summary/index object without a string `type` — the
+    // file still contains real events and should produce structured markdown.
+    const window = lines.slice(0, 5);
+    for (const line of window) {
+      try {
+        const parsed = JSON.parse(line) as Record<string, unknown>;
+        if (typeof parsed.type === 'string') return true;
+      } catch {
+        // Not valid JSON — continue scanning
+      }
     }
+    return false;
   }
 
   private processEvent(

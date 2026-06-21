@@ -149,7 +149,9 @@ describe('ClaudeCodeParser', () => {
     expect(session.turns[0]!.content).toBe('Hello');
   });
 
-  it('should return unrecognized when first line is not valid JSONL', () => {
+  it('H-10: first line non-JSON but line 2 is a typed event → parsed (not unrecognized)', () => {
+    // H-10: looksLikeJsonl now scans up to 5 lines, so a non-JSON first line
+    // followed by a valid typed event on line 2 must still produce parsed output.
     const content =
       'not json\n' +
       JSON.stringify({
@@ -158,7 +160,40 @@ describe('ClaudeCodeParser', () => {
       });
 
     const result = parser.parse(content, 'session-1');
+    expect(result.status).toBe('parsed');
+  });
+
+  it('H-10: all first 5 lines untyped → unrecognized', () => {
+    const lines = [
+      '{"summary":"index","version":1}',
+      '{"meta":"info"}',
+      '42',
+      '["array"]',
+      '{"other":"field"}',
+      // A valid typed event on line 6 — beyond the scan window
+      JSON.stringify({
+        type: 'user',
+        message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+      }),
+    ].join('\n');
+
+    const result = parser.parse(lines, 'session-1');
     expect(result.status).toBe('unrecognized');
+  });
+
+  it('H-10: first line is a typed event → true (existing behavior unchanged)', () => {
+    const content = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
+    });
+
+    const result = parser.parse(content, 'session-1');
+    expect(result.status).toBe('parsed');
+  });
+
+  it('H-10: empty/whitespace input → unrecognized', () => {
+    expect(parser.parse('', 's').status).toBe('unrecognized');
+    expect(parser.parse('   \n  \n', 's').status).toBe('unrecognized');
   });
 
   it('should skip unknown event types', () => {
