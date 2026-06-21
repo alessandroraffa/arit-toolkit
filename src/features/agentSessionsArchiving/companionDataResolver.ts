@@ -79,6 +79,12 @@ async function readOneSubagent(
   logger: Logger
 ): Promise<SubagentEntry> {
   const agentId = name.slice('agent-'.length, -'.jsonl'.length);
+  // L-01: belt-and-suspenders guard — the regex already requires at least one
+  // id char, but guard here too so an empty agentId never produces a '()' heading.
+  if (agentId.length === 0) {
+    logger.warn(`Skipping subagent file with empty agentId: ${name}`);
+    return { agentId: '', content: '', unreadable: true };
+  }
   const fileUri = vscode.Uri.joinPath(subagentsDirUri, name);
   let content: string;
   try {
@@ -94,25 +100,24 @@ async function readOneSubagent(
     : { agentId, content };
 }
 
-async function readSubagents(
-  companionDirUri: vscode.Uri,
+/**
+ * Read subagent entries from a pre-partitioned listing of the subagents/ directory.
+ * L-02: accepts the already-read listing so the caller reads subagents/ only once.
+ */
+async function readSubagentsFromListing(
+  subagentsDirUri: vscode.Uri,
+  listing: readonly [string, vscode.FileType][],
   logger: Logger
 ): Promise<SubagentEntry[]> {
-  const subagentsDirUri = vscode.Uri.joinPath(companionDirUri, 'subagents');
-  let entries: [string, vscode.FileType][];
-  try {
-    entries = await vscode.workspace.fs.readDirectory(subagentsDirUri);
-  } catch {
-    return [];
-  }
-
   const result: SubagentEntry[] = [];
-  for (const [name, fileType] of entries) {
+  for (const [name, fileType] of listing) {
     if (fileType !== vscode.FileType.File) {
       // Skip directories and symlinks in subagents/ for symmetry with readToolResults
       continue;
     }
-    if (/^agent-(?!acompact-).*\.jsonl$/.test(name)) {
+    // L-01: require at least one id character after the 'agent-' prefix so
+    // 'agent-.jsonl' (empty id) is excluded at the regex stage.
+    if (/^agent-(?!acompact-).+\.jsonl$/.test(name)) {
       result.push(await readOneSubagent(subagentsDirUri, name, logger));
     }
   }
@@ -184,28 +189,29 @@ async function readOneCompactionFile(
     const bytes = await vscode.workspace.fs.readFile(fileUri);
     const content = decoder.decode(bytes);
     const stat = await vscode.workspace.fs.stat(fileUri);
-    return { content, mtime: stat.mtime };
+    // L-04: plumb the source filename through CompactionEntry for deterministic sort
+    return { content, mtime: stat.mtime, filename: name };
   } catch (err) {
     logger.warn(`Failed to read compaction file ${name}: ${String(err)}`);
     return undefined;
   }
 }
 
-async function readCompactionFiles(
-  companionDirUri: vscode.Uri,
+/**
+ * Read compaction entries from a pre-partitioned listing of the subagents/ directory.
+ * L-02: accepts the already-read listing so the caller reads subagents/ only once.
+ */
+async function readCompactionFilesFromListing(
+  subagentsDirUri: vscode.Uri,
+  listing: readonly [string, vscode.FileType][],
   logger: Logger
 ): Promise<{ entries: CompactionEntry[]; partial: boolean }> {
-  const subagentsDirUri = vscode.Uri.joinPath(companionDirUri, 'subagents');
-  let entries: [string, vscode.FileType][];
-  try {
-    entries = await vscode.workspace.fs.readDirectory(subagentsDirUri);
-  } catch {
-    return { entries: [], partial: false };
-  }
-
   const result: CompactionEntry[] = [];
   let partial = false;
-  for (const [name] of entries) {
+  for (const [name, fileType] of listing) {
+    if (fileType !== vscode.FileType.File) {
+      continue;
+    }
     if (/^agent-acompact-.*\.jsonl$/.test(name)) {
       const entry = await readOneCompactionFile(subagentsDirUri, name, logger);
       if (entry !== undefined) {
@@ -239,9 +245,30 @@ export async function resolveCompanionData(
     return { subagentEntries: [], toolResultMap: new Map(), compactionEntries: [] };
   }
 
+  // L-02: read subagents/ directory ONCE and partition into the subagent set
+  // and the compaction set, so we halve the readDirectory cost per session.
+  // A missing subagents/ degrades both consistently (a single failed read leaves
+  // both collections empty without setting companionPartial — benign absence).
+  const subagentsDirUri = vscode.Uri.joinPath(companionDirUri, 'subagents');
+  let subagentsListing: [string, vscode.FileType][];
+  try {
+    subagentsListing = await vscode.workspace.fs.readDirectory(subagentsDirUri);
+  } catch (err) {
+    // L-06/WT-004: a missing subagents/ is benign — both collections are empty
+    // and companionPartial is NOT set (this is not a transient failure).
+    if (!isBenignAbsent(err)) {
+      logger.warn(`Failed to read subagents directory: ${String(err)}`);
+    }
+    subagentsListing = [];
+  }
+
   // H-07: read subagents first so we can scan their content for marker references
   // alongside the main session content when building the referenced-filename set.
-  const subagentEntries = await readSubagents(companionDirUri, logger);
+  const subagentEntries = await readSubagentsFromListing(
+    subagentsDirUri,
+    subagentsListing,
+    logger
+  );
 
   // Build the referenced-filename set from main content + subagent contents
   const referencedFilenames = new Set<string>();
@@ -265,8 +292,9 @@ export async function resolveCompanionData(
     logger,
     lazySet
   );
+  // L-02: use the same subagentsListing for compaction (already read above)
   const { entries: compactionEntries, partial: compactionPartial } =
-    await readCompactionFiles(companionDirUri, logger);
+    await readCompactionFilesFromListing(subagentsDirUri, subagentsListing, logger);
 
   const hasUnreadable = subagentEntries.some((e) => e.unreadable === true);
   const companionPartial = hasUnreadable || toolResultPartial || compactionPartial;

@@ -8,6 +8,8 @@ export interface SubagentEntry {
 export interface CompactionEntry {
   readonly content: string;
   readonly mtime: number;
+  /** L-04: source filename for deterministic secondary sort tiebreaker. */
+  readonly filename?: string;
 }
 
 export interface CompanionDataContext {

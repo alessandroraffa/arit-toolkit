@@ -54,9 +54,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]) // subagents/
-      .mockResolvedValueOnce([]) // tool-results/
-      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]); // subagents/ for compaction
+      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]) // subagents/ (L-02: single listing)
+      .mockResolvedValueOnce([]); // tool-results/
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValueOnce(encode(jsonlContent)) // agent-abc123.jsonl
@@ -79,12 +78,8 @@ describe('resolveCompanionData', () => {
       .mockResolvedValueOnce([
         ['agent-abc123.jsonl', FileType.File],
         ['agent-abc123.meta.json', FileType.File],
-      ]) // subagents/
-      .mockResolvedValueOnce([]) // tool-results/
-      .mockResolvedValueOnce([
-        ['agent-abc123.jsonl', FileType.File],
-        ['agent-abc123.meta.json', FileType.File],
-      ]); // subagents/ for compaction
+      ]) // subagents/ (L-02: single listing)
+      .mockResolvedValueOnce([]); // tool-results/
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValueOnce(encode(jsonlContent)) // agent-abc123.jsonl
@@ -101,9 +96,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([['agent-acompact-xyz.jsonl', FileType.File]]) // subagents/
-      .mockResolvedValueOnce([]) // tool-results/
-      .mockResolvedValueOnce([['agent-acompact-xyz.jsonl', FileType.File]]); // subagents/ for compaction
+      .mockResolvedValueOnce([['agent-acompact-xyz.jsonl', FileType.File]]) // subagents/ (L-02: single listing)
+      .mockResolvedValueOnce([]); // tool-results/
     workspace.fs.readFile = vi.fn().mockResolvedValue(encode(compactionContent));
     workspace.fs.stat = vi
       .fn()
@@ -121,9 +115,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([]) // subagents/
-      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]) // tool-results/
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      .mockResolvedValueOnce([]) // subagents/ (L-02: single listing)
+      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]); // tool-results/
     workspace.fs.readFile = vi.fn().mockResolvedValue(encode(toolOutput));
 
     const result = await resolveCompanionData(SESSION_URI, logger as any);
@@ -138,12 +131,11 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([]) // subagents/ (L-02: single listing)
       .mockResolvedValueOnce([
         ['toolu_abc.txt', FileType.File],
         ['toolu_abc.json', FileType.File],
-      ]) // tool-results/
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      ]); // tool-results/
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValueOnce(encode(txtOutput))
@@ -160,9 +152,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]) // subagents/
-      .mockResolvedValueOnce([]) // tool-results/
-      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]); // subagents/ for compaction
+      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]) // subagents/ (L-02: single listing)
+      .mockResolvedValueOnce([]); // tool-results/
     workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('permission denied'));
 
     const result = await resolveCompanionData(SESSION_URI, logger as any);
@@ -178,9 +169,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([]) // subagents/
-      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]) // tool-results/
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      .mockResolvedValueOnce([]) // subagents/ (L-02: single listing)
+      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]); // tool-results/
     workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('permission denied'));
 
     const result = await resolveCompanionData(SESSION_URI, logger as any);
@@ -196,9 +186,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([]) // subagents/
-      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]) // tool-results/
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      .mockResolvedValueOnce([]) // subagents/ (L-02: single listing)
+      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]); // tool-results/
     workspace.fs.readFile = vi.fn().mockRejectedValue(accessError);
 
     const result = await resolveCompanionData(SESSION_URI, logger as any);
@@ -212,9 +201,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([]) // subagents/
-      .mockResolvedValueOnce([]) // tool-results/
-      .mockResolvedValueOnce([['agent-acompact-abc.jsonl', FileType.File]]); // subagents/ for compaction
+      .mockResolvedValueOnce([['agent-acompact-abc.jsonl', FileType.File]]) // subagents/ (L-02: single listing, compaction in it)
+      .mockResolvedValueOnce([]); // tool-results/
     workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('read error'));
 
     const result = await resolveCompanionData(SESSION_URI, logger as any);
@@ -229,9 +217,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([]) // subagents/
-      .mockRejectedValueOnce(notFoundErr) // tool-results/ — benign absence
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      .mockResolvedValueOnce([]) // subagents/ (L-02: single listing)
+      .mockRejectedValueOnce(notFoundErr); // tool-results/ — benign absence
     workspace.fs.readFile = vi.fn().mockResolvedValue(encode(''));
 
     const result = await resolveCompanionData(SESSION_URI, logger as any);
@@ -245,9 +232,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([]) // subagents/
-      .mockRejectedValueOnce(permErr) // tool-results/ — permission error → partial
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      .mockResolvedValueOnce([]) // subagents/ (L-02: single listing)
+      .mockRejectedValueOnce(permErr); // tool-results/ — permission error → partial
 
     const result = await resolveCompanionData(SESSION_URI, logger as any);
 
@@ -266,8 +252,7 @@ describe('resolveCompanionData', () => {
       .mockResolvedValueOnce([
         ['subdir', FileType.Directory],
         ['toolu_abc.txt', FileType.File],
-      ]) // tool-results/ — one dir, one file
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      ]); // tool-results/ — one dir, one file
     workspace.fs.readFile = vi.fn().mockResolvedValue(encode(toolOutput));
 
     const result = await resolveCompanionData(SESSION_URI, logger as any);
@@ -301,8 +286,7 @@ describe('resolveCompanionData', () => {
       .mockResolvedValueOnce([
         ['toolu_used.txt', FileType.File],
         ['toolu_unused.txt', FileType.File],
-      ]) // tool-results/
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      ]); // tool-results/
     workspace.fs.readFile = vi.fn().mockResolvedValue(encode('content'));
 
     const result = await resolveCompanionData(SESSION_URI, logger as any, mainContent);
@@ -318,12 +302,11 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([]) // subagents/ (L-02: single listing)
       .mockResolvedValueOnce([
         ['toolu_a.txt', FileType.File],
         ['toolu_b.txt', FileType.File],
-      ]) // tool-results/
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      ]); // tool-results/
     workspace.fs.readFile = vi.fn().mockResolvedValue(encode('content'));
 
     // No rawSessionContent → no lazy filtering
@@ -341,8 +324,7 @@ describe('resolveCompanionData', () => {
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
       .mockResolvedValueOnce([]) // subagents/
-      .mockResolvedValueOnce([['big.txt', FileType.File]]) // tool-results/
-      .mockResolvedValueOnce([]); // subagents/ for compaction
+      .mockResolvedValueOnce([['big.txt', FileType.File]]); // tool-results/
     workspace.fs.readFile = vi.fn().mockResolvedValue(encode(bigContent));
 
     const result = await resolveCompanionData(SESSION_URI, logger as any, mainContent);
@@ -364,9 +346,8 @@ describe('resolveCompanionData', () => {
     workspace.fs.readDirectory = vi
       .fn()
       .mockResolvedValueOnce([]) // companion dir check
-      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]) // subagents/
-      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]) // tool-results/
-      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]); // subagents/ for compaction
+      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]) // subagents/ (L-02: single listing)
+      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]); // tool-results/
     workspace.fs.readFile = vi
       .fn()
       .mockResolvedValueOnce(encode(jsonlContent)) // subagent content
@@ -401,5 +382,116 @@ describe('resolveCompanionData', () => {
     // Must be the session id joined with dirname via path.join, not Uri.joinPath
     // (same result on POSIX, but avoids UNC edge cases on Windows)
     expect(calledPath).toBe('/home/.claude/projects/proj/abc123');
+  });
+
+  // L-02 tests: single subagents/ readDirectory call partitioned into subagent and compaction sets
+
+  it('L-02: readDirectory(subagents) is invoked exactly once per resolve', async () => {
+    const agentContent = '{"type":"user","message":{"role":"user","content":"hi"}}\n';
+    const compactionContent =
+      '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"summary"}]}}\n';
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([
+        ['agent-abc123.jsonl', FileType.File],
+        ['agent-acompact-xyz.jsonl', FileType.File],
+      ]) // subagents/ — single listing
+      .mockResolvedValueOnce([]); // tool-results/
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValueOnce(new TextEncoder().encode(agentContent)) // agent-abc123.jsonl
+      .mockRejectedValueOnce(new Error('no meta')) // meta absent
+      .mockResolvedValueOnce(new TextEncoder().encode(compactionContent)); // compaction file
+    workspace.fs.stat = vi
+      .fn()
+      .mockResolvedValue({ mtime: 5000, ctime: 0, size: 10, type: FileType.File });
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    // Should be 3 total calls: companion dir check + subagents/ + tool-results/
+    // (subagents/ read once and partitioned — no second readDirectory on it)
+    expect(workspace.fs.readDirectory).toHaveBeenCalledTimes(3);
+    expect(result.subagentEntries).toHaveLength(1);
+    expect(result.compactionEntries).toHaveLength(1);
+  });
+
+  it('L-02: missing subagents/ yields both empty subagentEntries and empty compactionEntries', async () => {
+    const notFoundErr = Object.assign(new Error('FileNotFound'), {
+      code: 'FileNotFound',
+    });
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockRejectedValueOnce(notFoundErr) // subagents/ — missing (benign)
+      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]); // tool-results/ still works
+    workspace.fs.readFile = vi.fn().mockResolvedValue(encode('tool content'));
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.subagentEntries).toHaveLength(0);
+    expect(result.compactionEntries).toHaveLength(0);
+    // Benign absence must NOT set companionPartial
+    expect(result.companionPartial).toBeUndefined();
+    // tool-results still resolved
+    expect(result.toolResultMap.size).toBe(1);
+  });
+
+  // L-01 tests: tighten subagent filename regex so empty agentId is never produced
+
+  it('L-01: agent-.jsonl (empty id) is skipped by regex and absent from results', async () => {
+    // The tightened regex /^agent-(?!acompact-).+\.jsonl$/ requires at least one
+    // id character after 'agent-', so 'agent-.jsonl' is excluded at the regex stage.
+    // The belt-and-suspenders agentId.length===0 guard in readOneSubagent is a
+    // safety net for any direct-call path; the regex prevents reaching it here.
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([['agent-.jsonl', FileType.File]]) // subagents/ — empty-id file
+      .mockResolvedValueOnce([]); // tool-results/
+    workspace.fs.readFile = vi.fn().mockResolvedValue(encode(''));
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.subagentEntries).toHaveLength(0);
+    // readFile should NOT have been called for the empty-id entry
+    expect(workspace.fs.readFile).not.toHaveBeenCalled();
+  });
+
+  it('L-01: normal agent-abc123.jsonl yields agentId abc123', async () => {
+    const content = '{"type":"user","message":{"role":"user","content":"hi"}}\n';
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([['agent-abc123.jsonl', FileType.File]]) // subagents/
+      .mockResolvedValueOnce([]); // tool-results/
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValueOnce(encode(content)) // agent-abc123.jsonl
+      .mockRejectedValueOnce(new Error('no meta')); // meta absent
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.subagentEntries).toHaveLength(1);
+    expect(result.subagentEntries[0]?.agentId).toBe('abc123');
+  });
+
+  it('L-01: agent-acompact-1.jsonl is excluded from the subagent pass', async () => {
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([['agent-acompact-1.jsonl', FileType.File]]) // subagents/ listing
+      .mockResolvedValueOnce([]); // tool-results/
+    workspace.fs.readFile = vi.fn().mockResolvedValue(encode(''));
+    workspace.fs.stat = vi
+      .fn()
+      .mockResolvedValue({ mtime: 100, ctime: 0, size: 10, type: FileType.File });
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    // acompact file must not appear in subagentEntries
+    expect(result.subagentEntries).toHaveLength(0);
+    // but it should appear in compactionEntries (picked up by the compaction pass)
+    expect(result.compactionEntries).toHaveLength(1);
   });
 });
