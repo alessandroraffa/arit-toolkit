@@ -149,7 +149,9 @@ describe('ClaudeCodeParser', () => {
     expect(session.turns[0]!.content).toBe('Hello');
   });
 
-  it('should return unrecognized when first line is not valid JSONL', () => {
+  it('H-10: first line non-JSON but line 2 is a typed event → parsed (not unrecognized)', () => {
+    // H-10: looksLikeJsonl now scans up to 5 lines, so a non-JSON first line
+    // followed by a valid typed event on line 2 must still produce parsed output.
     const content =
       'not json\n' +
       JSON.stringify({
@@ -158,7 +160,40 @@ describe('ClaudeCodeParser', () => {
       });
 
     const result = parser.parse(content, 'session-1');
+    expect(result.status).toBe('parsed');
+  });
+
+  it('H-10: all first 5 lines untyped → unrecognized', () => {
+    const lines = [
+      '{"summary":"index","version":1}',
+      '{"meta":"info"}',
+      '42',
+      '["array"]',
+      '{"other":"field"}',
+      // A valid typed event on line 6 — beyond the scan window
+      JSON.stringify({
+        type: 'user',
+        message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+      }),
+    ].join('\n');
+
+    const result = parser.parse(lines, 'session-1');
     expect(result.status).toBe('unrecognized');
+  });
+
+  it('H-10: first line is a typed event → true (existing behavior unchanged)', () => {
+    const content = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
+    });
+
+    const result = parser.parse(content, 'session-1');
+    expect(result.status).toBe('parsed');
+  });
+
+  it('H-10: empty/whitespace input → unrecognized', () => {
+    expect(parser.parse('', 's').status).toBe('unrecognized');
+    expect(parser.parse('   \n  \n', 's').status).toBe('unrecognized');
   });
 
   it('should skip unknown event types', () => {
@@ -286,5 +321,65 @@ describe('ClaudeCodeParser', () => {
     const session = expectParsed(parser.parse(content, 'session-1'));
 
     expect(session.turns[0]!.filesModified).toContain('new.ts');
+  });
+
+  // L-06 / WT-005: per-line malformed-JSONL recovery
+
+  it('WT-005: invalid-JSON line among valid lines yields turns only for valid events', () => {
+    // Three valid events sandwiching one bad line — all three valid events parse,
+    // the bad line is silently skipped (continue).
+    const validUser = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Turn 1' }] },
+    });
+    const validAssistant = JSON.stringify({
+      type: 'assistant',
+      message: { role: 'assistant', content: [{ type: 'text', text: 'Turn 2' }] },
+    });
+    const validUser2 = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Turn 3' }] },
+    });
+    const content = [validUser, 'INVALID JSON LINE', validAssistant, validUser2].join(
+      '\n'
+    );
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(3);
+    expect(session.turns[0]!.content).toBe('Turn 1');
+    expect(session.turns[1]!.content).toBe('Turn 2');
+    expect(session.turns[2]!.content).toBe('Turn 3');
+  });
+
+  it('WT-005: truncated final line is skipped while prior turns survive', () => {
+    // A truncated line at the end (e.g. partial write mid-flush) must not
+    // crash the parser or drop earlier recoverable events.
+    const validUser = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Safe turn' }] },
+    });
+    // Simulate a truncated JSON line (ends abruptly mid-object)
+    const truncated = '{"type":"assistant","message":{"role":"assistant","content":[{';
+    const content = [validUser, truncated].join('\n');
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(1);
+    expect(session.turns[0]!.content).toBe('Safe turn');
+  });
+
+  it('WT-005: looksLikeJsonl still recognizes file with mixed valid/invalid lines', () => {
+    // The valid typed event on line 1 ensures looksLikeJsonl returns true,
+    // so the file is parsed (not raw-copied) even with bad lines present.
+    const validFirst = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+    });
+    const content = [validFirst, '<<<BAD>>>', '{"not":"typed"}'].join('\n');
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+
+    expect(session.turns).toHaveLength(1);
   });
 });

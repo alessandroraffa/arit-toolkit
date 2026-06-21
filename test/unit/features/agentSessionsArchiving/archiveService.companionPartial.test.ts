@@ -129,13 +129,13 @@ describe('AgentSessionArchiveService — companionPartial retry behaviour', () =
       expect.stringContaining('Partial archive written')
     );
 
-    // lastArchivedMap must record mtime: 0, not effectiveMtime (5000), so the
+    // lastArchivedMap must record mtime '0' sentinel, not effectiveMtime ('5000'), so the
     // session is re-processed on the next cycle.
     const entry = (service as any).lastArchivedMap.get('partial-session') as
-      | { mtime: number }
+      | { mtime: string }
       | undefined;
     expect(entry).toBeDefined();
-    expect(entry!.mtime).toBe(0);
+    expect(entry!.mtime).toBe('0');
 
     service.dispose();
   });
@@ -194,11 +194,124 @@ describe('AgentSessionArchiveService — companionPartial retry behaviour', () =
 
     vi.mocked(workspace.fs.writeFile).mockClear();
 
-    // Second cycle — mtime: 0 in the map means effectiveMtime (5000) != 0, so the
+    // Second cycle — mtime '0' sentinel in the map means effectiveMtime ('5000') != '0', so the
     // session is NOT skipped and writeFile is called again.
     await service.runArchiveCycle();
 
     expect(workspace.fs.writeFile).toHaveBeenCalled();
+
+    service.dispose();
+  });
+
+  // B-03: empty-session skip must honour companionPartial
+
+  it('B-03: empty main turns + companionPartial true records mtime 0 so session is retried', async () => {
+    // The main JSONL is valid but has zero non-empty turns (empty session).
+    // The companion data is partial (e.g. a compaction file was transiently locked).
+    // Expected: the session is skipped as empty AND the recorded mtime is '0',
+    // so the next cycle will re-evaluate it once companion data is readable.
+    const emptyEvent = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: '' }] },
+    });
+    const rawContent = emptyEvent; // produces zero non-empty turns
+
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValue(new TextEncoder().encode(rawContent));
+    workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+    mockResolveCompanionData.mockResolvedValue({
+      subagentEntries: [],
+      toolResultMap: new Map(),
+      compactionEntries: [],
+      companionPartial: true,
+    });
+
+    const session = createMockSession({
+      providerName: 'claude-code',
+      archiveName: 'empty-partial-session',
+      displayName: 'Empty Partial Session',
+      extension: '.jsonl',
+      mtime: 7000,
+      ctime: 900,
+    });
+    const provider = createMockProvider([session]);
+    const service = new AgentSessionArchiveService(
+      workspaceRootUri,
+      [provider],
+      logger as any
+    );
+    (
+      service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+    )._currentConfig = DEFAULT_CONFIG;
+    (service as unknown as { _needsDedup: boolean })._needsDedup = false;
+
+    await service.runArchiveCycle();
+
+    // The session was empty so writeFile was NOT called.
+    expect(workspace.fs.writeFile).not.toHaveBeenCalled();
+
+    // But because companionPartial is true, the recorded mtime must be '0'
+    // (not effectiveMtime '7000') so the session is retried next cycle.
+    const entry = (service as any).lastArchivedMap.get('empty-partial-session') as
+      | { mtime: string }
+      | undefined;
+    expect(entry).toBeDefined();
+    expect(entry!.mtime).toBe('0');
+
+    service.dispose();
+  });
+
+  it('B-03: empty main turns without companionPartial records effectiveMtime so session is not retried', async () => {
+    // Same scenario but companion data is complete — a genuinely empty session
+    // should be recorded with the real effectiveMtime and not retried.
+    const emptyEvent = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: '' }] },
+    });
+    const rawContent = emptyEvent;
+
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValue(new TextEncoder().encode(rawContent));
+    workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+
+    mockResolveCompanionData.mockResolvedValue({
+      subagentEntries: [],
+      toolResultMap: new Map(),
+      compactionEntries: [],
+    });
+
+    const session = createMockSession({
+      providerName: 'claude-code',
+      archiveName: 'empty-complete-session',
+      displayName: 'Empty Complete Session',
+      extension: '.jsonl',
+      mtime: 8000,
+      ctime: 900,
+    });
+    const provider = createMockProvider([session]);
+    const service = new AgentSessionArchiveService(
+      workspaceRootUri,
+      [provider],
+      logger as any
+    );
+    (
+      service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
+    )._currentConfig = DEFAULT_CONFIG;
+    (service as unknown as { _needsDedup: boolean })._needsDedup = false;
+
+    await service.runArchiveCycle();
+
+    expect(workspace.fs.writeFile).not.toHaveBeenCalled();
+
+    // companionPartial is false → record the real effectiveMtime, not '0'
+    const entry = (service as any).lastArchivedMap.get('empty-complete-session') as
+      | { mtime: string }
+      | undefined;
+    expect(entry).toBeDefined();
+    expect(entry!.mtime).toBe('8000');
 
     service.dispose();
   });

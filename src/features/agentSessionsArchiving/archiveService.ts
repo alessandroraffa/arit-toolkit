@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import * as vscode from 'vscode';
 import type { AgentSessionsArchivingConfig } from '../../types';
 import type { SessionProvider, SessionFile } from './types';
@@ -9,10 +10,21 @@ import { checkAndPromptGitignore } from './gitignorePrompt';
 import { validateArchivePath } from './archivePathValidation';
 import { ArchiveCycleGuard } from './archiveCycleGuard';
 import { resolveCompanionData } from './companionDataResolver';
+import { MAX_ARCHIVE_BYTES } from './constants';
 
 interface ArchivedEntry {
-  mtime: number;
+  /**
+   * The compound fingerprint string (or stringified numeric mtime) recorded
+   * when this entry was last successfully archived. Compared against
+   * effectiveMtime (session.compositeMtime ?? String(session.mtime)) to decide
+   * whether a re-archive is needed. The sentinel value '0' (used by H-02
+   * hydration and the partial-retry path) is guaranteed to differ from any
+   * real positive fingerprint.
+   */
+  mtime: string;
   archiveFileName: string;
+  /** Content hash of the last written markdown, used for no-op write skip (H-03). */
+  contentHash?: string;
 }
 
 export class AgentSessionArchiveService implements vscode.Disposable {
@@ -200,11 +212,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     archiveUri: vscode.Uri,
     force = false
   ): Promise<void> {
-    const effectiveMtime = session.compositeMtime ?? session.mtime;
+    const effectiveMtime: string = session.compositeMtime ?? String(session.mtime);
     const entry = this.lastArchivedMap.get(session.archiveName);
     if (!force && entry?.mtime === effectiveMtime) {
       this.logger.debug(
-        `Skipped ${session.displayName} — mtime unchanged (${String(effectiveMtime)})`
+        `Skipped ${session.displayName} — fingerprint unchanged (${effectiveMtime})`
       );
       return;
     }
@@ -212,11 +224,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     await this.ensureDirectory(archiveUri);
     const timestamp = generateTimestamp('YYYYMMDDHHmm', new Date(session.ctime));
 
-    const { fileName: archiveFileName, companionPartial } = await this.writeArchiveFile(
-      session,
-      archiveUri,
-      timestamp
-    );
+    const {
+      fileName: archiveFileName,
+      companionPartial,
+      contentHash,
+    } = await this.writeArchiveFile(session, archiveUri, timestamp, entry);
     if (archiveFileName) {
       // L2 guard: empty-session skip records '' as archiveFileName; joinPath(archiveUri, '') equals archiveUri itself
       if (entry?.archiveFileName && entry.archiveFileName !== archiveFileName) {
@@ -226,23 +238,31 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       }
       if (companionPartial) {
         this.logger.warn(
-          `Partial archive written for ${session.displayName} — unreadable subagent(s); ` +
+          `Partial archive written for ${session.displayName} — companion data unreadable; ` +
             `session will be retried on the next cycle`
         );
         this.lastArchivedMap.set(session.archiveName, {
-          mtime: 0,
+          mtime: '0',
           archiveFileName,
+          ...(contentHash !== undefined ? { contentHash } : {}),
         });
       } else {
         this.lastArchivedMap.set(session.archiveName, {
           mtime: effectiveMtime,
           archiveFileName,
+          ...(contentHash !== undefined ? { contentHash } : {}),
         });
       }
       this.logger.debug(`Archived ${session.displayName} → ${archiveFileName}`);
     } else {
+      // B-03: when the session was skipped as empty but the companion data was
+      // partial (e.g. a compaction file was transiently locked), record mtime '0'
+      // so the session is retried next cycle rather than being permanently skipped.
+      // Once companion data is readable the session will be re-evaluated; if it
+      // is still empty (zero non-empty turns, no subagents, no compaction) it will
+      // be skipped again and this time the recorded mtime will match effectiveMtime.
       this.lastArchivedMap.set(session.archiveName, {
-        mtime: effectiveMtime,
+        mtime: companionPartial ? '0' : effectiveMtime,
         archiveFileName: '',
       });
     }
@@ -259,11 +279,24 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     }
   }
 
+  /**
+   * Compute a stable SHA-1 hex fingerprint of the rendered markdown string.
+   * Used by H-03 to detect byte-identical re-renders and skip the writeFile call.
+   */
+  private computeContentHash(markdown: string): string {
+    return crypto.createHash('sha1').update(markdown, 'utf8').digest('hex');
+  }
+
   private async writeArchiveFile(
     session: SessionFile,
     archiveUri: vscode.Uri,
-    timestamp: string
-  ): Promise<{ fileName: string | undefined; companionPartial: boolean }> {
+    timestamp: string,
+    priorEntry?: ArchivedEntry
+  ): Promise<{
+    fileName: string | undefined;
+    companionPartial: boolean;
+    contentHash?: string;
+  }> {
     const parser = getParserForProvider(session.providerName);
     if (!parser) {
       return {
@@ -287,14 +320,22 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         };
       }
 
-      const allTurnsEmpty = result.session.turns.every(
-        (turn) =>
-          !turn.content.trim() &&
-          turn.toolCalls.length === 0 &&
-          !turn.thinking &&
-          turn.filesRead.length === 0 &&
-          turn.filesModified.length === 0
-      );
+      const allTurnsEmpty =
+        result.session.turns.every(
+          (turn) =>
+            !turn.content.trim() &&
+            turn.toolCalls.length === 0 &&
+            !turn.thinking &&
+            turn.filesRead.length === 0 &&
+            turn.filesModified.length === 0
+        ) &&
+        !(
+          result.session.subagentSessions && result.session.subagentSessions.length > 0
+        ) &&
+        !(
+          result.session.compactionSummaries &&
+          result.session.compactionSummaries.length > 0
+        );
       if (allTurnsEmpty) {
         this.logger.info(
           `Skipped empty session ${session.displayName} — zero non-empty turns`
@@ -313,9 +354,52 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         mm,
         `${timestamp}-${session.archiveName}.md`
       );
-      const markdown = renderSessionToMarkdown(result.session);
+      let markdown = renderSessionToMarkdown(result.session);
+
+      // R-05: enforce max-archive-bytes ceiling with structure-aware truncation.
+      // A blind byte slice can cut mid-code-fence or mid-<details> block; we
+      // instead snap to the last top-level block boundary ('\n---\n') at or
+      // before the cap.  When no such boundary exists in the head, we scan the
+      // sliced head for unclosed ``` fences and unclosed <details> tags and
+      // emit the required closers before the elision banner so the resulting
+      // document remains structurally valid.
+      if (markdown.length > MAX_ARCHIVE_BYTES) {
+        markdown = this.truncateMarkdownSafely(markdown);
+        this.logger.warn(
+          `Archive for ${session.displayName} exceeded max size and was truncated`
+        );
+      }
+
+      const contentHash = this.computeContentHash(markdown);
+
+      // H-03: skip writeFile when the rendered markdown is byte-identical to the prior
+      // archive AND the archive file still exists on disk. Still update lastArchivedMap
+      // mtime to effectiveMtime via the returned contentHash (archiveSession handles that).
+      const priorHash = priorEntry?.contentHash;
+      const priorFileName = priorEntry?.archiveFileName;
+      if (
+        priorHash !== undefined &&
+        priorHash === contentHash &&
+        priorFileName === mdFileName
+      ) {
+        // Verify the archive file still exists before declaring a no-op skip
+        let archiveExists = false;
+        try {
+          await vscode.workspace.fs.stat(mdUri);
+          archiveExists = true;
+        } catch {
+          // File absent — fall through to write it
+        }
+        if (archiveExists) {
+          this.logger.debug(
+            `No-op write skip for ${session.displayName} — content hash unchanged`
+          );
+          return { fileName: mdFileName, companionPartial, contentHash };
+        }
+      }
+
       await vscode.workspace.fs.writeFile(mdUri, new TextEncoder().encode(markdown));
-      return { fileName: mdFileName, companionPartial };
+      return { fileName: mdFileName, companionPartial, contentHash };
     } catch (err) {
       this.logger.warn(
         `Failed to convert ${session.displayName} to markdown: ${String(err)}`
@@ -333,7 +417,13 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   ): Promise<{ parseResult: ParseResult; companionPartial: boolean }> {
     const rawBytes = await vscode.workspace.fs.readFile(session.uri);
     const rawContent = new TextDecoder().decode(rawBytes);
-    const companionContext = await resolveCompanionData(session.uri, this.logger);
+    // H-07: pass rawContent so resolveCompanionData can build the referenced-filename
+    // set and skip unreferenced tool-result files (lazy/referenced loading).
+    const companionContext = await resolveCompanionData(
+      session.uri,
+      this.logger,
+      rawContent
+    );
     const companionPartial = companionContext.companionPartial === true;
     return {
       parseResult: parser.parse(rawContent, session.archiveName, companionContext),
@@ -624,18 +714,15 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       }
       const best = files[0];
       if (best && !this.lastArchivedMap.has(archiveName)) {
-        let mtime = 0;
-        try {
-          const statResult = await vscode.workspace.fs.stat(
-            vscode.Uri.joinPath(archiveUri, best.name)
-          );
-          mtime = statResult.mtime;
-        } catch {
-          this.logger.debug(
-            'Hydration stat failed for ' + best.name + ' — using mtime 0'
-          );
-        }
-        this.lastArchivedMap.set(archiveName, { mtime, archiveFileName: best.name });
+        // H-02: always seed with the '0' sentinel instead of the archive file's
+        // own stat mtime. The source clock (effectiveMtime from the session's
+        // compositeMtime) and the archive file's mtime are different clocks and
+        // never coincide, so seeding from the stat mtime would cause every
+        // previously-archived session to be fully rewritten on every restart.
+        // The '0' sentinel forces exactly ONE re-archive per restart; H-03's
+        // content-hash skip makes that re-archive a no-op write when the
+        // rendered markdown is byte-identical.
+        this.lastArchivedMap.set(archiveName, { mtime: '0', archiveFileName: best.name });
       }
     }
   }
@@ -700,5 +787,82 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     } catch (err) {
       this.logger.debug(`deleteFile: ${String(err)}`);
     }
+  }
+
+  /**
+   * R-05: Truncate a markdown document to at most MAX_ARCHIVE_BYTES while
+   * preserving structural validity.
+   *
+   * Strategy:
+   * 1. Search for the last occurrence of '\n---\n' (top-level block separator)
+   *    at or before MAX_ARCHIVE_BYTES and snap to that boundary.
+   * 2. When no separator is found in the head, slice at MAX_ARCHIVE_BYTES and
+   *    then scan the head for unclosed ``` fences and unclosed <details> tags,
+   *    emitting the minimum set of closers needed before the elision banner.
+   */
+  private truncateMarkdownSafely(markdown: string): string {
+    const totalBytes = markdown.length;
+    const elisionBanner =
+      `\n\n---\n> **Archive truncated** — rendered output exceeded ` +
+      `${String(MAX_ARCHIVE_BYTES)} bytes. ` +
+      `${String(totalBytes - MAX_ARCHIVE_BYTES)} bytes elided.\n`;
+
+    // Step 1: snap to the last top-level block boundary in the head.
+    const SEPARATOR = '\n---\n';
+    const head = markdown.slice(0, MAX_ARCHIVE_BYTES);
+    const lastSepIdx = head.lastIndexOf(SEPARATOR);
+    if (lastSepIdx !== -1) {
+      // Include the separator itself so the document boundary is clean.
+      return head.slice(0, lastSepIdx + SEPARATOR.length) + elisionBanner;
+    }
+
+    // Step 2: no separator — slice at cap and repair open fences/details.
+    const closers = this.buildMarkdownClosers(head);
+    return head + closers + elisionBanner;
+  }
+
+  /**
+   * Scan a markdown string and return the minimum set of closing tokens needed
+   * to balance any open ``` fences and unclosed <details> blocks.
+   * Returned string is empty when the document head is already balanced.
+   */
+  private buildMarkdownClosers(head: string): string {
+    const lines = head.split('\n');
+    let openFence: string | undefined;
+    let openDetailsCount = 0;
+    const closers: string[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trimStart();
+
+      // Track ``` / ~~~ fences (code blocks).
+      // A fence opens when a line starts with 3+ backticks or tildes and no
+      // open fence is active.  It closes when the same (or longer) sequence
+      // appears on its own line.
+      if (!openFence) {
+        const fenceMatch = /^(`{3,}|~{3,})/.exec(trimmed);
+        if (fenceMatch) {
+          openFence = fenceMatch[1];
+        }
+      } else {
+        const closeMatch = /^(`{3,}|~{3,})\s*$/.exec(trimmed);
+        if (closeMatch?.[1] !== undefined && closeMatch[1].length >= openFence.length) {
+          openFence = undefined;
+        }
+      }
+
+      // Track <details> / </details> nesting (only outside code fences).
+      if (!openFence) {
+        if (/<details(\s[^>]*)?>/.test(trimmed)) openDetailsCount++;
+        if (trimmed.includes('</details>') && openDetailsCount > 0) openDetailsCount--;
+      }
+    }
+
+    // Emit closers in reverse nesting order: close fence first, then details.
+    if (openFence) closers.push('\n```');
+    for (let i = 0; i < openDetailsCount; i++) {
+      closers.push('\n</details>');
+    }
+    return closers.join('');
   }
 }

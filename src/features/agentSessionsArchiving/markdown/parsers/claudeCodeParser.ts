@@ -15,43 +15,115 @@ import {
   processToolUseBlock,
   processToolResult,
   extractToolMetadata,
+  sanitizeName,
 } from './claudeCodeParserUtils';
 import type { CompanionDataContext, CompactionEntry } from '../companionDataTypes';
 import {
-  resolveToolResultMarkers,
   extractSubagentMeta,
   extractCompactionSummaryText,
   parseFirstEventAgentType,
 } from './claudeCodeParserCompanion';
 
+/**
+ * L-03: Unified agentType resolver — chains meta → first-event → filename-derived
+ * fallback so the heading is never 'unknown' when the entry.agentId is available.
+ *
+ * Resolution order:
+ * 1. meta.agentType (sanitized via extractSubagentMeta → sanitizeName)
+ * 2. first-event agentId / subagentType (parseFirstEventAgentType)
+ * 3. filename-derived label from entry.agentId when non-empty
+ * 4. 'unknown' only as the last resort (agentId also empty)
+ */
+function resolveAgentType(
+  metaContent: string | undefined,
+  rawContent: string,
+  agentId: string
+): string {
+  const meta = extractSubagentMeta(metaContent);
+  if (meta.agentType !== 'unknown') return meta.agentType;
+
+  const fromFirstEvent = parseFirstEventAgentType(rawContent);
+  if (fromFirstEvent !== 'unknown') return fromFirstEvent;
+
+  // Final fallback: derive a label from the filename-embedded agentId.
+  // sanitizeName converts CamelCase/PascalCase to kebab-case and drops
+  // all-symbol names to undefined — in that case fall back to 'unknown'.
+  if (agentId.length > 0) {
+    const derived = sanitizeName(agentId);
+    return derived ?? agentId; // keep raw agentId if sanitizeName strips it entirely
+  }
+
+  return 'unknown';
+}
+
+/**
+ * L-04: Extract the displayed compaction timestamp from the assistant event's
+ * own `timestamp` field when present; fall back to the file mtime otherwise.
+ */
+function resolveCompactionTimestamp(content: string, mtime: number): string {
+  // Scan the first few lines for an assistant event with a timestamp field.
+  const lines = content.split('\n');
+  const window = lines.slice(0, 10); // small window — timestamp is usually near the top
+  for (const line of window) {
+    if (!line.trim()) continue;
+    try {
+      const ev = JSON.parse(line) as Record<string, unknown>;
+      if (ev.type === 'assistant' && typeof ev.timestamp === 'string' && ev.timestamp) {
+        const d = new Date(ev.timestamp);
+        if (!isNaN(d.getTime())) return ev.timestamp;
+      }
+    } catch {
+      // non-JSON line — continue
+    }
+  }
+  return new Date(mtime).toISOString();
+}
+
 export class ClaudeCodeParser implements SessionParser {
   public readonly providerName = 'claude-code';
+
+  /** L-07: optional logger for observability; injected at construction time. */
+  private readonly logger:
+    | { debug: (msg: string) => void; warn?: (msg: string) => void }
+    | undefined;
+
+  constructor(logger?: { debug: (msg: string) => void; warn?: (msg: string) => void }) {
+    this.logger = logger ?? undefined;
+  }
 
   public parse(
     content: string,
     sessionId: string,
     companionContext?: CompanionDataContext
   ): ParseResult {
-    const resolvedContent = companionContext
-      ? resolveToolResultMarkers(content, companionContext.toolResultMap)
-      : content;
-
-    const lines = resolvedContent.split('\n').filter((line) => line.trim());
+    // B-01: do NOT call resolveToolResultMarkers on the raw JSONL string.
+    // Marker values may contain newlines/quotes/backslashes that would corrupt
+    // the JSON; resolution is deferred to processToolResult (post-parse).
+    const lines = content.split('\n').filter((line) => line.trim());
     if (!this.looksLikeJsonl(lines)) {
       return { status: 'unrecognized', reason: 'content is not valid JSONL events' };
     }
 
     const turns: NormalizedTurn[] = [];
     let pending = emptyPending();
+    // L-07: count skipped malformed lines for the debug tally
+    let skippedLines = 0;
 
     for (const line of lines) {
       let event: JsonlEvent;
       try {
         event = JSON.parse(line) as JsonlEvent;
       } catch {
+        skippedLines++;
         continue;
       }
-      pending = this.processEvent(event, turns, pending);
+      pending = this.processEvent(event, turns, pending, companionContext);
+    }
+    // L-07: emit tally when at least one line was skipped
+    if (skippedLines > 0) {
+      this.logger?.debug(
+        `ClaudeCodeParser.parse "${sessionId}": skipped ${String(skippedLines)} malformed JSONL line(s)`
+      );
     }
 
     if (pending.toolCalls.length > 0 || pending.thinking) {
@@ -89,20 +161,27 @@ export class ClaudeCodeParser implements SessionParser {
   }
 
   private looksLikeJsonl(lines: string[]): boolean {
-    const firstLine = lines[0];
-    if (!firstLine) return false;
-    try {
-      const first = JSON.parse(firstLine) as Record<string, unknown>;
-      return typeof first.type === 'string';
-    } catch {
-      return false;
+    // H-10: scan the first ~5 non-blank lines and return true if ANY parses
+    // to an object with a string `type` field.  This handles files whose
+    // leading record is a summary/index object without a string `type` — the
+    // file still contains real events and should produce structured markdown.
+    const window = lines.slice(0, 5);
+    for (const line of window) {
+      try {
+        const parsed = JSON.parse(line) as Record<string, unknown>;
+        if (typeof parsed.type === 'string') return true;
+      } catch {
+        // Not valid JSON — continue scanning
+      }
     }
+    return false;
   }
 
   private processEvent(
     event: JsonlEvent,
     turns: NormalizedTurn[],
-    pending: PendingState
+    pending: PendingState,
+    companionContext?: CompanionDataContext
   ): PendingState {
     if (event.type === 'user') {
       this.processUserEvent(event, turns);
@@ -116,7 +195,7 @@ export class ClaudeCodeParser implements SessionParser {
       return pending;
     }
     if (event.type === 'tool_result') {
-      this.processToolResultEvent(event, pending);
+      this.processToolResultEvent(event, pending, companionContext);
     }
     return pending;
   }
@@ -182,9 +261,16 @@ export class ClaudeCodeParser implements SessionParser {
     }
   }
 
-  private processToolResultEvent(event: JsonlEvent, pending: PendingState): void {
+  private processToolResultEvent(
+    event: JsonlEvent,
+    pending: PendingState,
+    companionContext?: CompanionDataContext
+  ): void {
     for (const b of getBlocks(event.message?.content)) {
-      if (b.type === 'tool_result') processToolResult(b, pending);
+      if (b.type === 'tool_result') {
+        // B-01: pass toolResultMap so marker resolution happens post-parse
+        processToolResult(b, pending, companionContext?.toolResultMap, this.logger);
+      }
     }
   }
 
@@ -203,27 +289,34 @@ export class ClaudeCodeParser implements SessionParser {
         });
         continue;
       }
-      const resolved = resolveToolResultMarkers(entry.content, context.toolResultMap);
-      const lines = resolved.split('\n').filter((line) => line.trim());
+      // B-01: do NOT call resolveToolResultMarkers on the raw JSONL string.
+      // Parse first, then resolve markers post-parse via processEvent → processToolResult.
+      const lines = entry.content.split('\n').filter((line) => line.trim());
       const turns: NormalizedTurn[] = [];
       let pending = emptyPending();
+      // L-07: tally malformed lines for observability
+      let skippedSubagentLines = 0;
       for (const line of lines) {
         let event: JsonlEvent;
         try {
           event = JSON.parse(line) as JsonlEvent;
         } catch {
+          skippedSubagentLines++;
           continue;
         }
-        pending = this.processEvent(event, turns, pending);
+        pending = this.processEvent(event, turns, pending, context);
+      }
+      if (skippedSubagentLines > 0) {
+        this.logger?.debug(
+          `ClaudeCodeParser subagent "${entry.agentId}": skipped ${String(skippedSubagentLines)} malformed JSONL line(s)`
+        );
       }
       if (pending.toolCalls.length > 0 || pending.thinking) {
         turns.push(makeTurn({ role: 'assistant', content: '', ...pending }));
       }
+      // L-03: use the unified resolver (meta → first-event → filename-derived fallback)
+      const agentType = resolveAgentType(entry.metaContent, entry.content, entry.agentId);
       const meta = extractSubagentMeta(entry.metaContent);
-      const agentType =
-        meta.agentType === 'unknown'
-          ? parseFirstEventAgentType(entry.content)
-          : meta.agentType;
       const session: {
         agentId: string;
         agentType: string;
@@ -239,12 +332,28 @@ export class ClaudeCodeParser implements SessionParser {
   private processCompactionEntries(
     entries: readonly CompactionEntry[]
   ): CompactionSummary[] {
-    const sorted = [...entries].sort((a, b) => a.mtime - b.mtime);
+    // L-04: sort by mtime ascending; use filename as a deterministic tiebreaker
+    // for same-tick entries so archive output is stable across runs.
+    const sorted = [...entries].sort((a, b) => {
+      const mtimeDiff = a.mtime - b.mtime;
+      if (mtimeDiff !== 0) return mtimeDiff;
+      // Secondary key: source filename (embeds an ordering token)
+      const fa = a.filename ?? '';
+      const fb = b.filename ?? '';
+      return fa < fb ? -1 : fa > fb ? 1 : 0;
+    });
     const result: CompactionSummary[] = [];
     for (const entry of sorted) {
-      const summaryText = extractCompactionSummaryText(entry.content);
+      // R-06: pass a warn-compatible logger so budget exhaustion is observable
+      const warnLogger = this.logger?.warn
+        ? { warn: this.logger.warn.bind(this.logger) }
+        : undefined;
+      const summaryText = extractCompactionSummaryText(entry.content, warnLogger);
       if (summaryText !== undefined) {
-        result.push({ summaryText, timestamp: new Date(entry.mtime).toISOString() });
+        // L-04: derive displayed timestamp from the assistant event's own timestamp
+        // field when present; fall back to the file mtime when absent.
+        const timestamp = resolveCompactionTimestamp(entry.content, entry.mtime);
+        result.push({ summaryText, timestamp });
       }
     }
     return result;

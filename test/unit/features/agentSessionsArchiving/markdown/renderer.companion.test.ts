@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderSessionToMarkdown } from '../../../../../src/features/agentSessionsArchiving/markdown/renderer';
+import { renderCompactionSummaries } from '../../../../../src/features/agentSessionsArchiving/markdown/rendererSubagent';
 import type { NormalizedSession } from '../../../../../src/features/agentSessionsArchiving/markdown/types';
 
 describe('renderSessionToMarkdown — subagent sections', () => {
@@ -272,5 +273,71 @@ describe('renderSessionToMarkdown — subagent sections', () => {
     expect(output).toContain('⚠ Subagent transcript could not be read.');
     expect(textAfterHeading).not.toContain('**User:**');
     expect(textAfterHeading).not.toContain('**Agent:**');
+  });
+});
+
+describe('renderCompactionSummaries — H-11: per-line indentation', () => {
+  it('H-11: multi-line summary has every line indented with two spaces', () => {
+    const summaries = [
+      {
+        summaryText: 'Line one\nLine two\nLine three',
+        timestamp: '2026-01-01T00:00:00.000Z',
+      },
+    ];
+
+    const lines = renderCompactionSummaries(summaries);
+    const output = lines.join('\n');
+
+    // Every non-empty body line must start with two spaces
+    expect(output).toContain('  Line one');
+    expect(output).toContain('  Line two');
+    expect(output).toContain('  Line three');
+    // No line after the opening blank should be unindented
+    const bodyLines = output
+      .split('\n')
+      .filter((l) => l === 'Line one' || l === 'Line two' || l === 'Line three');
+    expect(bodyLines).toHaveLength(0);
+  });
+
+  it('H-11: single-line summary is still indented with two spaces', () => {
+    const summaries = [
+      { summaryText: 'Single line.', timestamp: '2026-01-01T00:00:00.000Z' },
+    ];
+
+    const lines = renderCompactionSummaries(summaries);
+    const output = lines.join('\n');
+
+    expect(output).toContain('  Single line.');
+  });
+
+  it('H-11: body containing </details> is html-escaped (BK-005 regression)', () => {
+    const summaries = [
+      { summaryText: 'Safe </details> end', timestamp: '2026-01-01T00:00:00.000Z' },
+    ];
+
+    const lines = renderCompactionSummaries(summaries);
+
+    // The body line must contain the escaped form — the literal tag must NOT
+    // appear in the body (the only </details> in the output is the structural
+    // closing tag that the renderer itself emits as the last line).
+    const bodyLine = lines.find((l) => l.includes('Safe'));
+    expect(bodyLine).toBeDefined();
+    expect(bodyLine).toContain('&lt;/details&gt;');
+    expect(bodyLine).not.toContain('</details>');
+    // The structural closing tag is still present as the last element
+    expect(lines[lines.length - 1]).toBe('</details>');
+  });
+
+  it('H-11: a body line starting with # stays inside the block when indented', () => {
+    const summaries = [
+      { summaryText: '# Heading\nParagraph', timestamp: '2026-01-01T00:00:00.000Z' },
+    ];
+
+    const lines = renderCompactionSummaries(summaries);
+    const output = lines.join('\n');
+
+    // The heading line must be indented (not a bare # at start of a rendered line)
+    expect(output).toContain('  # Heading');
+    expect(output).not.toMatch(/^# Heading/m);
   });
 });

@@ -326,4 +326,99 @@ describe('renderSessionToMarkdown', () => {
     expect(md).not.toContain('**User:**');
     expect(md).not.toContain('**Assistant:**');
   });
+
+  // L-05 tests: CommonMark-safe code fences
+
+  it('L-05: tool output containing triple backtick is wrapped in a 4-backtick fence', () => {
+    const session: NormalizedSession = {
+      providerName: 'claude-code',
+      providerDisplayName: 'Claude Code',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'assistant',
+          content: 'Done.',
+          toolCalls: [
+            { name: 'Bash', input: 'ls', output: 'file1\n```\nfenced\n```\nfile2' },
+          ],
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    // The fence must be 4 backticks because the content contains ```
+    expect(md).toContain('````');
+    // The output content must still appear
+    expect(md).toContain('fenced');
+  });
+
+  it('L-05: tool output containing 4-backtick run is wrapped in a 5-backtick fence', () => {
+    const session: NormalizedSession = {
+      providerName: 'claude-code',
+      providerDisplayName: 'Claude Code',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'assistant',
+          content: 'Done.',
+          toolCalls: [{ name: 'Bash', input: 'echo', output: 'start\n````\nend' }],
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    expect(md).toContain('`````');
+  });
+
+  it('L-05: plain text (no backticks) uses the minimum 3-backtick fence', () => {
+    const session: NormalizedSession = {
+      providerName: 'claude-code',
+      providerDisplayName: 'Claude Code',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'assistant',
+          content: 'Done.',
+          toolCalls: [{ name: 'Read', input: 'a.ts', output: 'plain content here' }],
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    expect(md).toContain('```');
+    // Must NOT contain a 4-backtick fence (no reason to expand)
+    expect(md).not.toContain('````');
+  });
+
+  it('L-05: per-line indentation is preserved with expanded fence', () => {
+    const session: NormalizedSession = {
+      providerName: 'claude-code',
+      providerDisplayName: 'Claude Code',
+      sessionId: 'test',
+      turns: [
+        {
+          role: 'assistant',
+          content: 'Done.',
+          toolCalls: [{ name: 'Bash', input: 'cmd', output: 'line1\n```\nline2' }],
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+
+    const md = renderSessionToMarkdown(session);
+
+    // Each line of the code block content should be indented (2 spaces for output details)
+    expect(md).toMatch(/ {2}line1/);
+    expect(md).toMatch(/ {2}line2/);
+  });
 });

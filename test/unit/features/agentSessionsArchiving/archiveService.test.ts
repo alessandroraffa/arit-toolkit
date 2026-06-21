@@ -469,10 +469,10 @@ describe('AgentSessionArchiveService', () => {
       );
       await service.start(DEFAULT_CONFIG);
 
-      // First cycle: hydration stat fails (mock returns undefined) → mtime: 0; source mtime is
-      // SESSION_MTIME → re-processes. Because ctime is unchanged, the new archive filename equals
-      // the hydrated filename → write-first-then-delete only fires when the filename differs, so
-      // no delete is issued; the file is overwritten in place by copyRawArchive.
+      // First cycle: hydration always seeds mtime '0' sentinel (H-02); source effectiveMtime is
+      // String(SESSION_MTIME) → '0' !== effectiveMtime → re-processes. Because ctime is unchanged,
+      // the new archive filename equals the hydrated filename → write-first-then-delete only fires
+      // when the filename differs, so no delete is issued; the file is overwritten by copyRawArchive.
       await service.runArchiveCycle();
 
       // No delete — the archive filename is unchanged (same ctime-based prefix).
@@ -1265,7 +1265,7 @@ describe('AgentSessionArchiveService', () => {
       // Prime lastArchivedMap with an old archiveFileName
       const oldArchiveFileName = '2026/05/202605010000-test-session.json';
       (service as any).lastArchivedMap.set(session.archiveName, {
-        mtime: 1000,
+        mtime: '1000',
         archiveFileName: oldArchiveFileName,
       });
 
@@ -1312,7 +1312,7 @@ describe('AgentSessionArchiveService', () => {
       // Same archiveFileName in both map and writeArchiveFile return
       const sameArchiveFileName = '2026/06/202606010000-test-session.json';
       (service as any).lastArchivedMap.set(session.archiveName, {
-        mtime: 1000,
+        mtime: '1000',
         archiveFileName: sameArchiveFileName,
       });
 
@@ -1330,8 +1330,12 @@ describe('AgentSessionArchiveService', () => {
     });
   });
 
-  describe('deduplicateAndHydrate — real mtime hydration', () => {
-    it('seeds lastArchivedMap with the stat mtime of each archive file, not mtime:0', async () => {
+  describe('deduplicateAndHydrate — restart sentinel hydration (H-02)', () => {
+    it('seeds lastArchivedMap with the sentinel "0" (not the stat mtime) so a restart forces exactly one re-archive', async () => {
+      // H-02: hydration always uses '0' so the effectiveMtime from the SOURCE session
+      // always differs on the first post-restart cycle, triggering one re-archive.
+      // H-03's content-hash skip then makes that re-archive a no-op write when
+      // the rendered markdown is byte-identical.
       workspace.fs.readDirectory = vi
         .fn()
         .mockImplementation((uri: { fsPath: string }) => {
@@ -1340,9 +1344,12 @@ describe('AgentSessionArchiveService', () => {
             return Promise.resolve([['2026', FileType.Directory]]);
           if (p.endsWith('/2026')) return Promise.resolve([['06', FileType.Directory]]);
           if (p.endsWith('/2026/06'))
-            return Promise.resolve([['202606010000-stat-session.json', FileType.File]]);
+            return Promise.resolve([
+              ['202606010000-sentinel-session.json', FileType.File],
+            ]);
           return Promise.resolve([]);
         });
+      // stat is NOT called during hydration after H-02 — mock it to verify no call is made
       workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 9999 });
 
       const provider = createMockProvider([]);
@@ -1358,16 +1365,22 @@ describe('AgentSessionArchiveService', () => {
 
       await service.runArchiveCycle();
 
-      const entry = (service as any).lastArchivedMap.get('stat-session') as
-        | { mtime: number }
+      const entry = (service as any).lastArchivedMap.get('sentinel-session') as
+        | { mtime: string }
         | undefined;
       expect(entry).toBeDefined();
-      expect(entry!.mtime).toBe(9999);
+      // Must be the '0' sentinel, NOT the archive file's stat mtime (9999)
+      expect(entry!.mtime).toBe('0');
+      // stat is not called during hydration — the sentinel is unconditional
+      expect(workspace.fs.stat).not.toHaveBeenCalled();
 
       service.dispose();
     });
 
-    it('falls back to mtime:0 when stat throws for an archive file', async () => {
+    it('sentinel ensures a session with a source fingerprint above "0" is re-archived on the next cycle', async () => {
+      // This test covers the restart-storm fix: after hydration with mtime '0',
+      // effectiveMtime from the source session (e.g. '1000') !== '0', so the session
+      // is processed. On the second cycle the fingerprints match and it is skipped.
       workspace.fs.readDirectory = vi
         .fn()
         .mockImplementation((uri: { fsPath: string }) => {
@@ -1376,29 +1389,36 @@ describe('AgentSessionArchiveService', () => {
             return Promise.resolve([['2026', FileType.Directory]]);
           if (p.endsWith('/2026')) return Promise.resolve([['06', FileType.Directory]]);
           if (p.endsWith('/2026/06'))
-            return Promise.resolve([['202606010000-nostat-session.json', FileType.File]]);
+            return Promise.resolve([
+              ['202606010000-restart-session.json', FileType.File],
+            ]);
           return Promise.resolve([]);
         });
-      workspace.fs.stat = vi.fn().mockRejectedValue(new Error('ENOENT'));
 
-      const provider = createMockProvider([]);
+      const session = createMockSession({
+        archiveName: 'restart-session',
+        mtime: 1000,
+        ctime: 1_609_459_200_000,
+        extension: '.json',
+      });
+      const provider = createMockProvider([session]);
+      workspace.fs.copy = vi.fn().mockResolvedValue(undefined);
+
       const service = new AgentSessionArchiveService(
         workspaceRootUri,
         [provider],
         logger as any
       );
-      (
-        service as unknown as { _currentConfig: AgentSessionsArchivingConfig }
-      )._currentConfig = DEFAULT_CONFIG;
-      (service as unknown as { _needsDedup: boolean })._needsDedup = true;
+      await service.start(DEFAULT_CONFIG);
 
+      // First cycle: hydration set mtime '0'; source effectiveMtime '1000' ≠ '0' → re-archives
       await service.runArchiveCycle();
+      expect(workspace.fs.copy).toHaveBeenCalledOnce();
 
-      const entry = (service as any).lastArchivedMap.get('nostat-session') as
-        | { mtime: number }
-        | undefined;
-      expect(entry).toBeDefined();
-      expect(entry!.mtime).toBe(0);
+      // Second cycle: effectiveMtime '1000' === stored '1000' → skipped
+      vi.mocked(workspace.fs.copy).mockClear();
+      await service.runArchiveCycle();
+      expect(workspace.fs.copy).not.toHaveBeenCalled();
 
       service.dispose();
     });
@@ -1442,7 +1462,7 @@ describe('AgentSessionArchiveService', () => {
 
       // Prime lastArchivedMap with empty archiveFileName (empty-session skip records '')
       (service as any).lastArchivedMap.set(session.archiveName, {
-        mtime: 1000,
+        mtime: '1000',
         archiveFileName: '',
       });
 
