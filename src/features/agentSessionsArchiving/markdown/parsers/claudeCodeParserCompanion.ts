@@ -1,15 +1,43 @@
-import * as path from 'path';
 import { sanitizeName } from './claudeCodeParserUtils';
+
+/**
+ * Derive the basename from a marker payload in a separator-agnostic way.
+ * Handles both forward-slash (POSIX) and backslash (Windows) paths.
+ * Returns undefined when the payload is empty/whitespace-only to guard
+ * against the degenerate `path.basename('') === '.'` artifact.
+ */
+function markerBasename(payload: string): string | undefined {
+  const trimmed = payload.trim();
+  const parts = trimmed.split(/[\\/]/).filter(Boolean);
+  return parts.length > 0 ? parts[parts.length - 1] : undefined;
+}
 
 export function resolveToolResultMarkers(
   content: string,
-  toolResultMap: ReadonlyMap<string, string>
+  toolResultMap: ReadonlyMap<string, string>,
+  logger?: { debug: (msg: string) => void }
 ): string {
+  // Build a lowercased secondary index for case-insensitive fallback.
+  const lowerMap = new Map<string, string>();
+  for (const [key, value] of toolResultMap) {
+    lowerMap.set(key.toLowerCase(), value);
+  }
+
   return content.replace(
     /<persisted-output>([\s\S]*?)<\/persisted-output>/g,
     (match, inner) => {
-      const filename = path.basename((inner as string).trim());
-      return toolResultMap.get(filename) ?? match;
+      const filename = markerBasename(inner as string);
+      if (filename === undefined) {
+        logger?.debug(`resolveToolResultMarkers: empty marker payload — skipping lookup`);
+        return match;
+      }
+      // Exact-case lookup (v2.5.1 full-filename keying preserved)
+      const exact = toolResultMap.get(filename);
+      if (exact !== undefined) return exact;
+      // Case-insensitive fallback (macOS APFS / Windows NTFS)
+      const lower = lowerMap.get(filename.toLowerCase());
+      if (lower !== undefined) return lower;
+      return match;
     }
   );
 }

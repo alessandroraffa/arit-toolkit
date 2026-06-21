@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   resolveToolResultMarkers,
   extractSubagentMeta,
@@ -38,6 +38,65 @@ describe('resolveToolResultMarkers', () => {
     ]);
     const result = resolveToolResultMarkers(content, map);
     expect(result).toBe('txt content and json content');
+  });
+
+  // H-06 tests
+
+  it('H-06: Windows backslash path resolves against forward-slash-keyed map', () => {
+    const result = resolveToolResultMarkers(
+      '<persisted-output>tool-results\\abc.txt</persisted-output>',
+      new Map([['abc.txt', 'backslash resolved']])
+    );
+    expect(result).toBe('backslash resolved');
+  });
+
+  it('H-06: case-insensitive fallback resolves uppercase marker against lowercase map key', () => {
+    const result = resolveToolResultMarkers(
+      '<persisted-output>ABC.txt</persisted-output>',
+      new Map([['abc.txt', 'case fallback content']])
+    );
+    expect(result).toBe('case fallback content');
+  });
+
+  it('H-06: exact-case match takes priority over lowercase fallback', () => {
+    // map has both 'ABC.txt' (exact) and 'abc.txt' (lower) — exact should win
+    const result = resolveToolResultMarkers(
+      '<persisted-output>ABC.txt</persisted-output>',
+      new Map([
+        ['ABC.txt', 'exact content'],
+        ['abc.txt', 'lower content'],
+      ])
+    );
+    expect(result).toBe('exact content');
+  });
+
+  it('H-06: same-stem-different-extension still resolves to distinct content (v2.5.1 regression)', () => {
+    const content =
+      '<persisted-output>/path/toolu_abc.txt</persisted-output> and ' +
+      '<persisted-output>/path/toolu_abc.json</persisted-output>';
+    const map = new Map([
+      ['toolu_abc.txt', 'txt content'],
+      ['toolu_abc.json', 'json content'],
+    ]);
+    const result = resolveToolResultMarkers(content, map);
+    expect(result).toBe('txt content and json content');
+  });
+
+  it('H-06: empty/whitespace-only marker retains original marker and emits debug log', () => {
+    const debugFn = vi.fn();
+    const logger = { debug: debugFn };
+    const marker = '<persisted-output>   </persisted-output>';
+    const result = resolveToolResultMarkers(marker, new Map([['a.txt', 'x']]), logger);
+    expect(result).toBe(marker);
+    expect(debugFn).toHaveBeenCalled();
+  });
+
+  it('H-06: unknown filename retains original marker verbatim', () => {
+    const result = resolveToolResultMarkers(
+      '<persisted-output>unknown.txt</persisted-output>',
+      new Map([['other.txt', 'content']])
+    );
+    expect(result).toBe('<persisted-output>unknown.txt</persisted-output>');
   });
 });
 

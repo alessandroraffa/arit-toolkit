@@ -254,6 +254,32 @@ describe('resolveCompanionData', () => {
     expect(result.toolResultMap.size).toBe(0);
   });
 
+  // H-06 tests: FileType filtering in readToolResults and readSubagents
+
+  it('H-06: Directory entry in tool-results/ is skipped (no readFile, no warn, absent from map)', async () => {
+    const toolOutput = 'tool output';
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([
+        ['subdir', FileType.Directory],
+        ['toolu_abc.txt', FileType.File],
+      ]) // tool-results/ — one dir, one file
+      .mockResolvedValueOnce([]); // subagents/ for compaction
+    workspace.fs.readFile = vi.fn().mockResolvedValue(encode(toolOutput));
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    // Directory entry skipped; only the File entry read
+    expect(result.toolResultMap.size).toBe(1);
+    expect(result.toolResultMap.get('toolu_abc.txt')).toBe(toolOutput);
+    expect(result.toolResultMap.get('subdir')).toBeUndefined();
+    // readFile called exactly once (for the File entry only)
+    expect(workspace.fs.readFile).toHaveBeenCalledTimes(1);
+    expect(logger.warn).not.toHaveBeenCalled();
+  });
+
   it('H-01: all readers succeed → companionPartial is not set', async () => {
     const toolOutput = 'tool output';
     const jsonlContent = '{"type":"human","text":"hello"}\n';

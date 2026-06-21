@@ -73,7 +73,11 @@ async function readSubagents(
   }
 
   const result: SubagentEntry[] = [];
-  for (const [name] of entries) {
+  for (const [name, fileType] of entries) {
+    if (fileType !== vscode.FileType.File) {
+      // Skip directories and symlinks in subagents/ for symmetry with readToolResults
+      continue;
+    }
     if (/^agent-(?!acompact-).*\.jsonl$/.test(name)) {
       result.push(await readOneSubagent(subagentsDirUri, name, logger));
     }
@@ -99,7 +103,11 @@ async function readToolResults(
 
   const map = new Map<string, string>();
   let partial = false;
-  for (const [name] of entries) {
+  for (const [name, fileType] of entries) {
+    if (fileType !== vscode.FileType.File) {
+      // Skip directories, symlinks, and unknown entries in tool-results/
+      continue;
+    }
     const fileUri = vscode.Uri.joinPath(toolResultsDirUri, name);
     if (map.has(name)) {
       logger.warn(
