@@ -356,13 +356,15 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       );
       let markdown = renderSessionToMarkdown(result.session);
 
-      // H-07: enforce max-archive-bytes ceiling — truncate with elision banner
+      // R-05: enforce max-archive-bytes ceiling with structure-aware truncation.
+      // A blind byte slice can cut mid-code-fence or mid-<details> block; we
+      // instead snap to the last top-level block boundary ('\n---\n') at or
+      // before the cap.  When no such boundary exists in the head, we scan the
+      // sliced head for unclosed ``` fences and unclosed <details> tags and
+      // emit the required closers before the elision banner so the resulting
+      // document remains structurally valid.
       if (markdown.length > MAX_ARCHIVE_BYTES) {
-        const elisionBanner =
-          `\n\n---\n> **Archive truncated** — rendered output exceeded ` +
-          `${String(MAX_ARCHIVE_BYTES)} bytes. ` +
-          `${String(markdown.length - MAX_ARCHIVE_BYTES)} bytes elided.\n`;
-        markdown = markdown.slice(0, MAX_ARCHIVE_BYTES) + elisionBanner;
+        markdown = this.truncateMarkdownSafely(markdown);
         this.logger.warn(
           `Archive for ${session.displayName} exceeded max size and was truncated`
         );
@@ -785,5 +787,82 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     } catch (err) {
       this.logger.debug(`deleteFile: ${String(err)}`);
     }
+  }
+
+  /**
+   * R-05: Truncate a markdown document to at most MAX_ARCHIVE_BYTES while
+   * preserving structural validity.
+   *
+   * Strategy:
+   * 1. Search for the last occurrence of '\n---\n' (top-level block separator)
+   *    at or before MAX_ARCHIVE_BYTES and snap to that boundary.
+   * 2. When no separator is found in the head, slice at MAX_ARCHIVE_BYTES and
+   *    then scan the head for unclosed ``` fences and unclosed <details> tags,
+   *    emitting the minimum set of closers needed before the elision banner.
+   */
+  private truncateMarkdownSafely(markdown: string): string {
+    const totalBytes = markdown.length;
+    const elisionBanner =
+      `\n\n---\n> **Archive truncated** — rendered output exceeded ` +
+      `${String(MAX_ARCHIVE_BYTES)} bytes. ` +
+      `${String(totalBytes - MAX_ARCHIVE_BYTES)} bytes elided.\n`;
+
+    // Step 1: snap to the last top-level block boundary in the head.
+    const SEPARATOR = '\n---\n';
+    const head = markdown.slice(0, MAX_ARCHIVE_BYTES);
+    const lastSepIdx = head.lastIndexOf(SEPARATOR);
+    if (lastSepIdx !== -1) {
+      // Include the separator itself so the document boundary is clean.
+      return head.slice(0, lastSepIdx + SEPARATOR.length) + elisionBanner;
+    }
+
+    // Step 2: no separator — slice at cap and repair open fences/details.
+    const closers = this.buildMarkdownClosers(head);
+    return head + closers + elisionBanner;
+  }
+
+  /**
+   * Scan a markdown string and return the minimum set of closing tokens needed
+   * to balance any open ``` fences and unclosed <details> blocks.
+   * Returned string is empty when the document head is already balanced.
+   */
+  private buildMarkdownClosers(head: string): string {
+    const lines = head.split('\n');
+    let openFence: string | undefined;
+    let openDetailsCount = 0;
+    const closers: string[] = [];
+
+    for (const line of lines) {
+      const trimmed = line.trimStart();
+
+      // Track ``` / ~~~ fences (code blocks).
+      // A fence opens when a line starts with 3+ backticks or tildes and no
+      // open fence is active.  It closes when the same (or longer) sequence
+      // appears on its own line.
+      if (!openFence) {
+        const fenceMatch = /^(`{3,}|~{3,})/.exec(trimmed);
+        if (fenceMatch) {
+          openFence = fenceMatch[1];
+        }
+      } else {
+        const closeMatch = /^(`{3,}|~{3,})\s*$/.exec(trimmed);
+        if (closeMatch?.[1] !== undefined && closeMatch[1].length >= openFence.length) {
+          openFence = undefined;
+        }
+      }
+
+      // Track <details> / </details> nesting (only outside code fences).
+      if (!openFence) {
+        if (/<details(\s[^>]*)?>/.test(trimmed)) openDetailsCount++;
+        if (trimmed.includes('</details>') && openDetailsCount > 0) openDetailsCount--;
+      }
+    }
+
+    // Emit closers in reverse nesting order: close fence first, then details.
+    if (openFence) closers.push('\n```');
+    for (let i = 0; i < openDetailsCount; i++) {
+      closers.push('\n</details>');
+    }
+    return closers.join('');
   }
 }

@@ -179,4 +179,93 @@ describe('AgentSessionArchiveService — H-07: max-archive-bytes ceiling', () =>
     expect(workspace.fs.writeFile).toHaveBeenCalled();
     expect(writtenContent).not.toContain('Archive truncated');
   });
+
+  // R-05 tests: structure-aware truncation
+
+  it('R-05: truncated document snaps to last top-level block separator', async () => {
+    // Build a JSONL whose rendered markdown will have a '\n---\n' separator somewhere
+    // before MAX_ARCHIVE_BYTES.  We rely on renderSessionToMarkdown emitting '---'
+    // between turns; inject two turns — a short user turn followed by a huge assistant
+    // turn so the separator falls before the cap.
+    const separator = '\n---\n';
+    const shortUser = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+    });
+    // Large enough to push total past MAX_ARCHIVE_BYTES
+    const hugeText = 'y'.repeat(MAX_ARCHIVE_BYTES + 2000);
+    const bigAssistant = JSON.stringify({
+      type: 'assistant',
+      message: { role: 'assistant', content: [{ type: 'text', text: hugeText }] },
+    });
+    const jsonl = [shortUser, bigAssistant].join('\n');
+    workspace.fs.readFile = vi.fn().mockResolvedValue(new TextEncoder().encode(jsonl));
+
+    let writtenContent = '';
+    workspace.fs.writeFile = vi
+      .fn()
+      .mockImplementation((_uri: unknown, data: Uint8Array) => {
+        writtenContent = new TextDecoder().decode(data);
+        return Promise.resolve();
+      });
+
+    const session = createMockSession({ mtime: 6001, compositeMtime: '6001' });
+    const service = new AgentSessionArchiveService(
+      workspaceRootUri,
+      [createMockProvider([session])],
+      logger as any
+    );
+    (service as any)._currentConfig = DEFAULT_CONFIG;
+    (service as any)._needsDedup = false;
+
+    await service.runArchiveCycle();
+
+    expect(workspace.fs.writeFile).toHaveBeenCalled();
+    expect(writtenContent).toContain('Archive truncated');
+    // The output must contain the separator (snapped to it, not mid-block)
+    expect(writtenContent).toContain(separator);
+    // No unclosed code fences
+    const fenceCount = (writtenContent.match(/^```/gm) ?? []).length;
+    expect(fenceCount % 2).toBe(0);
+  });
+
+  it('R-05: truncated document closes an open code fence when no separator exists', async () => {
+    // Build JSONL whose rendered markdown contains an open code fence at the cap.
+    // We craft content that starts a code fence near MAX_ARCHIVE_BYTES with no
+    // '\n---\n' separator in the head.  We force this by putting everything in one
+    // large assistant turn (no user turn → no separator).
+    const fencedText = '```\n' + 'z'.repeat(MAX_ARCHIVE_BYTES + 500);
+    const singleAssistant = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: fencedText }] },
+    });
+    workspace.fs.readFile = vi
+      .fn()
+      .mockResolvedValue(new TextEncoder().encode(singleAssistant));
+
+    let writtenContent = '';
+    workspace.fs.writeFile = vi
+      .fn()
+      .mockImplementation((_uri: unknown, data: Uint8Array) => {
+        writtenContent = new TextDecoder().decode(data);
+        return Promise.resolve();
+      });
+
+    const session = createMockSession({ mtime: 6002, compositeMtime: '6002' });
+    const service = new AgentSessionArchiveService(
+      workspaceRootUri,
+      [createMockProvider([session])],
+      logger as any
+    );
+    (service as any)._currentConfig = DEFAULT_CONFIG;
+    (service as any)._needsDedup = false;
+
+    await service.runArchiveCycle();
+
+    expect(workspace.fs.writeFile).toHaveBeenCalled();
+    expect(writtenContent).toContain('Archive truncated');
+    // Fence count must be even (balanced)
+    const fenceCount = (writtenContent.match(/^```/gm) ?? []).length;
+    expect(fenceCount % 2).toBe(0);
+  });
 });
