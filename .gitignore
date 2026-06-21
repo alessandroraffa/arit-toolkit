@@ -38,3 +38,4 @@ yarn.lock
 private/
 
 docs/archive/agent-sessions/
+.tangyr/logs/
