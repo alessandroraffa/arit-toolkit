@@ -5,6 +5,7 @@ import {
   extractCompactionSummaryText,
   parseFirstEventAgentType,
 } from '../../../../../../src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParserCompanion';
+import { COMPACTION_SCAN_BUDGET } from '../../../../../../src/features/agentSessionsArchiving/constants';
 
 describe('resolveToolResultMarkers', () => {
   it('replaces marker with full filename key from map', () => {
@@ -144,6 +145,82 @@ describe('extractCompactionSummaryText', () => {
     const content = JSON.stringify({
       type: 'user',
       message: { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
+    });
+    expect(extractCompactionSummaryText(content)).toBeUndefined();
+  });
+
+  // H-07 compaction scan budget
+
+  it('H-07: content far larger than scan budget still returns the first assistant text block', () => {
+    // Build a valid event within the first COMPACTION_SCAN_BUDGET bytes
+    const event = JSON.stringify({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: [{ type: 'text', text: 'Summary inside budget.' }],
+      },
+    });
+    // Append a huge tail beyond the budget — should never be scanned
+    const hugeTail = '\n' + 'x'.repeat(COMPACTION_SCAN_BUDGET * 2);
+    const content = event + hugeTail;
+
+    expect(extractCompactionSummaryText(content)).toBe('Summary inside budget.');
+  });
+
+  it('H-07: returns undefined when no assistant event appears within the scan budget', () => {
+    // Fill the scan budget with non-assistant content, then add an assistant event beyond it
+    const userLine = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'u' }] },
+    });
+    // Repeat the user line until we exceed the budget
+    const padding = (userLine + '\n').repeat(
+      Math.ceil(COMPACTION_SCAN_BUDGET / (userLine.length + 1)) + 1
+    );
+    const assistantBeyondBudget = JSON.stringify({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: [{ type: 'text', text: 'Should not be found.' }],
+      },
+    });
+    const content = padding + assistantBeyondBudget;
+
+    // The assistant event is beyond the scan budget, so the result should be undefined
+    expect(extractCompactionSummaryText(content)).toBeUndefined();
+  });
+
+  // H-09 string content (implemented alongside H-07 in extractCompactionSummaryText)
+
+  it('H-09: string-form message.content returns that string as the summary', () => {
+    const content = JSON.stringify({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: 'Plain string summary.',
+      },
+    });
+    expect(extractCompactionSummaryText(content)).toBe('Plain string summary.');
+  });
+
+  it('H-09: array-of-text-blocks form still returns the first text block', () => {
+    const content = JSON.stringify({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: [{ type: 'text', text: 'Block summary.' }],
+      },
+    });
+    expect(extractCompactionSummaryText(content)).toBe('Block summary.');
+  });
+
+  it('H-09: event with neither string nor array content returns undefined', () => {
+    const content = JSON.stringify({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: null,
+      },
     });
     expect(extractCompactionSummaryText(content)).toBeUndefined();
   });

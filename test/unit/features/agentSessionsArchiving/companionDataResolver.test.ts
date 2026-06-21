@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { workspace, FileType, FileSystemError } from '../../mocks/vscode';
 import { resolveCompanionData } from '../../../../src/features/agentSessionsArchiving/companionDataResolver';
+import { COMPANION_FILE_BYTE_CAP } from '../../../../src/features/agentSessionsArchiving/constants';
 import type * as vscode from 'vscode';
 
 function createMockLogger() {
@@ -278,6 +279,83 @@ describe('resolveCompanionData', () => {
     // readFile called exactly once (for the File entry only)
     expect(workspace.fs.readFile).toHaveBeenCalledTimes(1);
     expect(logger.warn).not.toHaveBeenCalled();
+  });
+
+  // H-07 tests: lazy/referenced loading and per-file byte cap
+
+  it("H-07: only referenced tool-result files are readFile'd (lazy loading)", async () => {
+    // Main session references toolu_used.txt but NOT toolu_unused.txt
+    const mainContent = JSON.stringify({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        content: [
+          { type: 'text', text: '<persisted-output>toolu_used.txt</persisted-output>' },
+        ],
+      },
+    });
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([
+        ['toolu_used.txt', FileType.File],
+        ['toolu_unused.txt', FileType.File],
+      ]) // tool-results/
+      .mockResolvedValueOnce([]); // subagents/ for compaction
+    workspace.fs.readFile = vi.fn().mockResolvedValue(encode('content'));
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any, mainContent);
+
+    // Only the referenced file should be in the map
+    expect(result.toolResultMap.has('toolu_used.txt')).toBe(true);
+    expect(result.toolResultMap.has('toolu_unused.txt')).toBe(false);
+    // readFile called only once (for toolu_used.txt only)
+    expect(workspace.fs.readFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('H-07: all tool-result files are read when no rawSessionContent provided', async () => {
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([
+        ['toolu_a.txt', FileType.File],
+        ['toolu_b.txt', FileType.File],
+      ]) // tool-results/
+      .mockResolvedValueOnce([]); // subagents/ for compaction
+    workspace.fs.readFile = vi.fn().mockResolvedValue(encode('content'));
+
+    // No rawSessionContent → no lazy filtering
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(result.toolResultMap.size).toBe(2);
+    expect(workspace.fs.readFile).toHaveBeenCalledTimes(2);
+  });
+
+  it('H-07: tool-result file exceeding byte cap is stored as truncated head + elision note', async () => {
+    const bigContent = 'A'.repeat(COMPANION_FILE_BYTE_CAP + 100);
+    // Reference the big file in main content
+    const mainContent = `<persisted-output>big.txt</persisted-output>`;
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([['big.txt', FileType.File]]) // tool-results/
+      .mockResolvedValueOnce([]); // subagents/ for compaction
+    workspace.fs.readFile = vi.fn().mockResolvedValue(encode(bigContent));
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any, mainContent);
+
+    const stored = result.toolResultMap.get('big.txt');
+    expect(stored).toBeDefined();
+    // Must be shorter than the original
+    expect(stored!.length).toBeLessThan(bigContent.length);
+    // Head must be preserved
+    expect(stored!.startsWith('A'.repeat(100))).toBe(true);
+    // Elision note must be present
+    expect(stored).toContain('bytes elided');
+    expect(stored).toContain('big.txt');
   });
 
   it('H-01: all readers succeed → companionPartial is not set', async () => {

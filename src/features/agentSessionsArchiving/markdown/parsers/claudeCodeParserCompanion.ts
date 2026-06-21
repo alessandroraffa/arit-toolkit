@@ -1,4 +1,5 @@
 import { sanitizeName } from './claudeCodeParserUtils';
+import { COMPACTION_SCAN_BUDGET, COMPANION_FILE_BYTE_CAP } from '../../constants';
 
 /**
  * Derive the basename from a marker payload in a separator-agnostic way.
@@ -66,7 +67,14 @@ export function extractSubagentMeta(metaContent: string | undefined): {
 }
 
 export function extractCompactionSummaryText(content: string): string | undefined {
-  const lines = content.split('\n').filter((line) => line.trim());
+  // H-07: bound the scan to the first COMPACTION_SCAN_BUDGET bytes to avoid
+  // materializing a full line array for very large compaction files.
+  const head =
+    content.length > COMPACTION_SCAN_BUDGET
+      ? content.slice(0, COMPACTION_SCAN_BUDGET)
+      : content;
+
+  const lines = head.split('\n').filter((line) => line.trim());
   for (const line of lines) {
     let event: unknown;
     try {
@@ -78,10 +86,29 @@ export function extractCompactionSummaryText(content: string): string | undefine
     if (ev.type !== 'assistant') continue;
     const message = ev.message as Record<string, unknown> | undefined;
     const messageContent = message?.content;
+    // H-09: handle string-form message.content (older/variant Claude Code schema)
+    if (typeof messageContent === 'string' && messageContent.length > 0) {
+      // Apply summary text cap with elision note if needed
+      if (messageContent.length > COMPANION_FILE_BYTE_CAP) {
+        return (
+          messageContent.slice(0, COMPANION_FILE_BYTE_CAP) +
+          '\n… summary truncated (see compaction file)'
+        );
+      }
+      return messageContent;
+    }
     if (!Array.isArray(messageContent)) continue;
     for (const block of messageContent as Record<string, unknown>[]) {
       if (block.type === 'text' && typeof block.text === 'string') {
-        return block.text;
+        const text = block.text;
+        // Apply summary text cap with elision note if needed
+        if (text.length > COMPANION_FILE_BYTE_CAP) {
+          return (
+            text.slice(0, COMPANION_FILE_BYTE_CAP) +
+            '\n… summary truncated (see compaction file)'
+          );
+        }
+        return text;
       }
     }
   }

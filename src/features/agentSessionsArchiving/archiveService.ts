@@ -10,6 +10,7 @@ import { checkAndPromptGitignore } from './gitignorePrompt';
 import { validateArchivePath } from './archivePathValidation';
 import { ArchiveCycleGuard } from './archiveCycleGuard';
 import { resolveCompanionData } from './companionDataResolver';
+import { MAX_ARCHIVE_BYTES } from './constants';
 
 interface ArchivedEntry {
   /**
@@ -347,7 +348,20 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         mm,
         `${timestamp}-${session.archiveName}.md`
       );
-      const markdown = renderSessionToMarkdown(result.session);
+      let markdown = renderSessionToMarkdown(result.session);
+
+      // H-07: enforce max-archive-bytes ceiling — truncate with elision banner
+      if (markdown.length > MAX_ARCHIVE_BYTES) {
+        const elisionBanner =
+          `\n\n---\n> **Archive truncated** — rendered output exceeded ` +
+          `${String(MAX_ARCHIVE_BYTES)} bytes. ` +
+          `${String(markdown.length - MAX_ARCHIVE_BYTES)} bytes elided.\n`;
+        markdown = markdown.slice(0, MAX_ARCHIVE_BYTES) + elisionBanner;
+        this.logger.warn(
+          `Archive for ${session.displayName} exceeded max size and was truncated`
+        );
+      }
+
       const contentHash = this.computeContentHash(markdown);
 
       // H-03: skip writeFile when the rendered markdown is byte-identical to the prior
@@ -395,7 +409,13 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   ): Promise<{ parseResult: ParseResult; companionPartial: boolean }> {
     const rawBytes = await vscode.workspace.fs.readFile(session.uri);
     const rawContent = new TextDecoder().decode(rawBytes);
-    const companionContext = await resolveCompanionData(session.uri, this.logger);
+    // H-07: pass rawContent so resolveCompanionData can build the referenced-filename
+    // set and skip unreferenced tool-result files (lazy/referenced loading).
+    const companionContext = await resolveCompanionData(
+      session.uri,
+      this.logger,
+      rawContent
+    );
     const companionPartial = companionContext.companionPartial === true;
     return {
       parseResult: parser.parse(rawContent, session.archiveName, companionContext),
