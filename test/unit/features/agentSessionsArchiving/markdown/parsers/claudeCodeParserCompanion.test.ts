@@ -99,6 +99,22 @@ describe('resolveToolResultMarkers', () => {
     );
     expect(result).toBe('<persisted-output>unknown.txt</persisted-output>');
   });
+
+  it('L-07: unresolved marker (key missing) emits debug log and retains marker', () => {
+    const debugFn = vi.fn();
+    const logger = { debug: debugFn };
+    const marker = '<persisted-output>missing.txt</persisted-output>';
+    const result = resolveToolResultMarkers(
+      marker,
+      new Map([['other.txt', 'x']]),
+      logger
+    );
+    expect(result).toBe(marker);
+    expect(debugFn).toHaveBeenCalled();
+    // The debug message must mention the filename
+    const calls = debugFn.mock.calls.map((c) => String(c[0]));
+    expect(calls.some((m) => m.includes('missing.txt'))).toBe(true);
+  });
 });
 
 describe('extractSubagentMeta', () => {

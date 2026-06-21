@@ -83,13 +83,20 @@ function resolveCompactionTimestamp(content: string, mtime: number): string {
 export class ClaudeCodeParser implements SessionParser {
   public readonly providerName = 'claude-code';
 
+  /** L-07: optional logger for observability; injected at construction time. */
+  private readonly logger: { debug: (msg: string) => void } | undefined;
+
+  constructor(logger?: { debug: (msg: string) => void }) {
+    this.logger = logger ?? undefined;
+  }
+
   public parse(
     content: string,
     sessionId: string,
     companionContext?: CompanionDataContext
   ): ParseResult {
     const resolvedContent = companionContext
-      ? resolveToolResultMarkers(content, companionContext.toolResultMap)
+      ? resolveToolResultMarkers(content, companionContext.toolResultMap, this.logger)
       : content;
 
     const lines = resolvedContent.split('\n').filter((line) => line.trim());
@@ -99,15 +106,24 @@ export class ClaudeCodeParser implements SessionParser {
 
     const turns: NormalizedTurn[] = [];
     let pending = emptyPending();
+    // L-07: count skipped malformed lines for the debug tally
+    let skippedLines = 0;
 
     for (const line of lines) {
       let event: JsonlEvent;
       try {
         event = JSON.parse(line) as JsonlEvent;
       } catch {
+        skippedLines++;
         continue;
       }
       pending = this.processEvent(event, turns, pending);
+    }
+    // L-07: emit tally when at least one line was skipped
+    if (skippedLines > 0) {
+      this.logger?.debug(
+        `ClaudeCodeParser.parse "${sessionId}": skipped ${String(skippedLines)} malformed JSONL line(s)`
+      );
     }
 
     if (pending.toolCalls.length > 0 || pending.thinking) {
@@ -265,18 +281,30 @@ export class ClaudeCodeParser implements SessionParser {
         });
         continue;
       }
-      const resolved = resolveToolResultMarkers(entry.content, context.toolResultMap);
+      const resolved = resolveToolResultMarkers(
+        entry.content,
+        context.toolResultMap,
+        this.logger
+      );
       const lines = resolved.split('\n').filter((line) => line.trim());
       const turns: NormalizedTurn[] = [];
       let pending = emptyPending();
+      // L-07: tally malformed lines for observability
+      let skippedSubagentLines = 0;
       for (const line of lines) {
         let event: JsonlEvent;
         try {
           event = JSON.parse(line) as JsonlEvent;
         } catch {
+          skippedSubagentLines++;
           continue;
         }
         pending = this.processEvent(event, turns, pending);
+      }
+      if (skippedSubagentLines > 0) {
+        this.logger?.debug(
+          `ClaudeCodeParser subagent "${entry.agentId}": skipped ${String(skippedSubagentLines)} malformed JSONL line(s)`
+        );
       }
       if (pending.toolCalls.length > 0 || pending.thinking) {
         turns.push(makeTurn({ role: 'assistant', content: '', ...pending }));

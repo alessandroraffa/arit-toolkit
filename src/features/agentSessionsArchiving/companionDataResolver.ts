@@ -10,6 +10,20 @@ import { COMPANION_FILE_BYTE_CAP } from './constants';
 
 const decoder = new TextDecoder();
 
+/**
+ * L-07: Log a debug message when decoded content contains the UTF-8
+ * replacement character U+FFFD, which indicates binary/corrupted data.
+ * This is purely diagnostic — the content is returned unchanged.
+ */
+function warnOnReplacementChars(text: string, name: string, logger: Logger): void {
+  if (text.includes('�')) {
+    const count = (text.match(/�/g) ?? []).length;
+    logger.debug(
+      `Companion file "${name}" decoded with ${String(count)} UTF-8 replacement character(s) — may be binary or corrupted`
+    );
+  }
+}
+
 /** Elision note appended to truncated companion file content. */
 const ELISION_NOTE = (name: string, totalBytes: number): string =>
   `\n… ${String(totalBytes - COMPANION_FILE_BYTE_CAP)} bytes elided, see tool-results/${name}`;
@@ -90,6 +104,7 @@ async function readOneSubagent(
   try {
     const bytes = await vscode.workspace.fs.readFile(fileUri);
     content = decoder.decode(bytes);
+    warnOnReplacementChars(content, name, logger); // L-07
   } catch (err) {
     logger.warn(`Failed to read subagent file ${name}: ${String(err)}`);
     return { agentId, content: '', unreadable: true };
@@ -170,6 +185,7 @@ async function readToolResults(
       const bytes = await vscode.workspace.fs.readFile(fileUri);
       // H-07: apply per-file byte cap; truncation is intentional (no companionPartial)
       const decoded = decoder.decode(bytes);
+      warnOnReplacementChars(decoded, name, logger); // L-07
       map.set(name, applyByteCap(decoded, name));
     } catch (err) {
       logger.warn(`Failed to read tool-result file ${name}: ${String(err)}`);
@@ -188,6 +204,7 @@ async function readOneCompactionFile(
   try {
     const bytes = await vscode.workspace.fs.readFile(fileUri);
     const content = decoder.decode(bytes);
+    warnOnReplacementChars(content, name, logger); // L-07
     const stat = await vscode.workspace.fs.stat(fileUri);
     // L-04: plumb the source filename through CompactionEntry for deterministic sort
     return { content, mtime: stat.mtime, filename: name };

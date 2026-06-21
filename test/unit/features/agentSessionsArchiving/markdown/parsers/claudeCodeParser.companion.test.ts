@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ClaudeCodeParser } from '../../../../../../src/features/agentSessionsArchiving/markdown/parsers/claudeCodeParser';
 import type { ParseResult } from '../../../../../../src/features/agentSessionsArchiving/markdown/types';
 import type { CompanionDataContext } from '../../../../../../src/features/agentSessionsArchiving/markdown/companionDataTypes';
@@ -372,5 +372,65 @@ describe('ClaudeCodeParser — companion data', () => {
     // mtime 1000 < 2000 → 'earlier' renders first
     expect(session.compactionSummaries![0]!.summaryText).toBe('earlier');
     expect(session.compactionSummaries![1]!.summaryText).toBe('later');
+  });
+
+  // L-07 tests: skipped-line tally observability
+
+  it('L-07: parse emits debug tally when malformed lines are skipped', () => {
+    const debugFn = vi.fn();
+    const parserWithLogger = new ClaudeCodeParser({ debug: debugFn });
+
+    const validLine = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Hi' }] },
+    });
+    const content = [validLine, 'BAD LINE 1', 'BAD LINE 2'].join('\n');
+
+    const session = expectParsed(parserWithLogger.parse(content, 'session-x'));
+
+    // Valid event is parsed, bad lines skipped
+    expect(session.turns).toHaveLength(1);
+    // Debug tally must have been emitted with count 2
+    expect(debugFn).toHaveBeenCalled();
+    const calls = debugFn.mock.calls.map((c) => String(c[0]));
+    expect(calls.some((m) => m.includes('2') && m.includes('session-x'))).toBe(true);
+  });
+
+  it('L-07: subagent parse emits debug tally when malformed lines are skipped', () => {
+    const debugFn = vi.fn();
+    const parserWithLogger = new ClaudeCodeParser({ debug: debugFn });
+
+    const validSubagentLine = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'Sub' }] },
+    });
+    const subContent = [validSubagentLine, 'CORRUPT'].join('\n');
+    const ctx: CompanionDataContext = {
+      subagentEntries: [{ agentId: 'sub-abc', content: subContent }],
+      toolResultMap: new Map(),
+      compactionEntries: [],
+    };
+
+    const session = expectParsed(parserWithLogger.parse(baseContent, 'session-1', ctx));
+
+    expect(session.subagentSessions![0]!.turns).toHaveLength(1);
+    expect(debugFn).toHaveBeenCalled();
+    const calls = debugFn.mock.calls.map((c) => String(c[0]));
+    expect(calls.some((m) => m.includes('sub-abc'))).toBe(true);
+  });
+
+  it('L-07: no debug tally emitted when all lines parse cleanly', () => {
+    const debugFn = vi.fn();
+    const parserWithLogger = new ClaudeCodeParser({ debug: debugFn });
+
+    const session = expectParsed(parserWithLogger.parse(baseContent, 'session-1'));
+
+    expect(session.turns).toHaveLength(2);
+    // debug may be called by resolveToolResultMarkers for other reasons,
+    // but must NOT contain a 'skipped' tally message
+    const skipCalls = debugFn.mock.calls
+      .map((c) => String(c[0]))
+      .filter((m) => m.includes('skipped'));
+    expect(skipCalls).toHaveLength(0);
   });
 });

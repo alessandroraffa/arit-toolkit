@@ -38,6 +38,10 @@ export function resolveToolResultMarkers(
       // Case-insensitive fallback (macOS APFS / Windows NTFS)
       const lower = lowerMap.get(filename.toLowerCase());
       if (lower !== undefined) return lower;
+      // L-07: log unresolved markers so externalization gaps are diagnosable
+      logger?.debug(
+        `resolveToolResultMarkers: unresolved marker for "${filename}" — retained verbatim`
+      );
       return match;
     }
   );

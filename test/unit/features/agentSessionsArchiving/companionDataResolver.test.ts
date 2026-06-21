@@ -494,4 +494,35 @@ describe('resolveCompanionData', () => {
     // but it should appear in compactionEntries (picked up by the compaction pass)
     expect(result.compactionEntries).toHaveLength(1);
   });
+
+  // L-07 tests: observability for silently-degraded companion data
+
+  it('L-07: companion readDirectory rejecting with ENAMETOOLONG emits logger.warn', async () => {
+    const longPathErr = Object.assign(new Error('ENAMETOOLONG'), {
+      code: 'ENAMETOOLONG',
+    });
+    workspace.fs.readDirectory = vi.fn().mockRejectedValue(longPathErr);
+
+    await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it('L-07: tool-result file with UTF-8 replacement char emits logger.debug', async () => {
+    // U+FFFD (replacement character) in the decoded content triggers a debug log.
+    // The content is returned unchanged — data flow is unaffected.
+    const contentWithReplacement = 'valid prefix � corrupted byte';
+    workspace.fs.readDirectory = vi
+      .fn()
+      .mockResolvedValueOnce([]) // companion dir check
+      .mockResolvedValueOnce([]) // subagents/
+      .mockResolvedValueOnce([['toolu_abc.txt', FileType.File]]); // tool-results/
+    workspace.fs.readFile = vi.fn().mockResolvedValue(encode(contentWithReplacement));
+
+    const result = await resolveCompanionData(SESSION_URI, logger as any);
+
+    expect(logger.debug).toHaveBeenCalled();
+    // Content is still present in the map — no data dropped
+    expect(result.toolResultMap.get('toolu_abc.txt')).toBe(contentWithReplacement);
+  });
 });
