@@ -83,9 +83,11 @@ export class ClaudeCodeParser implements SessionParser {
   public readonly providerName = 'claude-code';
 
   /** L-07: optional logger for observability; injected at construction time. */
-  private readonly logger: { debug: (msg: string) => void } | undefined;
+  private readonly logger:
+    | { debug: (msg: string) => void; warn?: (msg: string) => void }
+    | undefined;
 
-  constructor(logger?: { debug: (msg: string) => void }) {
+  constructor(logger?: { debug: (msg: string) => void; warn?: (msg: string) => void }) {
     this.logger = logger ?? undefined;
   }
 
@@ -342,7 +344,11 @@ export class ClaudeCodeParser implements SessionParser {
     });
     const result: CompactionSummary[] = [];
     for (const entry of sorted) {
-      const summaryText = extractCompactionSummaryText(entry.content);
+      // R-06: pass a warn-compatible logger so budget exhaustion is observable
+      const warnLogger = this.logger?.warn
+        ? { warn: this.logger.warn.bind(this.logger) }
+        : undefined;
+      const summaryText = extractCompactionSummaryText(entry.content, warnLogger);
       if (summaryText !== undefined) {
         // L-04: derive displayed timestamp from the assistant event's own timestamp
         // field when present; fall back to the file mtime when absent.

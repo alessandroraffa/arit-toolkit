@@ -240,6 +240,73 @@ describe('extractCompactionSummaryText', () => {
     });
     expect(extractCompactionSummaryText(content)).toBeUndefined();
   });
+
+  // R-06 tests: warn when scan budget exhausted without finding an assistant event
+
+  it('R-06: emits logger.warn when no assistant event found and budget was exceeded', () => {
+    const warnFn = vi.fn();
+    const logger = { warn: warnFn };
+
+    // Fill content beyond the budget with only user events so no assistant event
+    // is found within the budget window.
+    const userLine =
+      JSON.stringify({
+        type: 'user',
+        message: { role: 'user', content: [{ type: 'text', text: 'u' }] },
+      }) + '\n';
+    const padding = userLine.repeat(
+      Math.ceil(COMPACTION_SCAN_BUDGET / userLine.length) + 1
+    );
+    const assistantBeyond = JSON.stringify({
+      type: 'assistant',
+      message: { role: 'assistant', content: [{ type: 'text', text: 'lost' }] },
+    });
+    const content = padding + assistantBeyond;
+
+    const result = extractCompactionSummaryText(content, logger);
+
+    // Still returns undefined (the assistant event was beyond the budget)
+    expect(result).toBeUndefined();
+    // But now a warn must be emitted so the drop is diagnosable
+    expect(warnFn).toHaveBeenCalledOnce();
+    const msg = String(warnFn.mock.calls[0]![0]);
+    expect(msg).toContain('COMPACTION_SCAN_BUDGET');
+  });
+
+  it('R-06: does not warn when content is within budget and no assistant event exists', () => {
+    const warnFn = vi.fn();
+    const logger = { warn: warnFn };
+
+    // Short content, entirely within budget, no assistant event
+    const content = JSON.stringify({
+      type: 'user',
+      message: { role: 'user', content: [{ type: 'text', text: 'hi' }] },
+    });
+
+    const result = extractCompactionSummaryText(content, logger);
+
+    expect(result).toBeUndefined();
+    // Budget was NOT exceeded → no warn
+    expect(warnFn).not.toHaveBeenCalled();
+  });
+
+  it('R-06: does not warn when assistant event IS found within budget', () => {
+    const warnFn = vi.fn();
+    const logger = { warn: warnFn };
+
+    const content = JSON.stringify({
+      type: 'assistant',
+      message: { role: 'assistant', content: [{ type: 'text', text: 'found' }] },
+    });
+    // Append huge tail beyond budget to trigger the length check
+    const hugeTail = '\n' + 'x'.repeat(COMPACTION_SCAN_BUDGET + 100);
+
+    const result = extractCompactionSummaryText(content + hugeTail, logger);
+
+    expect(result).toBe('found');
+    // Event was found → no warn
+    expect(warnFn).not.toHaveBeenCalled();
+  });
 });
 
 describe('parseFirstEventAgentType', () => {

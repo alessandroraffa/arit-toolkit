@@ -70,13 +70,14 @@ export function extractSubagentMeta(metaContent: string | undefined): {
   return result;
 }
 
-export function extractCompactionSummaryText(content: string): string | undefined {
+export function extractCompactionSummaryText(
+  content: string,
+  logger?: { warn: (msg: string) => void }
+): string | undefined {
   // H-07: bound the scan to the first COMPACTION_SCAN_BUDGET bytes to avoid
   // materializing a full line array for very large compaction files.
-  const head =
-    content.length > COMPACTION_SCAN_BUDGET
-      ? content.slice(0, COMPACTION_SCAN_BUDGET)
-      : content;
+  const budgetExceeded = content.length > COMPACTION_SCAN_BUDGET;
+  const head = budgetExceeded ? content.slice(0, COMPACTION_SCAN_BUDGET) : content;
 
   const lines = head.split('\n').filter((line) => line.trim());
   for (const line of lines) {
@@ -115,6 +116,16 @@ export function extractCompactionSummaryText(content: string): string | undefine
         return text;
       }
     }
+  }
+
+  // R-06: warn when no assistant event was found AND the content was truncated
+  // to the scan budget — the summary may exist beyond the budget boundary.
+  if (budgetExceeded) {
+    logger?.warn(
+      `extractCompactionSummaryText: no assistant event found within ` +
+        `COMPACTION_SCAN_BUDGET (${String(COMPACTION_SCAN_BUDGET)} bytes) — ` +
+        `compaction summary may be beyond the scan budget and will be omitted`
+    );
   }
   return undefined;
 }
