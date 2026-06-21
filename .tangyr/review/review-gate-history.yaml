@@ -10,3 +10,23 @@
   finding_count: 14
   blocking_count: 3
   produced_at: 2026-06-21
+
+- gate: pre-implementation
+  artifact_type: specification
+  artifact_version: SPEC-003 draft (docs/specifications/SPEC-003-opencode-session-provider.md; created 2026-06-22)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 16
+  blocking_count: 8
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: specification
+  artifact_version: SPEC-003 revised (docs/specifications/SPEC-003-opencode-session-provider.md; second revision 2026-06-22, verification follow-up of the PASS_WITH_CONDITIONS gate above)
+  verdict: PASS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 9
+  blocking_count: 0
+  produced_at: 2026-06-22

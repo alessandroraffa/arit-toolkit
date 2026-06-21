@@ -92,4 +92,117 @@ This log captures process-level improvements proposed during multi-perspective r
     a "silent move" constraint without hiding failures.
   target: skills/review-gate (checklist) and skills/stepledger-authoring
   owner: Human
+
+- id: KZ-2026-06-22-001
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: specification
+  status: open
+  classification: checklist-update
+  pattern: >
+    SPEC-003 introduces the first provider that reads from a SHARED store (one
+    SQLite DB holding all workspaces' sessions) rather than one flat file per
+    session. All four reviewers independently flagged failure modes that are unique
+    to a shared store and that the single-file provider template never had to
+    address: (1) the raw-copy fallback copies the WHOLE shared DB — a cross-workspace
+    data leak plus a corrupt WAL-less copy; (2) the read-only-vs-consistency tension
+    of a live WAL DB (the -wal/-shm sidecars are never named in the spec); (3)
+    change-detection churn — keying on the shared DB/WAL mtime re-archives this
+    workspace whenever ANY other workspace writes; (4) a workspace-matching bug now
+    leaks foreign sessions into a git-tracked archive instead of merely picking a
+    wrong local file. These are not OpenCode-specific — they recur for any future
+    shared-store provider.
+  proposed_change: >
+    Add a "Shared-store provider" checklist to the specification review gate (and to
+    spec authoring): when a provider reads from a store shared across workspaces,
+    require the spec to (a) state whether the per-session raw-copy fallback applies
+    and exclude it when no per-session boundary exists; (b) name any journal/sidecar
+    files and the required read property (committed-state visibility, no exclusive
+    lock, no checkpoint); (c) bound BOTH change-detection failure modes — missed
+    updates AND cross-workspace churn — with a per-session/per-workspace fingerprint;
+    (d) elevate workspace-matching to enumerate path-normalization edge cases and add
+    a positive cross-workspace isolation acceptance criterion.
+  target: skills/review-gate (checklist) and skills/authoring-standards
+  owner: Human
+
+- id: KZ-2026-06-22-002
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: specification
+  status: open
+  classification: checklist-update
+  pattern: >
+    SPEC-003 has functional requirements with no matching acceptance criterion
+    (compaction mapping, auto-discovery, per-session parse isolation) and an
+    acceptance criterion set that tests only the positive path of change detection
+    (an update re-archives) while leaving the negative property (unrelated activity
+    does NOT re-archive) untested. Reviewers across White, Green, and Orange all
+    surfaced unmatched FR-to-AC pairs. A test suite derived from the ACs would silently
+    omit these behaviors.
+  proposed_change: >
+    Add a specification review-gate checklist item: every functional requirement must
+    map to at least one acceptance criterion, and every "reliably detect / must not"
+    style requirement must have BOTH a positive criterion (the wanted change is
+    detected) and a negative criterion (the unwanted trigger does not fire). Flag any
+    functional requirement with no corresponding acceptance criterion before approval.
+  target: skills/review-gate (checklist) and skills/authoring-standards
+  owner: Human
+
+- id: KZ-2026-06-22-003
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: specification
+  status: open
+  classification: checklist-update
+  pattern: >
+    SPEC-003 maps a new provider onto an existing normalized-model structure
+    (SubagentSession, CompactionSummary, the enriched-turn fields) by reference only —
+    "consistent with SPEC-002" — without a concrete source-to-field mapping table.
+    The referenced structure (SubagentSession{agentId, agentType, description}) was
+    designed for Claude Code's file-based .meta.json shape; OpenCode's child-session
+    rows have a different shape (session.id, session.agent, session.title) and epoch
+    timestamps with unspecified unit/timezone. The "consistent with X" reference left
+    three required fields and the timestamp conversion without a defined source,
+    flagged independently by White and Green.
+  proposed_change: >
+    Add a specification authoring/review checklist item: when a provider spec reuses
+    an existing normalized-model structure, require an explicit source-to-field mapping
+    table (source column/field -> normalized field, with the fallback value when the
+    source is null and the unit/timezone for any time conversion). A bare "consistent
+    with <prior spec>" reference is not a verifiable mapping rule when the source schema
+    differs from the one the prior spec was written against.
+  target: skills/review-gate (checklist) and skills/authoring-standards
+  owner: Human
+
+- id: KZ-2026-06-22-004
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: specification
+  status: open
+  classification: checklist-update
+  pattern: >
+    On the SPEC-003 verification pass (after the prior 8 blocking conditions were
+    resolved), Black and Orange independently surfaced the same residual gap class:
+    when a provider supports an environment-variable store-location override
+    (OPENCODE_DB) alongside a default-directory discovery rule that enumerates
+    supplementary file patterns (per-channel opencode-<channel>.db variants), the
+    spec said the override "takes precedence over the default location" but did not
+    state (a) whether the supplementary patterns are also enumerated at the override
+    path or suppressed, (b) the behavior when the override points to a non-existent
+    path (silent no-op vs. error), or (c) the behavior when the override points to an
+    out-of-scope store. The override edge cases were left to be inferred. This is the
+    same class of ambiguity that any env-var-overridable discovery rule will reproduce,
+    not OpenCode-specific, and it is exactly the kind of gap that survives a first
+    review and only surfaces on the verification pass.
+  proposed_change: >
+    Add a discovery-section checklist item for the specification review gate (and spec
+    authoring): when a provider exposes an environment-variable store-location override,
+    the spec must explicitly state (a) exclusivity — whether supplementary file patterns
+    are still enumerated at the override path or suppressed; (b) the non-existent-path
+    behavior, routed to the same absent-store no-op the default path uses; and (c) the
+    out-of-scope-store behavior, routed to the same detect-and-signal path the default
+    path uses. "Takes precedence" without these three dispositions is an incomplete
+    override specification.
+  target: skills/review-gate (checklist) and skills/authoring-standards
+  owner: Human
 ```
