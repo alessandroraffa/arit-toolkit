@@ -255,8 +255,14 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       }
       this.logger.debug(`Archived ${session.displayName} → ${archiveFileName}`);
     } else {
+      // B-03: when the session was skipped as empty but the companion data was
+      // partial (e.g. a compaction file was transiently locked), record mtime '0'
+      // so the session is retried next cycle rather than being permanently skipped.
+      // Once companion data is readable the session will be re-evaluated; if it
+      // is still empty (zero non-empty turns, no subagents, no compaction) it will
+      // be skipped again and this time the recorded mtime will match effectiveMtime.
       this.lastArchivedMap.set(session.archiveName, {
-        mtime: effectiveMtime,
+        mtime: companionPartial ? '0' : effectiveMtime,
         archiveFileName: '',
       });
     }
