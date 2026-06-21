@@ -11,11 +11,15 @@ export class ClaudeCodeProvider implements SessionProvider {
   public getWatchPatterns(workspaceRootPath: string): WatchPattern[] {
     const projectDirName = workspaceRootPath.replaceAll('/', '-');
     const baseUri = vscode.Uri.file(`${os.homedir()}/.claude/projects/${projectDirName}`);
-    return [
-      { baseUri, glob: '*.jsonl' },
-      { baseUri, glob: '*/subagents/*.jsonl' },
-      { baseUri, glob: '*/tool-results/*' },
-    ];
+    // H-08: collapse the three per-pattern watchers into one recursive glob so
+    // OS watch handles per provider are minimised.  A single '**/*' under the
+    // project dir matches:
+    //   *.jsonl              (root session files)
+    //   */subagents/*.jsonl  (subagent transcripts)
+    //   */tool-results/*     (tool-result files, incl. non-.jsonl)
+    // The shared debounced callback in SessionFileWatcher already coalesces
+    // rapid change events, so change-detection semantics are unchanged.
+    return [{ baseUri, glob: '**/*' }];
   }
 
   public async findSessions(workspaceRootPath: string): Promise<SessionFile[]> {

@@ -105,11 +105,28 @@ describe('ClaudeCodeProvider', () => {
   it('should return watch patterns for project directory', () => {
     const patterns = provider.getWatchPatterns('/Users/dev/my-project');
 
-    expect(patterns).toHaveLength(3);
+    // H-08: collapsed to a single recursive glob
+    expect(patterns).toHaveLength(1);
     expect(patterns[0]!.baseUri.fsPath).toContain('-Users-dev-my-project');
-    expect(patterns[0]!.glob).toBe('*.jsonl');
-    expect(patterns[1]!.glob).toBe('*/subagents/*.jsonl');
-    expect(patterns[2]!.glob).toBe('*/tool-results/*');
+    expect(patterns[0]!.glob).toBe('**/*');
+  });
+
+  // H-08 tests: collapsed recursive watcher pattern
+
+  it('H-08: getWatchPatterns returns exactly one recursive pattern covering all companion paths', () => {
+    const patterns = provider.getWatchPatterns('/workspace/project');
+
+    expect(patterns).toHaveLength(1);
+    const glob = patterns[0]!.glob;
+    // The single glob must be a recursive catch-all
+    expect(glob).toBe('**/*');
+  });
+
+  it('H-08: the single pattern base URI targets the project dir', () => {
+    const patterns = provider.getWatchPatterns('/home/user/my-proj');
+
+    expect(patterns).toHaveLength(1);
+    expect(patterns[0]!.baseUri.fsPath).toContain('-home-user-my-proj');
   });
 
   // H-04 tests: compound fingerprint replaces scalar max-mtime
