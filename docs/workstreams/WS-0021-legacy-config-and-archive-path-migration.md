@@ -74,11 +74,11 @@ export async function isGitTracked(filePath: string, cwd: string): Promise<boole
 
 Run the quality gate and confirm the Task 1.1 tests pass. Commit: `feat(core): add isgittracked git-tracking probe`.
 
-### [ ] Activity 2: Restructure legacy consolidation to be reliable and git-aware
+### [x] Activity 2: Restructure legacy consolidation to be reliable and git-aware
 
 Replace `verifyLegacyConfigMigration` with `consolidateLegacyConfig` in `src/core/extensionStateManager.ts`, implementing architectural decisions 1 and 2. Read the whole file first; the relevant methods are `initialize()`, `verifyLegacyConfigMigration()`, `findAvailableBackupPath()`, `readConfigFile()`, `applyConfig()`, `runMigration()`, `getConfigUri()`.
 
-#### [ ] Task 2.1: Write failing unit tests for consolidation
+#### [x] Task 2.1: Write failing unit tests for consolidation
 
 Extend the existing legacy-verify test file (`test/unit/core/extensionStateManager.legacyVerify.test.ts`) — or add a sibling — covering every SPEC-002 acceptance branch:
 
@@ -93,7 +93,7 @@ Extend the existing legacy-verify test file (`test/unit/core/extensionStateManag
 
 Stub `isGitTracked` (mock the `../git` import) per case to drive the tracked/untracked branches deterministically. Confirm the new tests fail before implementation.
 
-#### [ ] Task 2.2: Implement `consolidateLegacyConfig` and a git-aware `removeLegacyConfigFile`
+#### [x] Task 2.2: Implement `consolidateLegacyConfig` and a git-aware `removeLegacyConfigFile`
 
 Replace `verifyLegacyConfigMigration` with `consolidateLegacyConfig`:
 
@@ -106,7 +106,7 @@ Update `initialize()` to call `await this.consolidateLegacyConfig()` where it cu
 
 Run the quality gate; confirm Task 2.1 tests pass and no existing test regresses (update any test that asserted the old "bail when present" behavior, recording the change as a divergence). Commit: `feat(core): make legacy config consolidation reliable and git-aware`.
 
-#### [ ] Task 2.3: Documentation for consolidation
+#### [x] Task 2.3: Documentation for consolidation
 
 Update the `docs/technical-context.md` legacy-config subsection (the one documenting `verifyLegacyConfigMigration`, §8.13) to describe `consolidateLegacyConfig`: the both-files-vs-legacy-only branches, the git-aware removal rule, the authoritative-`.tangyr.jsonc` invariant, and the single-root scope/limitation. Update the `initialize()` call-tree diagram. Commit with the implementation or as a `docs(...)` commit.
 
@@ -150,7 +150,9 @@ Run the full quality gate one final time; confirm zero regressions and that cove
 
 ## Divergences and notes
 
-_(To be completed by the executor.)_
+- **Task 2.2**: The old test `should do nothing when .tangyr.jsonc already exists` in `extensionStateManager.legacyVerify.test.ts` was updated because it used `stat = vi.fn().mockResolvedValue({})` (all stat calls succeed), which caused `.arit-toolkit.jsonc` to appear present under the new `consolidateLegacyConfig` logic. The old test's `stat` mock was asserting the old buggy behavior (bail when `.tangyr.jsonc` present regardless of legacy state). Updated: stat mock now correctly simulates only `.tangyr.jsonc` present (`.arit-toolkit.jsonc` absent), which is the actual no-op case per SPEC-002. Change recorded per WS-0021 Task 2.2 instruction.
+
+- **Task 2.2 (workspaceRoot parameter)**: `removeLegacyConfigFile` was defined with `workspaceRoot: vscode.Uri` as an explicit parameter instead of accessing `this._workspaceRoot!` directly, to avoid the `@typescript-eslint/no-non-null-assertion` lint error. This is a structural improvement over the StepLedger's implicit assumption — no behavioral change.
 
 ### Reflection
 
