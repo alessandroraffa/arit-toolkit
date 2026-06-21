@@ -129,13 +129,13 @@ describe('AgentSessionArchiveService — companionPartial retry behaviour', () =
       expect.stringContaining('Partial archive written')
     );
 
-    // lastArchivedMap must record mtime: 0, not effectiveMtime (5000), so the
+    // lastArchivedMap must record mtime '0' sentinel, not effectiveMtime ('5000'), so the
     // session is re-processed on the next cycle.
     const entry = (service as any).lastArchivedMap.get('partial-session') as
-      | { mtime: number }
+      | { mtime: string }
       | undefined;
     expect(entry).toBeDefined();
-    expect(entry!.mtime).toBe(0);
+    expect(entry!.mtime).toBe('0');
 
     service.dispose();
   });
@@ -194,7 +194,7 @@ describe('AgentSessionArchiveService — companionPartial retry behaviour', () =
 
     vi.mocked(workspace.fs.writeFile).mockClear();
 
-    // Second cycle — mtime: 0 in the map means effectiveMtime (5000) != 0, so the
+    // Second cycle — mtime '0' sentinel in the map means effectiveMtime ('5000') != '0', so the
     // session is NOT skipped and writeFile is called again.
     await service.runArchiveCycle();
 

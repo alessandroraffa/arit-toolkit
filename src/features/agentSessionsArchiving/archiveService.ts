@@ -11,8 +11,18 @@ import { ArchiveCycleGuard } from './archiveCycleGuard';
 import { resolveCompanionData } from './companionDataResolver';
 
 interface ArchivedEntry {
-  mtime: number;
+  /**
+   * The compound fingerprint string (or stringified numeric mtime) recorded
+   * when this entry was last successfully archived. Compared against
+   * effectiveMtime (session.compositeMtime ?? String(session.mtime)) to decide
+   * whether a re-archive is needed. The sentinel value '0' (used by H-02
+   * hydration and the partial-retry path) is guaranteed to differ from any
+   * real positive fingerprint.
+   */
+  mtime: string;
   archiveFileName: string;
+  /** Content hash of the last written markdown, used for no-op write skip (H-03). */
+  contentHash?: string;
 }
 
 export class AgentSessionArchiveService implements vscode.Disposable {
@@ -200,11 +210,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     archiveUri: vscode.Uri,
     force = false
   ): Promise<void> {
-    const effectiveMtime = session.compositeMtime ?? session.mtime;
+    const effectiveMtime: string = session.compositeMtime ?? String(session.mtime);
     const entry = this.lastArchivedMap.get(session.archiveName);
     if (!force && entry?.mtime === effectiveMtime) {
       this.logger.debug(
-        `Skipped ${session.displayName} — mtime unchanged (${String(effectiveMtime)})`
+        `Skipped ${session.displayName} — fingerprint unchanged (${effectiveMtime})`
       );
       return;
     }
@@ -226,11 +236,11 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       }
       if (companionPartial) {
         this.logger.warn(
-          `Partial archive written for ${session.displayName} — unreadable subagent(s); ` +
+          `Partial archive written for ${session.displayName} — companion data unreadable; ` +
             `session will be retried on the next cycle`
         );
         this.lastArchivedMap.set(session.archiveName, {
-          mtime: 0,
+          mtime: '0',
           archiveFileName,
         });
       } else {
@@ -624,18 +634,15 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       }
       const best = files[0];
       if (best && !this.lastArchivedMap.has(archiveName)) {
-        let mtime = 0;
-        try {
-          const statResult = await vscode.workspace.fs.stat(
-            vscode.Uri.joinPath(archiveUri, best.name)
-          );
-          mtime = statResult.mtime;
-        } catch {
-          this.logger.debug(
-            'Hydration stat failed for ' + best.name + ' — using mtime 0'
-          );
-        }
-        this.lastArchivedMap.set(archiveName, { mtime, archiveFileName: best.name });
+        // H-02: always seed with the '0' sentinel instead of the archive file's
+        // own stat mtime. The source clock (effectiveMtime from the session's
+        // compositeMtime) and the archive file's mtime are different clocks and
+        // never coincide, so seeding from the stat mtime would cause every
+        // previously-archived session to be fully rewritten on every restart.
+        // The '0' sentinel forces exactly ONE re-archive per restart; H-03's
+        // content-hash skip makes that re-archive a no-op write when the
+        // rendered markdown is byte-identical.
+        this.lastArchivedMap.set(archiveName, { mtime: '0', archiveFileName: best.name });
       }
     }
   }
