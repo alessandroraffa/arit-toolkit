@@ -1,3 +1,9 @@
+## [2.5.2](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.1...v2.5.2) (2026-06-21)
+
+### Bug Fixes
+
+* **deps:** update overrides and regenerate lockfile to clear security audit ([13b11f8](https://github.com/alessandroraffa/tangyr-vscode/commit/13b11f852ef32042ab33d5411c60c4d5715ea624))
+
 ## [2.5.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.0...v2.5.1) (2026-06-20)
 
 ### Bug Fixes
