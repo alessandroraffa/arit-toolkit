@@ -42,6 +42,13 @@ export class ExtensionStateManager {
   private _loadedLegacyConfigFile = false;
   private _lastWrittenConfigContent: string | undefined;
   private _migrationInFlight: Promise<boolean> | undefined;
+  /**
+   * BK-006: set to true after runMigration() is called for the first time during
+   * initialize(), so that consolidateLegacyConfig Path A does not show a duplicate
+   * migration prompt when the user declined the first one and .tangyr.jsonc was
+   * not yet created. A single activation, a single prompt.
+   */
+  private _migrationAttemptedThisSession = false;
 
   constructor(
     private readonly logger: Logger,
@@ -122,7 +129,12 @@ export class ExtensionStateManager {
   public async initialize(extensionVersion: string): Promise<void> {
     this._extensionVersion = extensionVersion;
     if (!this.isSingleRoot || !this._workspaceRoot) {
-      this.logger.debug('Skipping initialization for non-single-root workspace');
+      // SPEC-002 Constraint 1: automatic consolidation and path migration are
+      // scoped to single-root workspaces only. Multi-root and no-workspace
+      // activations are out of scope and are a safe no-op here.
+      this.logger.info(
+        `Skipping initialization for ${this._workspaceMode} workspace — legacy-config consolidation and archive-path migration require a single-root workspace`
+      );
       return;
     }
     await this.readStateFromFile();
@@ -131,6 +143,7 @@ export class ExtensionStateManager {
       this._onDidChangeState.fire(this._isEnabled);
       if (this._isEnabled) {
         await this.runMigration();
+        this._migrationAttemptedThisSession = true;
       } else {
         await this.ensureCurrentConfigFile();
       }
@@ -138,6 +151,7 @@ export class ExtensionStateManager {
       const accepted = await this.showOnboardingNotification();
       if (accepted) {
         await this.runMigration();
+        this._migrationAttemptedThisSession = true;
       }
     }
     await this.consolidateLegacyConfig();
@@ -437,11 +451,20 @@ export class ExtensionStateManager {
       this.logger.info(
         `consolidateLegacyConfig: both files present — ${CONFIG_FILENAME} is authoritative, removing legacy`
       );
-      const removedByDelete = await this.removeLegacyConfigFile(legacyUri, workspaceRoot);
-      const verb = removedByDelete ? 'deleted' : 'renamed to .arit-toolkit.jsonc.bak';
-      void vscode.window.showInformationMessage(
-        `Tangyr: cleaned up legacy .arit-toolkit.jsonc (${verb}).`
-      );
+      const removeResult = await this.removeLegacyConfigFile(legacyUri, workspaceRoot);
+      if (removeResult === 'deleted') {
+        void vscode.window.showInformationMessage(
+          `Tangyr: cleaned up legacy .arit-toolkit.jsonc (deleted).`
+        );
+      } else if (removeResult === 'renamed') {
+        void vscode.window.showInformationMessage(
+          `Tangyr: cleaned up legacy .arit-toolkit.jsonc (renamed to .arit-toolkit.jsonc.bak).`
+        );
+      } else {
+        void vscode.window.showWarningMessage(
+          `Tangyr: legacy .arit-toolkit.jsonc could not be removed — will retry next activation.`
+        );
+      }
       return;
     }
     // Legacy only: attempt to parse.
@@ -471,17 +494,36 @@ export class ExtensionStateManager {
       return;
     }
     // Path A: parseable legacy — apply config, run migration to write .tangyr.jsonc, then remove legacy.
+    // BK-006: when runMigration() was already called during initialize() and the user
+    // declined (so .tangyr.jsonc was not written), skip a second migration prompt.
+    // A single activation must not prompt the user twice.
+    if (this._migrationAttemptedThisSession) {
+      this.logger.info(
+        `consolidateLegacyConfig: migration already attempted this session — skipping second runMigration() (user may have declined)`
+      );
+      return;
+    }
     this.applyConfig(parsed);
     this._loadedLegacyConfigFile = true;
     this._onDidChangeState.fire(this._isEnabled);
     this.logger.info(`consolidateLegacyConfig: applied legacy config to in-memory state`);
     await this.runMigration();
+    this._migrationAttemptedThisSession = true;
     this.logger.info(`consolidateLegacyConfig: ran migration after Path A apply`);
-    const removedByDelete = await this.removeLegacyConfigFile(legacyUri, workspaceRoot);
-    const verb = removedByDelete ? 'deleted' : 'renamed to .arit-toolkit.jsonc.bak';
-    void vscode.window.showInformationMessage(
-      `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy file ${verb}.`
-    );
+    const removeResult = await this.removeLegacyConfigFile(legacyUri, workspaceRoot);
+    if (removeResult === 'deleted') {
+      void vscode.window.showInformationMessage(
+        `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy file deleted.`
+      );
+    } else if (removeResult === 'renamed') {
+      void vscode.window.showInformationMessage(
+        `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy file renamed to .arit-toolkit.jsonc.bak.`
+      );
+    } else {
+      void vscode.window.showWarningMessage(
+        `Tangyr: migrated workspace config from .arit-toolkit.jsonc to .tangyr.jsonc; legacy .arit-toolkit.jsonc could not be removed — will retry next activation.`
+      );
+    }
   }
 
   /**
@@ -489,12 +531,13 @@ export class ExtensionStateManager {
    * - When tracked: deletes from the working tree (git history is the backup).
    * - When not tracked (or git unavailable): renames to .arit-toolkit.jsonc.bak
    *   with a timestamped suffix on collision via findAvailableBackupPath.
-   * Returns true when deleted, false when renamed. Failure is logged and does not throw.
+   * Returns 'deleted' when deleted, 'renamed' when renamed to .bak, or 'failed'
+   * when the operation could not be completed. Failure is logged and does not throw.
    */
   private async removeLegacyConfigFile(
     legacyUri: vscode.Uri,
     workspaceRoot: vscode.Uri
-  ): Promise<boolean> {
+  ): Promise<'deleted' | 'renamed' | 'failed'> {
     const tracked = await isGitTracked(legacyUri.fsPath, workspaceRoot.fsPath);
     if (tracked) {
       try {
@@ -502,12 +545,12 @@ export class ExtensionStateManager {
         this.logger.info(
           `consolidateLegacyConfig: deleted git-tracked ${LEGACY_CONFIG_FILENAME}`
         );
-        return true;
+        return 'deleted';
       } catch (err) {
         this.logger.warn(
           `consolidateLegacyConfig: could not delete ${LEGACY_CONFIG_FILENAME}: ${String(err)}`
         );
-        return true; // deletion was attempted (tracked path)
+        return 'failed';
       }
     }
     // Not tracked: rename to .bak
@@ -519,12 +562,13 @@ export class ExtensionStateManager {
       this.logger.info(
         `consolidateLegacyConfig: renamed ${LEGACY_CONFIG_FILENAME} to ${bakUri.fsPath}`
       );
+      return 'renamed';
     } catch (renameErr) {
       this.logger.warn(
         `consolidateLegacyConfig: could not rename ${LEGACY_CONFIG_FILENAME}: ${String(renameErr)}`
       );
+      return 'failed';
     }
-    return false;
   }
 
   private notifySectionListeners(
