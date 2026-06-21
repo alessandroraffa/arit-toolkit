@@ -2,7 +2,7 @@
 title: 'Definitive legacy config consolidation and default archive path migration'
 objective: Make legacy .arit-toolkit.jsonc removal reliable and git-aware, change the default archive path to .tangyr/agent-sessions, migrate existing configs off the historical default, and relocate existing session archives without loss — per SPEC-002.
 workstream: WS-0021
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: []
 created: 2026-06-21
@@ -138,13 +138,13 @@ In `archiveService.ts`, add a one-shot `reconcileArchiveLocation()` invoked at t
 
 Run the quality gate; confirm Task 3.1 tests pass. Commit: `feat(archiving): default to .tangyr/agent-sessions and migrate existing archives`.
 
-### [ ] Activity 4: Documentation and final verification
+### [x] Activity 4: Documentation and final verification
 
-#### [ ] Task 4.1: Update `docs/technical-context.md`
+#### [x] Task 4.1: Update `docs/technical-context.md`
 
 Document, in the archiving model section: the new default `.tangyr/agent-sessions`; the `migrateValue` value-migration mechanism and the historical-default rewrite rule (custom paths preserved); and the idempotent `reconcileArchiveLocation` relocation, including its gate and silence. Update any version/last-updated header fields per the existing convention.
 
-#### [ ] Task 4.2: Full-suite verification and reflection
+#### [x] Task 4.2: Full-suite verification and reflection
 
 Run the full quality gate one final time; confirm zero regressions and that coverage on the touched files did not drop. Compile the Reflection sub-block in "Divergences and notes" (divergence count by cause, recurring patterns, proposed improvements, assessment). Set the workstream status to `completed`. Propose the PR to the Human.
 
@@ -156,4 +156,26 @@ Run the full quality gate one final time; confirm zero regressions and that cove
 
 ### Reflection
 
-_(To be completed at the end of the last activity.)_
+**Divergence count by cause**
+
+| Category             | Count | Entries                                                                                                                                                                                                                                 |
+| -------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Spec gap             | 0     | —                                                                                                                                                                                                                                       |
+| Codebase drift       | 1     | Task 2.2: old `legacyVerify` test had an over-broad `stat` mock that made `.arit-toolkit.jsonc` appear present in a scenario that was only meant to test `.tangyr.jsonc`-alone. Required test correction.                               |
+| Convention ambiguity | 1     | Task 2.2: non-null assertion on `this._workspaceRoot` in `removeLegacyConfigFile` rejected by `@typescript-eslint/no-non-null-assertion`. Resolved by making `workspaceRoot` an explicit parameter — cleaner than suppressing the rule. |
+| Tooling limitation   | 1     | Task 3.3 / Task 3.4: TypeScript flagged `DEFAULT_ARCHIVE_PATH === HISTORICAL_DEFAULT_ARCHIVE_PATH` as unreachable comparison between two distinct literal types. Guard removed; the equality can never hold at runtime anyway.          |
+| Other                | 0     | —                                                                                                                                                                                                                                       |
+
+**Recurring patterns**
+
+None. Each divergence was isolated to a single activity and root cause.
+
+**Proposed improvements**
+
+- **Codebase drift / test mock precision** — when authoring StepLedger test scenarios that involve `vscode.workspace.fs.stat` returning success for "one file exists", the mock should always be scoped per `fsPath` rather than using a blanket `vi.fn().mockResolvedValue({})`. Propose adding a note to the StepLedger authoring checklist: "stat mocks must discriminate by file path when multiple files are under test."
+
+- **Convention ambiguity / non-null assertion** — when a private method is only reachable after a non-null guard in its caller, the TypeScript rule `no-non-null-assertion` still requires structural resolution. Document in `docs/technical-context.md` Conventions: prefer explicit parameter-passing over `this.field!` even when the caller has already guarded.
+
+**Assessment**
+
+No systemic issues. Three isolated divergences, each resolved within its task with no scope creep. Test count increased from 1005 (pre-WS-0021) to 1029. All divergences were minor (test mock precision, lint rule, unreachable TS guard). The architectural decisions from WS-0021 were implemented as specified with no re-design.

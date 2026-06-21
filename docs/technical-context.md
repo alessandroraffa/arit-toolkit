@@ -336,7 +336,7 @@ workspace-level state:
   "versionCode": 1001004000,
   "agentSessionsArchiving": {
     "enabled": true,
-    "archivePath": "docs/archive/agent-sessions",
+    "archivePath": ".tangyr/agent-sessions",
     "intervalMinutes": 5,
     "ignoreSessionsBefore": "20250101",
   },
@@ -437,13 +437,13 @@ flags are never modified by the global toggle.
 
 ```text
   Source                          Archive directory
-  (read-only)                     (workspace-relative)
+  (read-only)                     (workspace-relative, default: .tangyr/agent-sessions)
   +-----------------------+
-  | .aider.chat.history.md|       docs/archive/agent-sessions/
-  | ~/.claude/projects/   | --->  202602111319-aider-chat-history.md
-  | globalStorage/cline/  |       202602110800-claude-code-abc123.jsonl
-  | workspaceStorage/     |       202602111200-cline-task-xyz789.json
-  |   chatSessions/       |       202602111430-copilot-chat-sess01.json
+  | .aider.chat.history.md|       .tangyr/agent-sessions/
+  | ~/.claude/projects/   | --->  2026/02/202602111319-aider-chat-history.md
+  | globalStorage/cline/  |       2026/02/202602110800-claude-code-abc123.jsonl
+  | workspaceStorage/     |       2026/02/202602111200-cline-task-xyz789.json
+  |   chatSessions/       |       2026/02/202602111430-copilot-chat-sess01.json
   | ~/.continue/sessions/ |       ...
   +-----------------------+
 
@@ -647,6 +647,12 @@ timer state and runs `start()`.
 **Change detection:** When a session file's `mtime` changes, the old
 archive file is deleted and a new one (with the same ctime-based prefix)
 is created with updated content.
+
+**Default archive path and historical migration:** The default `archivePath` is `.tangyr/agent-sessions` (runtime directory, not tracked in version control). The historical default was `docs/archive/agent-sessions` (inside the versioned documentation tree). Installs that still carry the historical default are migrated transparently:
+
+1. **Value migration (`migrateValue`):** `ConfigSectionDefinition` supports an optional `migrateValue(existing) => unknown` transform. `ConfigMigrationService.mergeIntoConfig` applies it to every registered section that is present in the config being merged, before stamping the version. The archiving section's `migrateValue` rewrites `archivePath` from `docs/archive/agent-sessions` (or absent/empty) to `.tangyr/agent-sessions`; any other value (a custom path) is left unchanged. The transform is idempotent.
+
+2. **Archive relocation (`reconcileArchiveLocation`):** `AgentSessionArchiveService` runs a one-shot, silent `reconcileArchiveLocation()` at the start of the first archive cycle after each `start()`. The method returns early unless `currentConfig.archivePath === DEFAULT_ARCHIVE_PATH`; when that gate passes and a non-empty tree exists at `HISTORICAL_DEFAULT_ARCHIVE_PATH`, it calls the existing loss-safe `moveArchive` to relocate the tree to the new default. The move is silent (no confirmation prompt). The `_locationReconciled` flag prevents the method from running on subsequent cycles. Custom-path installs are never touched.
 
 **Date cutoff filtering:** The optional `ignoreSessionsBefore` field
 (format `YYYYMMDD`) sets a UTC date cutoff. Sessions whose creation time
