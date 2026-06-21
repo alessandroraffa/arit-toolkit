@@ -1,8 +1,17 @@
 ## [2.5.2](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.1...v2.5.2) (2026-06-21)
 
+### Features
+
+* **core:** make legacy config consolidation reliable and git-aware (SPEC-002)
+* **archiving:** default archive path changed to `.tangyr/agent-sessions`; existing installs on the historical default `docs/archive/agent-sessions` are migrated automatically and archives relocated without loss
+
 ### Bug Fixes
 
 * **deps:** update overrides and regenerate lockfile to clear security audit ([13b11f8](https://github.com/alessandroraffa/tangyr-vscode/commit/13b11f852ef32042ab33d5411c60c4d5715ea624))
+
+### Known Limitations
+
+* **core:** legacy-config consolidation and archive-path migration are scoped to single-root workspaces. Multi-root and no-workspace activations are skipped automatically (logged at info level). See SPEC-002 Constraint 1.
 
 ## [2.5.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.0...v2.5.1) (2026-06-20)
 

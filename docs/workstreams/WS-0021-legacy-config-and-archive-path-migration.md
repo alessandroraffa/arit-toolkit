@@ -179,3 +179,96 @@ None. Each divergence was isolated to a single activity and root cause.
 **Assessment**
 
 No systemic issues. Three isolated divergences, each resolved within its task with no scope creep. Test count increased from 1005 (pre-WS-0021) to 1029. All divergences were minor (test mock precision, lint rule, unreachable TS guard). The architectural decisions from WS-0021 were implemented as specified with no re-design.
+
+---
+
+## Review-gate fix-forward addendum (2026-06-21)
+
+A multi-perspective review gate (PASS_WITH_CONDITIONS) surfaced seven findings.
+All were applied. Divergences from the original WS-0021 implementation below.
+
+### Findings resolved
+
+**F1 — removeLegacyConfigFile reported success on delete failure.**
+The catch after `fs.delete` returned the same `true` as a successful delete.
+Fixed: method now returns `'deleted' | 'renamed' | 'failed'` (tri-state). Call
+sites show a warning message ("could not be removed — will retry next activation")
+on `'failed'` and do not claim the file was deleted or renamed.
+
+**F2 — moveEntry returned true for unrecognized entries, silently enabling
+source deletion.** Fixed: unrecognized entries (non-year directories, symlinks)
+now return `false`, so `allCopiesSucceeded` is false and `finalizeMoveArchive`
+leaves the source tree intact and logs the entry for manual reconciliation.
+
+**F3 — reconcileArchiveLocation was silent (log-only).** Fixed: `moveArchive`
+now returns `boolean`; `finalizeMoveArchive` returns `boolean`;
+`reconcileArchiveLocation` surfaces one non-blocking VS Code notification —
+`showInformationMessage` on full success, `showWarningMessage` on partial
+failure. No notification when nothing to move. Not a confirmation prompt
+(SPEC-002 AC-10 preserved).
+
+**C4 — coverage gaps.**
+
+- AC-5 (newly added archiving section default): `archiveServiceRegistration.test.ts`
+  added with a `mergeIntoConfig`-level test confirming `archivePath` defaults to
+  `.tangyr/agent-sessions` when the section is newly accepted.
+- `migrateValue` empty-string branch: added test confirming `archivePath: ''`
+  is rewritten to the new default.
+- F1 delete-failure test: `extensionStateManager.removeLegacyConfigFile.test.ts`
+  added (covers both tracked-delete-fail and untracked-rename-fail paths).
+- `configPreservation.test.ts` fixture annotated with a comment explaining why
+  it carries the historical default path rather than the new default.
+
+**C5 — multi-root/no-workspace limitation not documented.**
+Added info-level log in `initialize()` when `!isSingleRoot`, explicitly
+referencing SPEC-002 Constraint 1. Added CHANGELOG entry under Known Limitations.
+
+**BK-004 — destination clobber in moveTopLevelFile/moveMonthDirectory.**
+Both methods now stat the destination before copying and return `false` (copy
+failure) when the destination already exists, preventing silent overwrite.
+Existing test mocks updated to reject stat for new-default destination paths.
+
+**OR-003 — gitignoreDecisions not forwarded on path rewrite.**
+`migrateValue` in `registerWithCore` now forwards `gitignoreDecisions[oldPath]`
+to `gitignoreDecisions[newPath]` when the historical default is rewritten.
+No change when the decision map has no entry for the old path. Implemented via
+object spread (no `delete` — avoids `no-dynamic-delete` lint error).
+
+**BK-006 — double runMigration() / duplicate prompt risk.**
+Analysis: when `tryReadLegacyConfigFile` succeeds and `_isEnabled=true`,
+`initialize()` calls `runMigration()` (first prompt). If the user declines,
+`.tangyr.jsonc` is not written. `consolidateLegacyConfig` Path A then calls
+`applyConfig(parsed)` (resets `_configVersionCode` to old) and `runMigration()`
+again — a second prompt. Fixed by adding `_migrationAttemptedThisSession` flag:
+set after `runMigration()` in `initialize()`; checked in Path A before calling
+`runMigration()` a second time. If already set, Path A exits early (user
+already had one chance to accept; next activation will try again).
+
+### New divergences (fix-forward pass)
+
+- **BK-004 (test mock precision)**: `archiveService.reconcile.test.ts`,
+  `archiveService.test.ts`, and the two new test files all required
+  discriminated `stat` mocks (reject for new-default paths, resolve for source
+  paths) to correctly model "destination absent". The blanket
+  `mockResolvedValue({})` pattern from existing tests would have caused BK-004's
+  stat check to treat destinations as pre-existing and skip all copies. This
+  reinforces the proposed improvement from the original WS-0021 reflection:
+  stat mocks must discriminate by file path.
+
+- **OR-003 (lint — no-dynamic-delete)**: the initial implementation used
+  `delete newDecisions[current]` which triggered `@typescript-eslint/no-dynamic-delete`.
+  Resolved using destructuring spread (`const { [current]: _removed, ...rest } = decisions`)
+  to build the new object without the old key.
+
+- **OR-003 (lint — non-nullable-type-assertion-style)**: initial implementation
+  used `decisions[current] as string` which was flagged. Resolved by narrowing
+  via `oldDecision !== undefined` guard before assignment.
+
+- **F3 (moveArchive return type)**: `reconfigure`'s call to `moveArchive` now
+  receives a `boolean` return but ignores it. This is intentional — the
+  `reconfigure` path is user-driven and the existing warn log is sufficient; the
+  notification path applies only to the automatic `reconcileArchiveLocation` call.
+
+### Updated test count
+
+1029 (post-WS-0021) → 1048 (post review-gate fixes). 19 new tests added.
