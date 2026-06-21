@@ -1,3 +1,15 @@
+## [2.6.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.3...v2.6.0) (2026-06-21)
+
+### Features
+
+* **archiving:** default to .tangyr/agent-sessions and migrate existing archives ([eeb2e56](https://github.com/alessandroraffa/tangyr-vscode/commit/eeb2e564b5a45379c8ef1d2fca43d778b84bd412))
+* **core:** add isgittracked git-tracking probe ([f449173](https://github.com/alessandroraffa/tangyr-vscode/commit/f4491735eaaf1068ab3e7a26a0124f7e2db0dcc6))
+* **core:** make legacy config consolidation reliable and git-aware ([e2d99ea](https://github.com/alessandroraffa/tangyr-vscode/commit/e2d99ea05707999e5fab8ed2fb921fe60629ebb1))
+
+### Bug Fixes
+
+* **core,archiving:** review-gate blocking fixes — f1 f2 f3 bk-004 bk-006 or-003 ([fddcc0a](https://github.com/alessandroraffa/tangyr-vscode/commit/fddcc0a2b97808a38983452388d2b8188caf80c0))
+
 ## [2.5.3](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.2...v2.5.3) (2026-06-21)
 
 ### Bug Fixes
