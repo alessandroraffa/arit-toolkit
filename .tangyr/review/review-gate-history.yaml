@@ -70,3 +70,23 @@
   finding_count: 0
   blocking_count: 0
   produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: stepledger
+  artifact_version: WS-0022 draft (docs/workstreams/WS-0022-opencode-provider.md; status idle; created 2026-06-22; branch feat/opencode-provider; governed by approved SPEC-003 and PLAN-005; author self-report lost to connection error)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 16
+  blocking_count: 5
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: stepledger
+  artifact_version: WS-0022 revised (docs/workstreams/WS-0022-opencode-provider.md; status idle; 2026-06-22, focused verification follow-up of the 5-blocking PASS_WITH_CONDITIONS gate above; cached-string fix applied for B2+B3)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black]
+  finding_count: 2
+  blocking_count: 1
+  produced_at: 2026-06-22

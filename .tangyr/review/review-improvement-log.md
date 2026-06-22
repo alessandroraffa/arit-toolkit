@@ -384,4 +384,105 @@ This log captures process-level improvements proposed during multi-perspective r
     whether it propagates), not only its absent-resource behaviour.
   target: skills/review-gate (checklist) and skills/plan-authoring-protocol
   owner: Human
+
+- id: KZ-2026-06-22-011
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0022 (the OpenCode workstream) carried unresolved either/or choices into
+    executable task text that a coder must settle before writing code: a literal
+    "call getSessionRows(db, ???)" placeholder immediately superseded by a
+    full-table-scan instruction (Task 1.4); "readContent opens the DB fresh (or uses
+    a stored reference)" (Task 2.3); the reasoning-part field path "$.content or
+    $.text as confirmed by … inspection" (Task 3.1); and two "add to file X (or a
+    sibling file if it would exceed 400 lines)" conditional-placement clauses. All
+    four reviewers independently flagged the same cluster. The structural cause is
+    named in the artifact metadata: the author's final self-report (the draft-review
+    self-check that surfaces assumptions) was lost to a connection error, so the
+    either/or markers were never resolved before the workstream was presented at the
+    gate. A "???" placeholder or an unbracketed "(or X)" in an executable task is the
+    machine-detectable tell of an unresolved coder decision — exactly the ambiguity
+    that "ambiguity does not flow downstream" forbids at StepLedger altitude.
+  proposed_change: >
+    Add a stepledger-authoring and review-gate lint rule: an executable task
+    description must contain no unresolved placeholder tokens ("???", "TBD", "TODO"
+    inside an instruction) and no unresolved choice fork ("X or Y", "either … or",
+    "fresh OR stored", conditional file placement) in its implementation steps. Each
+    such fork must be resolved to a single stated choice before status transitions
+    from draft to idle. When a value genuinely requires runtime discovery (e.g. a
+    JSON field name only confirmable against a live fixture), it must be encoded as a
+    named discovery subtask whose recorded finding a later task references by name —
+    not as an inline either/or the downstream coder is left to pick.
+  target: skills/stepledger-authoring and skills/review-gate (checklist)
+  owner: Human
+
+- id: KZ-2026-06-22-012
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0022 Task 4.5's AC-1..13 self-audit attributed several acceptance criteria to
+    a test that verifies a DIFFERENT property than the AC requires. AC-7 ("store files
+    byte-unchanged after a cycle") was mapped to "the smoke-check in Task 1.1 asserting
+    the DB handle is read-only," but the Task 1.1 smoke-check asserts SNAPSHOT
+    ISOLATION (a concurrent insert is not visible mid-transaction), not write-absence
+    or byte-unchanged files; no task asserts byte-unchanged or that a write on the
+    read-only handle throws. AC-11 was mapped to "renderer.test.ts" when the actual
+    compaction-rendering tests live in renderer.companion.test.ts. This is the
+    KZ-2026-06-21-003 pattern (marked-complete checkbox with no matching test) in its
+    attribution variant: a real, passing test is cited as evidence for an AC whose
+    property it does not establish, and the AC-to-test mapping names a property
+    ("read-only") or a file ("renderer.test.ts") that does not match what was actually
+    written. The governing plan (PLAN-005 §1) even named the byte-unchanged assertion
+    that the workstream's task then omitted — an assertion-drift from plan to ledger.
+  proposed_change: >
+    Add a stepledger-authoring and review-gate checklist item: in the final AC-coverage
+    self-audit, each acceptance criterion must cite a specific named test (or named
+    test description) AND the cited test's asserted property must be the AC's property,
+    not an adjacent one. "Read-only open" does not establish "byte-unchanged";
+    "snapshot isolation" does not establish "WAL-committed-data-visible" without a
+    fixture that commits before the read. Separately, when the governing plan names a
+    concrete assertion (e.g. "the smoke-check asserts the triplet is byte-unchanged"),
+    the workstream must carry that exact assertion into a task, not paraphrase it into
+    a weaker construction guarantee.
+  target: skills/stepledger-authoring and skills/tdd-workflow
+  owner: Human
+
+- id: KZ-2026-06-22-013
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0022 depends on a build/test-runtime fact that is asserted in prose but encoded
+    nowhere: line 43 states "node:sqlite is available on Node 22.22 without an explicit
+    --experimental-sqlite flag," yet vitest.config.ts and test/unit/setup.ts contain
+    no execArgv, no NODE_OPTIONS, and no flag, and the governing plan (PLAN-005) marks
+    extension-host node:sqlite availability as TBV. The workstream promotes a
+    plan-level TBV item to a settled prose fact and makes the entire test suite
+    (fixture DBs built via real node:sqlite, provider tests forbidden from mocking it)
+    depend on that unverified assumption. node:sqlite was flag-gated on Node 22.x
+    before a later 22.x minor; if the nvm-resolved binary precedes that minor, every
+    adapter/provider/parser test file fails to import. This is the
+    KZ-2026-06-22-009 empirical-probe-scope pattern at the runtime-prerequisite level:
+    a load-bearing environmental precondition stated as fact without a mechanical
+    safeguard (a flag in pool execArgv, a .nvmrc floor, or a version assertion that
+    fails fast with a clear message).
+  proposed_change: >
+    Add a stepledger-authoring and review-gate checklist item: any executable workstream
+    whose tests depend on an experimental or version-gated runtime capability must
+    ENCODE the precondition mechanically (a test-runner flag in config, a pinned
+    runtime floor, or a fail-fast version assertion with a remediation message) rather
+    than asserting it in prose — and the encoding must be idempotent across the
+    supported runtime range. A claim that a capability "is available without a flag" is
+    insufficient unless either the flag is set anyway (a harmless no-op when unneeded)
+    or a version floor is pinned and checked.
+  target: skills/stepledger-authoring and skills/review-gate (checklist)
+  owner: Human
 ```
