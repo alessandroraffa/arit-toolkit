@@ -127,7 +127,7 @@ export function registerAgentSessionsArchivingFeature(
 
   registerWithCore(ctx.migrationRegistry, stateManager);
 
-  const providers = getDefaultProviders(ctx.context);
+  const providers = getDefaultProviders(ctx.context, ctx.logger);
   const service = new AgentSessionArchiveService(workspaceRoot, providers, ctx.logger);
   const watcher = new SessionFileWatcher(providers, () => {
     void service.runArchiveCycle();

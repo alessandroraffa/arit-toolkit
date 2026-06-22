@@ -379,3 +379,23 @@ describe('OpenCodeProvider', () => {
     });
   });
 });
+
+describe('provider registration (Task 3.3)', () => {
+  it('getDefaultProviders returns a provider with name "open-code"', async () => {
+    const { getDefaultProviders } =
+      await import('../../../../../src/features/agentSessionsArchiving/providers/index');
+    const mockLogger = {
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+    };
+    const mockContext = {
+      globalStorageUri: { fsPath: '/global' },
+      storageUri: { fsPath: '/storage' },
+    } as unknown as import('vscode').ExtensionContext;
+    const providers = getDefaultProviders(mockContext, mockLogger as any);
+    const names = providers.map((p) => p.name);
+    expect(names).toContain('open-code');
+  });
+});

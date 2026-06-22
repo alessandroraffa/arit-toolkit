@@ -271,11 +271,11 @@ Commit `types.ts`, `archiveService.ts` (seam modifications only), the provider a
 
 ---
 
-### [ ] Activity 3: `OpenCodeParser` and provider registration
+### [x] Activity 3: `OpenCodeParser` and provider registration
 
 Implement `OpenCodeParser`, register it in `markdown/parsers/index.ts`, and register `OpenCodeProvider` in `providers/index.ts`. After this activity the end-to-end path from DB → materialized JSON → parsed `NormalizedSession` → markdown is complete.
 
-#### [ ] Task 3.1: Write failing parser tests
+#### [x] Task 3.1: Write failing parser tests
 
 Create `test/unit/features/agentSessionsArchiving/markdown/parsers/openCodeParser.test.ts`. Write failing tests for:
 
@@ -294,7 +294,7 @@ Create `test/unit/features/agentSessionsArchiving/markdown/parsers/openCodeParse
 
 Confirm all tests fail before implementing the parser.
 
-#### [ ] Task 3.2: Implement `openCodeParser.ts`
+#### [x] Task 3.2: Implement `openCodeParser.ts`
 
 Create `src/features/agentSessionsArchiving/markdown/parsers/openCodeParser.ts`. The class `OpenCodeParser` implements `SessionParser` from `../types`:
 
@@ -314,7 +314,7 @@ Create `src/features/agentSessionsArchiving/markdown/parsers/openCodeParser.ts`.
 
 Run the quality gate; confirm Task 3.1 tests pass.
 
-#### [ ] Task 3.3: Register parser and provider
+#### [x] Task 3.3: Register parser and provider
 
 In `src/features/agentSessionsArchiving/markdown/parsers/index.ts`: import `OpenCodeParser` from `'./openCodeParser'` and add `new OpenCodeParser()` to the `PARSERS` array.
 
@@ -324,11 +324,11 @@ Add a test in `test/unit/features/agentSessionsArchiving/index.test.ts` (followi
 
 Run the quality gate; confirm all tests pass and test count has not decreased.
 
-#### [ ] Task 3.4: Update impacted documentation
+#### [x] Task 3.4: Update impacted documentation
 
 No public documentation requires updating for the parser registration in this activity (the full documentation update is deferred to Activity 4). Add a JSDoc block at the top of `openCodeParser.ts` summarising: the §3 JSON contract it consumes, the reasoning/tool/step-start/step-finish part mapping, and the compaction behaviour (confirmed in Task 1.3).
 
-#### [ ] Task 3.5: Commit changes
+#### [x] Task 3.5: Commit changes
 
 Commit `openCodeParser.ts`, the updated `markdown/parsers/index.ts`, the updated `providers/index.ts`, the updated `openCodeProvider.ts` (Logger constructor parameter), and the new and updated test files. Commit message: `feat(archiving): add opencode parser and register provider`.
 
