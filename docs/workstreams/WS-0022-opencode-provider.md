@@ -2,7 +2,7 @@
 title: 'OpenCode session-archiving provider'
 objective: Implement the OpenCode session provider end-to-end — store discovery, ingestion seam, parser, and change detection — per SPEC-003 and PLAN-005.
 workstream: WS-0022
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: []
 created: 2026-06-22
@@ -334,11 +334,11 @@ Commit `openCodeParser.ts`, the updated `markdown/parsers/index.ts`, the updated
 
 ---
 
-### [ ] Activity 4: Change detection, watch patterns, signalling, and documentation
+### [x] Activity 4: Change detection, watch patterns, signalling, and documentation
 
 Add `getWatchPatterns` to `OpenCodeProvider`, verify the per-session fingerprint end-to-end, add all three signal paths' tests, and update `docs/technical-context.md` and the README provider list.
 
-#### [ ] Task 4.1: Write failing change-detection and signalling tests
+#### [x] Task 4.1: Write failing change-detection and signalling tests
 
 Add to `test/unit/features/agentSessionsArchiving/providers/openCodeProvider.test.ts`:
 
@@ -359,7 +359,7 @@ Add to `test/unit/features/agentSessionsArchiving/sessionFileWatcher.test.ts` (o
 
 Confirm all new tests fail.
 
-#### [ ] Task 4.2: Implement `getWatchPatterns` and verify fingerprint end-to-end
+#### [x] Task 4.2: Implement `getWatchPatterns` and verify fingerprint end-to-end
 
 In `src/features/agentSessionsArchiving/providers/openCodeProvider.ts`, add:
 
@@ -380,7 +380,7 @@ The `compositeMtime` fingerprint (`"<timeUpdated>:<messageCount>:<partCount>"`) 
 
 Run the quality gate; confirm Task 4.1 tests pass.
 
-#### [ ] Task 4.3: Update `docs/technical-context.md`
+#### [x] Task 4.3: Update `docs/technical-context.md`
 
 In `docs/technical-context.md`, locate the archiving provider section (around the `Session Provider abstraction` trade-off entry and the workspace filtering subsection). Add a subsection titled `OpenCode provider` documenting:
 
@@ -395,11 +395,11 @@ In `docs/technical-context.md`, locate the archiving provider section (around th
 
 Add `open-code` to the provider list in any table or enumeration that lists supported providers in `docs/technical-context.md`.
 
-#### [ ] Task 4.4: Update README provider list
+#### [x] Task 4.4: Update README provider list
 
 In the repository root `README.md` (or `docs/README.md` — locate the file with the supported-providers list by reading `README.md` in the repository root first), add `OpenCode` to the list of supported session sources in the same format as the existing entries. If no such list exists in the README, skip this subtask and record the absence in "Divergences and notes".
 
-#### [ ] Task 4.5: Full-suite verification and reflection
+#### [x] Task 4.5: Full-suite verification and reflection
 
 Run the full quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22 && pnpm run check-types && pnpm run lint && pnpm run test:unit`. Confirm zero errors, zero failures, and that the test count is strictly greater than 1048 (the count after WS-0021's review-gate fixes). Verify that acceptance criteria AC-1 through AC-13 from SPEC-003 are each covered by at least one passing test:
 
@@ -419,7 +419,7 @@ Run the full quality gate one final time: `source ~/.nvm/nvm.sh && nvm use 22.22
 
 Compile the Reflection sub-block in "Divergences and notes". Set status to `completed`. Propose the PR to the Human.
 
-#### [ ] Task 4.6: Commit changes
+#### [x] Task 4.6: Commit changes
 
 Commit `openCodeProvider.ts` (watch patterns), `docs/technical-context.md`, `README.md` (if updated), and the new and updated test files. Commit message: `feat(archiving): add opencode watch patterns, signalling, and documentation`.
 
@@ -475,4 +475,30 @@ Commit `openCodeProvider.ts` (watch patterns), `docs/technical-context.md`, `REA
 
 ### Reflection
 
-_To be compiled at workstream completion._
+**Divergence count by cause:**
+
+| Cause                                | Count |
+| ------------------------------------ | ----- |
+| node:sqlite behavioral difference    | 3     |
+| Early application of planned change  | 2     |
+| Schema-discovery finding (confirmed) | 2     |
+| Warn message text differs from spec  | 1     |
+| **Total**                            | **8** |
+
+**Recurring patterns:**
+
+1. **Runtime behavioral discovery over spec assumptions.** Three divergences (DIV-001, DIV-002, DIV-003) arose from `node:sqlite`'s actual behavior differing from PLAN-005 descriptions that used the wrong option casing (`readonly` vs `readOnly`). The fix was immediate in each case but required test restructuring. Pattern: spec descriptions of third-party module APIs should be validated against the TypeScript type definition before the StepLedger is written.
+
+2. **Seam changes pulled forward by compilation dependencies.** DIV-004 and DIV-007 both arose because the provider's `SessionFile` construction required the seam changes in `types.ts` and `archiveService.ts` to be applied a full activity earlier than planned. The StepLedger placed those changes in Activity 2 but Activity 1 could not compile without them. Pattern: when a new provider implements an interface that does not yet exist in its final form, the interface change should be placed in the same activity as the first implementation that requires it.
+
+3. **`vi.doMock` without `vi.resetModules()` causes stale cache.** Multiple Tier-1/Tier-2 signal tests failed silently because the module cache retained the real `sqliteAvailable`. The fix was `vi.resetModules()` before every `vi.doMock`. This is a known Vitest isolation requirement that should be documented as a standing pattern in the test fixture conventions.
+
+**Proposed improvements:**
+
+- Add a note to the StepLedger authoring skill: "When a new provider requires interface changes, place those interface changes in the same activity." This prevents Activity 1/2 ordering issues of the DIV-004 type.
+- Add a standing note to the project test conventions: "`vi.doMock` for module-level constants requires `vi.resetModules()` beforehand."
+- The `node:sqlite` option name (`readOnly` not `readonly`) should be recorded as a project-level known quirk so future adapters do not repeat the same discovery.
+
+**Assessment:**
+
+WS-0022 was completed in four activities across two sessions (context compaction at Activity 1/2 boundary). All 13 acceptance criteria are covered by passing tests. The final test count is 1113 (baseline 1048, +65 new tests). Zero type errors, zero lint errors. The OpenCode provider is end-to-end: store discovery → workspace-matched sessions → §3 JSON materialization → `OpenCodeParser` → normalized markdown → archive. Change detection via per-session fingerprint and watch patterns are operational. Documentation updated in `docs/technical-context.md` and `README.md`. PR is ready for review.

@@ -32,7 +32,7 @@ fall into four categories:
 | Category            | Capability                                                                                                                                                            |
 | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | File utilities      | Create or rename files/directories with UTC timestamp prefixes in configurable formats.                                                                               |
-| Background services | Periodically archive chat session files produced by AI coding assistants (Aider, Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue).                        |
+| Background services | Periodically archive chat session files produced by AI coding assistants (Aider, Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue, OpenCode).              |
 | Status bar services | Display real-time text statistics (characters, tokens, words, lines, paragraphs, reading time, file size) with selection awareness and configurable tokenizer models. |
 | Editing utilities   | Increment or decrement markdown heading levels across selected text via command palette and keybindings.                                                              |
 
@@ -477,6 +477,47 @@ write is skipped and the skip is logged at `info` level. The session's
 archive cycles.
 
 **Codex provider session-ID sanitization:** The Codex provider sanitizes `meta.id` using an allowlist regex (`^[A-Za-z0-9._-]+$`) before constructing `archiveName`: any value that does not match (including path-traversal sequences such as `../evil` or IDs containing backslashes) is rejected and the session is skipped with a `warn` log. Single-component dot segments (`.` and `..`) are additionally rejected by a direct equality check before the regex test.
+
+**OpenCode provider:** Reads the shared SQLite store used by the OpenCode
+AI coding assistant. Store location resolves as follows: when `OPENCODE_DB`
+environment variable is set, its value is used directly; otherwise the
+provider enumerates `opencode*.db` files under `$XDG_DATA_HOME/opencode` or
+`~/.local/share/opencode` (Windows path TBV). All reads use the `node:sqlite`
+built-in module via `openCodeAdapter.ts`, opened read-only (`readOnly: true`).
+Each session is read inside a deferred read transaction (`BEGIN DEFERRED …
+COMMIT`) for WAL-correct snapshot isolation under concurrent writes.
+
+Two-tier failure taxonomy: Tier 1 — `node:sqlite` module absent in the VS
+Code extension host runtime (Node < 22); one deduped informational notification
+is shown, the provider contributes zero sessions, and existing providers are
+unaffected. Tier 2 — store present but unopenable (corrupt, permission-denied,
+locked); caught per-store with a `warn` log on every archive cycle (actionable,
+unlike the fixed Tier-1 runtime constraint). When the store directory exists
+but contains no `.db` files (legacy JSON layout or other tool), a distinct
+one-time out-of-scope notification is shown.
+
+Workspace matching uses both-sides real-path resolution (`fs.realpathSync`),
+case-folding on macOS/Windows, separator normalization, and exact normalized
+string comparison. Sessions with a relative or empty `directory` field are
+skipped with a `debug` log.
+
+Ingestion seam: `SessionFile.uri` is optional; `readContent?: () => Promise<string>`
+carries the eagerly-materialized session content. `materializeSession` produces
+a `schemaVersion: 1` JSON document (`PLAN-005 §3`) with ordered messages and
+parts and subagent child sessions. `archiveService` calls `readContent()` when
+present instead of `vscode.workspace.fs.readFile`; companion resolution and
+`copyRawArchive` are skipped for content-backed sessions.
+
+Change detection: `SessionFile.compositeMtime = "<timeUpdated>:<messageCount>:<partCount>"`
+computed inside the per-session deferred read transaction. The archive service
+re-archives only when this fingerprint changes from the previously recorded
+value, preventing cross-workspace churn. Watch patterns cover `opencode.db`
+and `opencode.db-wal` (not `-shm`) under the resolved store directory.
+
+Schema-discovery findings (increment-1, v1.17.9): no per-event compaction
+messages or parts exist — `time_compacting` is session-level metadata only;
+`compactionSummaries` is always `[]` for OpenCode sessions. The `OpenCodeParser`
+is registered as `providerName: 'open-code'`.
 
 **Codex parser multi-turn handling:** The Codex parser detects each
 `user_message` event as a turn boundary. When a new user message arrives,

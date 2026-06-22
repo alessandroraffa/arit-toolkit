@@ -380,4 +380,52 @@ describe('archiveService readContent/uri? ingestion seam', () => {
       expect(mockResolveCompanionData).toHaveBeenCalled();
     });
   });
+
+  describe('AC-10: subagent-only content-backed session is archived (not empty-session filtered)', () => {
+    it('session with zero top-level turns but non-empty subagentSessions is written to archive', async () => {
+      // The allTurnsEmpty predicate in writeArchiveFile checks
+      // subagentSessions.length > 0 before skipping — a subagent-only session
+      // must be archived. This test confirms the predicate path for a
+      // content-backed OpenCode session.
+      mockGetParserForProvider.mockReturnValue({
+        providerName: 'open-code',
+        parse: vi.fn().mockReturnValue({
+          status: 'parsed',
+          session: {
+            providerName: 'open-code',
+            providerDisplayName: 'OpenCode',
+            sessionId: 'open-code-sess-1',
+            turns: [], // no top-level turns
+            subagentSessions: [
+              {
+                agentId: 'child-1',
+                agentType: 'claude-4',
+                turns: [
+                  {
+                    role: 'assistant' as const,
+                    content: 'done',
+                    toolCalls: [],
+                    filesRead: [],
+                    filesModified: [],
+                  },
+                ],
+              },
+            ],
+            compactionSummaries: [],
+          },
+        }),
+      });
+      const session = createContentSession();
+      const provider = createProvider([session]);
+      const service = new AgentSessionArchiveService(
+        WORKSPACE_URI,
+        [provider],
+        logger as any
+      );
+      await runOneCycle(service);
+
+      // Session has subagentSessions — not empty-session filtered
+      expect(workspace.fs.writeFile).toHaveBeenCalled();
+    });
+  });
 });

@@ -30,6 +30,7 @@ AI coding assistants store their session files in different locations and format
 | Cline               | VS Code global storage                      | Session content references workspace path    |
 | GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`) | Per-workspace storage (`.json` and `.jsonl`) |
 | OpenAI Codex        | `~/.codex/sessions/<YYYY>/<MM>/<DD>/`       | `cwd` field in session metadata              |
+| OpenCode            | `~/.local/share/opencode/opencode.db`       | `directory` field in session row             |
 
 Missing your assistant? Contact the maintainer to request support.
 
