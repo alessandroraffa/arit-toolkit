@@ -310,6 +310,12 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   }> {
     const parser = getParserForProvider(session.providerName);
     if (!parser) {
+      if (session.readContent !== undefined) {
+        this.logger.warn(
+          `No parser for content-backed session ${session.displayName} (provider: ${session.providerName}) — skipping`
+        );
+        return { fileName: undefined, companionPartial: false };
+      }
       return {
         fileName: await this.copyRawArchive(session, archiveUri, timestamp),
         companionPartial: false,
@@ -325,6 +331,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         this.logger.warn(
           `Unrecognized format for ${session.displayName}: ${result.reason}`
         );
+        if (session.readContent !== undefined) {
+          return { fileName: undefined, companionPartial };
+        }
         return {
           fileName: await this.copyRawArchive(session, archiveUri, timestamp),
           companionPartial,
@@ -415,6 +424,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this.logger.warn(
         `Failed to convert ${session.displayName} to markdown: ${String(err)}`
       );
+      if (session.readContent !== undefined) {
+        return { fileName: undefined, companionPartial: false };
+      }
       return {
         fileName: await this.copyRawArchive(session, archiveUri, timestamp),
         companionPartial: false,
@@ -422,16 +434,53 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     }
   }
 
+  /**
+   * Read session content and parse it.
+   *
+   * When `session.readContent` is present (content-backed sessions such as
+   * OpenCode), it is called in its own try/catch. A throw logs a per-session
+   * warn and skips the session (does NOT rethrow). Companion resolution is
+   * skipped for content-backed sessions (no file URI).
+   *
+   * When `session.readContent` is absent, the existing file-read path runs via
+   * `vscode.workspace.fs.readFile(session.uri)` and companion data is resolved.
+   */
   private async readAndParse(
     session: SessionFile,
     parser: SessionParser
   ): Promise<{ parseResult: ParseResult; companionPartial: boolean }> {
-    const rawBytes = await vscode.workspace.fs.readFile(session.uri);
+    if (session.readContent !== undefined) {
+      let rawContent: string;
+      try {
+        rawContent = await session.readContent();
+      } catch (err) {
+        this.logger.warn(
+          `OpenCode session ${session.displayName}: readContent threw — skipping: ${String(err)}`
+        );
+        return {
+          parseResult: { status: 'unrecognized', reason: 'readContent threw' },
+          companionPartial: false,
+        };
+      }
+      return {
+        parseResult: parser.parse(rawContent, session.archiveName),
+        companionPartial: false,
+      };
+    }
+
+    const sessionUri = session.uri;
+    if (!sessionUri) {
+      return {
+        parseResult: { status: 'unrecognized', reason: 'no uri and no readContent' },
+        companionPartial: false,
+      };
+    }
+    const rawBytes = await vscode.workspace.fs.readFile(sessionUri);
     const rawContent = new TextDecoder().decode(rawBytes);
     // H-07: pass rawContent so resolveCompanionData can build the referenced-filename
     // set and skip unreferenced tool-result files (lazy/referenced loading).
     const companionContext = await resolveCompanionData(
-      session.uri,
+      sessionUri,
       this.logger,
       rawContent
     );
@@ -447,6 +496,10 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     archiveUri: vscode.Uri,
     timestamp: string
   ): Promise<string | undefined> {
+    // Content-backed sessions (readContent present) have no file URI — skip copy.
+    if (!session.uri) {
+      return undefined;
+    }
     const yyyy = timestamp.substring(0, 4);
     const mm = timestamp.substring(4, 6);
     const monthUri = vscode.Uri.joinPath(archiveUri, yyyy, mm);

@@ -70,6 +70,7 @@ describe('bundle asset verification', () => {
       'net',
       'os',
       'path',
+      'sqlite',
       'stream',
       'string_decoder',
       'url',

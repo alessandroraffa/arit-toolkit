@@ -44,7 +44,7 @@ export class ContinueProvider implements SessionProvider {
     if (!session) {
       return undefined;
     }
-    if (!(await belongsToWorkspace(session.uri, workspacePath))) {
+    if (!session.uri || !(await belongsToWorkspace(session.uri, workspacePath))) {
       return undefined;
     }
     return session;

@@ -10,3 +10,103 @@
   finding_count: 14
   blocking_count: 3
   produced_at: 2026-06-21
+
+- gate: pre-implementation
+  artifact_type: specification
+  artifact_version: SPEC-003 draft (docs/specifications/SPEC-003-opencode-session-provider.md; created 2026-06-22)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 16
+  blocking_count: 8
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: specification
+  artifact_version: SPEC-003 revised (docs/specifications/SPEC-003-opencode-session-provider.md; second revision 2026-06-22, verification follow-up of the PASS_WITH_CONDITIONS gate above)
+  verdict: PASS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 9
+  blocking_count: 0
+  produced_at: 2026-06-22
+
+- gate: pre-approval
+  artifact_type: initiative
+  artifact_version: INIT-005 draft (docs/initiatives/INIT-005-opencode-provider.md; created 2026-06-22; governed by approved SPEC-003)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 13
+  blocking_count: 0
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: implementation_plan
+  artifact_version: PLAN-005 draft (docs/plans/PLAN-005-opencode-provider.md; created 2026-06-22; governed by approved SPEC-003 and in-progress INIT-005)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 23
+  blocking_count: 8
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: implementation_plan
+  artifact_version: PLAN-005 revised (docs/plans/PLAN-005-opencode-provider.md; second revision 2026-06-22, verification follow-up of the PASS_WITH_CONDITIONS gate above; adds a "Schema verification status" table)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 11
+  blocking_count: 2
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: implementation_plan
+  artifact_version: PLAN-005 third revision (docs/plans/PLAN-005-opencode-provider.md; 2026-06-22, focused verification follow-up of the 2-blocking PASS_WITH_CONDITIONS gate above; closes §3 contract completeness and the readContent() exception-isolation path)
+  verdict: PASS
+  risk_classification: high
+  perspectives_activated: [white, black]
+  finding_count: 0
+  blocking_count: 0
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: stepledger
+  artifact_version: WS-0022 draft (docs/workstreams/WS-0022-opencode-provider.md; status idle; created 2026-06-22; branch feat/opencode-provider; governed by approved SPEC-003 and PLAN-005; author self-report lost to connection error)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 16
+  blocking_count: 5
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: stepledger
+  artifact_version: WS-0022 revised (docs/workstreams/WS-0022-opencode-provider.md; status idle; 2026-06-22, focused verification follow-up of the 5-blocking PASS_WITH_CONDITIONS gate above; cached-string fix applied for B2+B3)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black]
+  finding_count: 2
+  blocking_count: 1
+  produced_at: 2026-06-22
+
+- gate: pre-release
+  artifact_type: stepledger
+  artifact_version: WS-0022 implementation (OpenCode provider; branch feat/opencode-provider; git range 8445f5c..a09f256; status completed; final gate before merge auto-publishes to the VS Code Marketplace)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 14
+  blocking_count: 2
+  produced_at: 2026-06-22
+
+- gate: pre-release
+  artifact_type: stepledger
+  artifact_version: WS-0022 implementation — fix verification (OpenCode provider; branch feat/opencode-provider; fix commit f3ec596 over the a09f256 PASS_WITH_CONDITIONS gate above; focused white+black verification that the 2 blockers F1/F2+F9 and the F3-F11/F16 spec-conformance fixes are closed; final gate before merge auto-publishes to the VS Code Marketplace)
+  verdict: PASS
+  risk_classification: high
+  perspectives_activated: [white, black]
+  finding_count: 5
+  blocking_count: 0
+  produced_at: 2026-06-22

@@ -1,7 +1,8 @@
 import type * as vscode from 'vscode';
 
 export interface SessionFile {
-  readonly uri: vscode.Uri;
+  readonly uri?: vscode.Uri;
+  readonly readContent?: () => Promise<string>;
   readonly providerName: string;
   readonly archiveName: string;
   readonly displayName: string;

@@ -4,6 +4,7 @@ import { ClineRooCodeParser } from './clineRooCodeParser';
 import { CopilotChatParser } from './copilotChatParser';
 import { ContinueParser } from './continueParser';
 import { CodexParser } from './codexParser';
+import { OpenCodeParser } from './openCodeParser';
 
 const PARSERS: readonly SessionParser[] = [
   new ClaudeCodeParser(),
@@ -12,6 +13,7 @@ const PARSERS: readonly SessionParser[] = [
   new CopilotChatParser(),
   new ContinueParser(),
   new CodexParser(),
+  new OpenCodeParser(),
 ];
 
 export function getParserForProvider(providerName: string): SessionParser | undefined {
