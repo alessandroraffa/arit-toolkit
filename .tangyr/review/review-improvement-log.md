@@ -485,4 +485,163 @@ This log captures process-level improvements proposed during multi-perspective r
     or a version floor is pinned and checked.
   target: skills/stepledger-authoring and skills/review-gate (checklist)
   owner: Human
+
+- id: KZ-2026-06-22-014
+  created: 2026-06-22
+  gate: pre-release
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    On the WS-0022 implementation gate, a shipped source-code header comment in two
+    files (openCodeAdapter.ts and openCodeProvider.ts) asserted the OPPOSITE of what
+    the committed test proves and what the divergence log records: the comment said
+    "readOnly: true does NOT enforce SQL-level read-only on exec — writes go to an
+    in-memory overlay," while the committed adapter test asserts exec INSERT throws
+    AND the DB file is byte-unchanged, and DIV-001 records the same throw behavior.
+    The comment was the stale PLAN-005 hypothesis (later corrected by DIV-001) carried
+    forward into the data-safety rationale for AC-7. Both White and Black independently
+    flagged the same two lines. A code comment that makes a load-bearing data-safety
+    claim ("DB file byte-unchanged", "writes go to an overlay") is not covered by the
+    test suite — only the behavior is — so a stale or wrong safety comment ships
+    silently and misleads the next maintainer/auditor about the actual guarantee.
+  proposed_change: >
+    Add a review-gate and coding-standards checklist item: when a code comment states
+    a data-safety or correctness GUARANTEE (read-only enforcement, byte-unchanged,
+    no-write, idempotence), the cited mechanism in the comment must match what a named
+    test actually asserts. During review, diff every safety-claim comment against the
+    test that proves the claim and against the divergence log; a comment that names a
+    mechanism the test contradicts (e.g. "in-memory overlay" vs a test asserting the
+    write throws) is a blocking factual-accuracy defect even when the runtime behavior
+    is correct, because the shipped artifact lies about WHY it is safe.
+  target: skills/review-gate (checklist) and skills/coding-standards
+  owner: Human
+
+- id: KZ-2026-06-22-015
+  created: 2026-06-22
+  gate: pre-release
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0022 silently dropped a spec-required normalized-model field in the new
+    provider's parser. SPEC-003 §NMM item 7 (and SPEC-001) require populating the
+    optional enriched agentName field where the source supplies it; the OpenCode
+    session row carries an agent value that materializes into the §3 document's
+    session.agent, the normalized turn model declares agentName, the renderer USES
+    it ("Agent(<name>)"), and the Claude Code parser populates it — yet the
+    OpenCodeParser never sets agentName on any turn, and no test checks it. WS-0022
+    Task 3.2 even listed "agentName: parsed.session.agent ?? undefined" as a turn
+    field; it was specified and then not implemented, with no test to catch the
+    omission. This is the AC/test-attribution-drift family (KZ-2026-06-21-003,
+    KZ-2026-06-22-012) at the field level: an optional-but-required field is dropped
+    and the suite stays green because no AC was written for the field and no test
+    asserts it on the new provider's output.
+  proposed_change: >
+    Add a stepledger-authoring and review-gate checklist item for any new provider/
+    parser that maps onto a shared normalized model: enumerate every field the shared
+    model and renderer CONSUME (including optional enriched fields like agentName,
+    timestamp, thinking) and require a per-field assertion in the new parser's tests
+    that the field is populated when the source supplies it. A field that the renderer
+    reads but the new parser never writes is a silent value-degradation that test-count
+    growth and positive-path AC tests will not surface; cross-check the new parser
+    against a reference parser (e.g. the Claude Code parser) for field-population parity.
+  target: skills/review-gate (checklist) and skills/stepledger-authoring
+  owner: Human
+
+- id: KZ-2026-06-22-016
+  created: 2026-06-22
+  gate: pre-release
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    On WS-0022 all four reviewers (Green, Black, Orange) independently flagged that the
+    provider's change-detection watch set is NARROWER than its discovery set: resolveStores
+    enumerates every store file matching /^opencode(-[a-z0-9]+)?\.db$/i (the default plus
+    per-channel opencode-<channel>.db variants) and OPENCODE_DB may name an arbitrary file,
+    but getWatchPatterns hardcodes the globs "opencode.db"/"opencode.db-wal". A user on a
+    non-default channel, or with a custom OPENCODE_DB filename, has their sessions DISCOVERED
+    and archived on interval but never gets a watch-triggered re-archive on change — silently
+    violating the change-detection acceptance criterion only for the non-default subset, which
+    the default-path tests never exercise. The structural tell is a provider that exposes a
+    discovery pattern/override for inputs and a separate, hardcoded watch pattern for the same
+    inputs, with the two sets allowed to diverge.
+  proposed_change: >
+    Add a provider-authoring and review-gate checklist item: whenever a provider both
+    DISCOVERS source files via a pattern/override and WATCHES source files for change
+    detection, the watch pattern set must cover every file the discovery set can return
+    (derive the watch globs from the same pattern/override, not a hardcoded subset). Require
+    a test that a non-default discovered input (a channel variant, an env-override filename)
+    produces a matching watch pattern. A watch set narrower than the discovery set is a
+    change-detection gap for exactly the inputs the happy-path test does not cover.
+  target: skills/review-gate (checklist) and skills/coding-standards
+  owner: Human
+
+- id: KZ-2026-06-22-017
+  created: 2026-06-22
+  gate: pre-release
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    The discovery-set / watch-set alignment defect recurs in BOTH directions across
+    two consecutive gates on the same provider. The prior gate (KZ-2026-06-22-016)
+    caught a watch set NARROWER than discovery — a missed-change bug. The fix
+    over-corrected to a wildcard watch glob ('opencode*.db') that is now BROADER than
+    the discovery regex (/^opencode(-[a-z0-9]+)?\.db$/i): a file like
+    opencode-backup.db.bak matches the glob but not the discovery filter, firing a
+    spurious findSessions() rescan that resolves to nothing. Neither direction is
+    catastrophic, but the pair shows that "watch covers discovery" and "watch equals
+    discovery" are different properties — a one-directional checklist item ("watch must
+    cover discovery") permits the broader-than-discovery drift the remediation then
+    introduced, and no test asserts the negative (a near-miss filename does NOT match
+    the watch glob).
+  proposed_change: >
+    Strengthen the discovery/watch alignment checklist item (KZ-2026-06-22-016) to be
+    bidirectional: the watch pattern set must be EQUIVALENT to the discovery set, not
+    merely a superset — every file the watch glob matches must also be a file the
+    discovery filter would accept, and vice versa. When a watch mechanism can only
+    express a wildcard while discovery uses a stricter regex, require either (a) the
+    watch globs decomposed to mirror the regex alternation (e.g. 'name.db' +
+    'name-*.db' rather than 'name*.db'), or (b) an explicit comment documenting the
+    intentional over-broadness plus a re-validation of the matched candidate inside the
+    triggered scan. Require a negative test: a near-miss filename (name.db.bak,
+    name.tmp) must NOT match the watch glob.
+  target: skills/review-gate (checklist) and skills/coding-standards
+  owner: Human
+
+- id: KZ-2026-06-22-018
+  created: 2026-06-22
+  gate: pre-release
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    The provider routes a thrown store-open error to either a SILENT no-op (absent
+    store) or a USER-VISIBLE Tier-2 warning (present-but-unopenable) by substring-
+    matching the stringified error message (isAbsentStoreError: String(err).includes
+    ('enoent') || includes('no such file or directory')). The visibility of a real
+    failure to the user therefore hinges on the exact wording an underlying binding
+    (node:sqlite / libsqlite SQLITE_CANTOPEN) chooses on each platform. A
+    permission-denied store whose message happens to contain 'no such file or
+    directory' would be wrongly silenced (a present-but-inaccessible store rendered
+    invisible); a genuinely-absent store whose message matches neither token would
+    raise a spurious warning. The committed tests assert only the two nominal wordings
+    (an 'ENOENT' throw and a 'SQLITE_CANTOPEN: unable to open database file' throw) and
+    never exercise the EACCES/EPERM ambiguity. String-matching an error to decide
+    user-facing visibility is fragile precisely where it matters — the boundary
+    between a silenced absence and a surfaced failure.
+  proposed_change: >
+    Add a review-gate and coding-standards checklist item: when an error is classified
+    to decide user-facing visibility (silent vs notify) or control flow, branch on the
+    structured error CODE first (Node ErrnoException .code === 'ENOENT' / 'EACCES' /
+    'EPERM', or the binding's typed error/errno) and treat raw message substring-
+    matching only as a last-resort fallback. The classifier must be tested for each
+    decision branch with the platform-representative error shape, including the
+    adversarial near-miss (a non-absent failure whose message contains the absent-store
+    token, and an absent store whose message contains neither), not only the two happy
+    wordings.
+  target: skills/review-gate (checklist) and skills/coding-standards
+  owner: Human
 ```

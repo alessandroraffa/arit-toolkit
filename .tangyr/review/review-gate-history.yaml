@@ -90,3 +90,23 @@
   finding_count: 2
   blocking_count: 1
   produced_at: 2026-06-22
+
+- gate: pre-release
+  artifact_type: stepledger
+  artifact_version: WS-0022 implementation (OpenCode provider; branch feat/opencode-provider; git range 8445f5c..a09f256; status completed; final gate before merge auto-publishes to the VS Code Marketplace)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 14
+  blocking_count: 2
+  produced_at: 2026-06-22
+
+- gate: pre-release
+  artifact_type: stepledger
+  artifact_version: WS-0022 implementation — fix verification (OpenCode provider; branch feat/opencode-provider; fix commit f3ec596 over the a09f256 PASS_WITH_CONDITIONS gate above; focused white+black verification that the 2 blockers F1/F2+F9 and the F3-F11/F16 spec-conformance fixes are closed; final gate before merge auto-publishes to the VS Code Marketplace)
+  verdict: PASS
+  risk_classification: high
+  perspectives_activated: [white, black]
+  finding_count: 5
+  blocking_count: 0
+  produced_at: 2026-06-22
