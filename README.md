@@ -14,9 +14,9 @@
 
 Tangyr Workbench is the VS Code companion for agentic coding and vibe coding — turning AI coding sessions, decision logs, and prompt artifacts into versioned project material.
 
-Chat sessions with Claude Code, GitHub Copilot Chat, OpenAI Codex, and Cline are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. Tangyr Workbench collects them automatically into your workspace, organized by date, as project artifacts.
+Chat sessions with Claude Code, GitHub Copilot Chat, OpenAI Codex, Cline, and OpenCode are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. Tangyr Workbench collects them automatically into your workspace, organized by date, as project artifacts.
 
-In agentic and vibe coding workflows, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. Tangyr Workbench archives AI sessions from 4 assistants, creates timestamped files and folders for chronological project documentation, prefixes existing items with their creation date, and gives you real-time token counts and text metrics in the status bar — all without leaving VS Code.
+In agentic and vibe coding workflows, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. Tangyr Workbench archives AI sessions from 5 assistants, creates timestamped files and folders for chronological project documentation, prefixes existing items with their creation date, and gives you real-time token counts and text metrics in the status bar — all without leaving VS Code.
 
 ## Agent Sessions Archiving
 
@@ -168,7 +168,7 @@ Command Palette → "Tangyr: Toggle Extension (Enable/Disable)" or "Tangyr: Chec
 
 ## Why Tangyr Workbench
 
-- Archives sessions from Claude Code, Cline, GitHub Copilot Chat, and OpenAI Codex into one place — no other extension does this
+- Archives sessions from Claude Code, Cline, GitHub Copilot Chat, OpenAI Codex, and OpenCode into one place — no other extension does this
 - Archived files live in your workspace: version them with Git, share them with your team
 - Real-time token counting with OpenAI and Anthropic tokenizers — know the cost of every file before you send it to an AI assistant
 - Timestamps give you a consultable timeline of the work done on a project
