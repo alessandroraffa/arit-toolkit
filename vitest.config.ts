@@ -9,6 +9,12 @@ export default defineConfig({
     exclude: ['test/integration/**', 'test/e2e/**'],
     globals: true,
     setupFiles: ['test/unit/setup.ts'],
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        execArgv: ['--experimental-sqlite'],
+      },
+    },
     coverage: {
       enabled: true,
       provider: 'v8',
