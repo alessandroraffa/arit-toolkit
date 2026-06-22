@@ -1,3 +1,17 @@
+## [2.7.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.6.0...v2.7.0) (2026-06-22)
+
+### Features
+
+* **archiving:** add opencode node:sqlite adapter and provider skeleton ([00bf03d](https://github.com/alessandroraffa/tangyr-vscode/commit/00bf03d85afc0cbec3cd4899f4b056104d6fa3f7))
+* **archiving:** add opencode parser and register provider ([1136566](https://github.com/alessandroraffa/tangyr-vscode/commit/11365667883e2294d3b0dd66fb7851f5cd3f5f3f))
+* **archiving:** add opencode watch patterns, signalling, and documentation ([d77c462](https://github.com/alessandroraffa/tangyr-vscode/commit/d77c462407b83fa14ca42aaadc5bc1f763880369))
+* **archiving:** add read-content ingestion seam and opencode session materializer ([78c2c29](https://github.com/alessandroraffa/tangyr-vscode/commit/78c2c29346bff3ec497804fd1e1a430b46007521))
+
+### Bug Fixes
+
+* **archiving:** apply review-gate fix-forward findings on opencode provider ([f3ec596](https://github.com/alessandroraffa/tangyr-vscode/commit/f3ec5961ecd5674d5b75367e10a1cf5cdc211618))
+* **archiving:** recognize node:sqlite builtin in bundle test and list opencode in readme ([a09f256](https://github.com/alessandroraffa/tangyr-vscode/commit/a09f2566ffed734c4156f7d56f8bf3b551b29679))
+
 ## [2.6.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.5.3...v2.6.0) (2026-06-21)
 
 ### Features
