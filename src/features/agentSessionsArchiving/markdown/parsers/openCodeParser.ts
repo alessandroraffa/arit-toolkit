@@ -16,7 +16,8 @@
  *   type "text"         → content (data.text); multiple text parts joined with '\n\n'
  *   type "reasoning"    → thinking (data.text); multiple reasoning parts joined with '\n\n'
  *   type "tool"         → ToolCall: name=data.tool, input=data.state.input,
- *                         output=data.state.output (omitted when absent/non-string)
+ *                         output=data.state.output (string or JSON.stringify fallback;
+ *                         omitted when absent)
  *   type "step-start"   → ignored
  *   type "step-finish"  → ignored
  *
@@ -26,6 +27,9 @@
  *
  * Role mapping: "user" → 'user', "assistant" → 'assistant'; any other value is
  * skipped with a console.debug log (parser has no logger dependency).
+ *
+ * Agent name: session.agent is normalized to kebab-case (SPEC-001) and set as
+ * agentName on every turn when non-empty.
  */
 import type {
   SessionParser,
@@ -34,52 +38,13 @@ import type {
   ParseResult,
   SubagentSession,
 } from '../types';
-
-interface Section3Part {
-  id: string;
-  type: string;
-  data: Record<string, unknown>;
-}
-
-interface Section3Message {
-  id: string;
-  role: string;
-  timeCreated: number;
-  parts: Section3Part[];
-}
-
-interface Section3SubagentSession {
-  id: string;
-  agent: string | null;
-  title: string | null;
-  parentId: string | null;
-}
-
-interface Section3Subagent {
-  session: Section3SubagentSession;
-  messages: Section3Message[];
-}
-
-interface Section3Document {
-  schemaVersion: number;
-  session: {
-    id: string;
-    directory: string;
-    title: string | null;
-    agent: string | null;
-    parentId: string | null;
-    timeCreated: number;
-    timeUpdated: number;
-    timeCompacting: number | null;
-    summary: { additions: number; deletions: number; files: number; diffs: string };
-  };
-  messages: Section3Message[];
-  subagents: Section3Subagent[];
-}
-
-function getStr(val: unknown): string | undefined {
-  return typeof val === 'string' && val.length > 0 ? val : undefined;
-}
+import { sanitizeName } from './claudeCodeParserUtils';
+import type {
+  Section3Part,
+  Section3Message,
+  Section3Subagent,
+  Section3Document,
+} from '../../providers/openCodeTypes';
 
 function mapParts(parts: Section3Part[]): {
   content: string;
@@ -110,7 +75,15 @@ function mapParts(parts: Section3Part[]): {
         const input =
           typeof rawInput === 'string' ? rawInput : JSON.stringify(rawInput ?? {});
         const rawOutput = state?.output;
-        const output = getStr(rawOutput);
+        // Apply stringify-fallback for structured (non-string) output so no data is lost
+        const output =
+          rawOutput !== undefined && rawOutput !== null
+            ? typeof rawOutput === 'string'
+              ? rawOutput.length > 0
+                ? rawOutput
+                : undefined
+              : JSON.stringify(rawOutput)
+            : undefined;
         const tc: ToolCall =
           output !== undefined ? { name, input, output } : { name, input };
         toolCalls.push(tc);
@@ -133,7 +106,7 @@ function mapParts(parts: Section3Part[]): {
   };
 }
 
-function mapMessage(msg: Section3Message): NormalizedTurn | null {
+function mapMessage(msg: Section3Message, agentName?: string): NormalizedTurn | null {
   const role = msg.role;
   if (role !== 'user' && role !== 'assistant') {
     console.debug(`[OpenCodeParser] skipping message with unknown role "${role}"`);
@@ -148,6 +121,7 @@ function mapMessage(msg: Section3Message): NormalizedTurn | null {
     filesRead: [],
     filesModified: [],
     ...(thinking !== undefined ? { thinking } : {}),
+    ...(agentName !== undefined ? { agentName } : {}),
   };
   return turn;
 }
@@ -157,7 +131,7 @@ function mapSubagent(sub: Section3Subagent): SubagentSession {
   const agentType =
     typeof agent === 'string' && agent.trim().length > 0 ? agent : 'unknown';
   const turns = sub.messages
-    .map(mapMessage)
+    .map((m) => mapMessage(m))
     .filter((t): t is NormalizedTurn => t !== null);
   const title = sub.session.title;
   return {
@@ -172,22 +146,27 @@ export class OpenCodeParser implements SessionParser {
   public readonly providerName = 'open-code';
 
   public parse(content: string, sessionId: string): ParseResult {
-    let doc: Section3Document;
+    let raw: unknown;
     try {
-      doc = JSON.parse(content) as Section3Document;
+      raw = JSON.parse(content);
     } catch {
       return { status: 'unrecognized', reason: 'invalid JSON' };
     }
 
-    if (doc.schemaVersion !== 1) {
+    const rawDoc = raw as { schemaVersion?: unknown } & Partial<Section3Document>;
+    if (rawDoc.schemaVersion !== 1) {
       return {
         status: 'unrecognized',
-        reason: `unsupported schemaVersion ${String(doc.schemaVersion)}`,
+        reason: `unsupported schemaVersion ${String(rawDoc.schemaVersion)}`,
       };
     }
+    const doc = rawDoc as Section3Document;
+
+    // Normalize session.agent to kebab-case (SPEC-001); undefined when absent/empty
+    const agentName = sanitizeName(doc.session.agent);
 
     const turns: NormalizedTurn[] = doc.messages
-      .map(mapMessage)
+      .map((m) => mapMessage(m, agentName))
       .filter((t): t is NormalizedTurn => t !== null);
 
     const subagentSessions: SubagentSession[] = doc.subagents.map(mapSubagent);

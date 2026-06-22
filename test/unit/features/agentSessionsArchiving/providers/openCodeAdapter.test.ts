@@ -153,7 +153,7 @@ describe('openCodeAdapter', () => {
   });
 
   describe('snapshot-isolation smoke-check', () => {
-    it('WAL snapshot isolation: write during open read txn is blocked or not visible', () => {
+    it('F11 — WAL snapshot isolation: write during open read txn is blocked or not visible', () => {
       // Under node:sqlite, opening a second write handle while a deferred read
       // transaction is open causes the write to be blocked ("database is locked").
       // This is a strong isolation guarantee: isolation holds either because:
@@ -175,16 +175,17 @@ describe('openCodeAdapter', () => {
         }>;
         expect(rowsBefore).toHaveLength(1);
 
-        // Attempt concurrent write — may throw "database is locked" or succeed
-        let writeBlocked = false;
+        // Attempt concurrent write — may throw "database is locked" or succeed.
+        // We don't track writeBlocked separately: in both outcomes the open
+        // deferred-read transaction must not see any new row (either the write
+        // failed, or snapshot isolation hides it).
         const writeHandle = new DatabaseSync(readPath);
         try {
           writeHandle
             .prepare('INSERT INTO session (id, directory) VALUES (?, ?)')
             .run('new-sess', '/new');
         } catch {
-          // "database is locked" — write blocked; isolation guaranteed
-          writeBlocked = true;
+          // "database is locked" — write blocked; isolation trivially holds
         } finally {
           try {
             writeHandle.close();
@@ -193,7 +194,8 @@ describe('openCodeAdapter', () => {
           }
         }
 
-        // If write succeeded, read should not see it within the open transaction
+        // Read inside the still-open deferred transaction — must see exactly the
+        // pre-write snapshot (1 row) whether the write was blocked or succeeded.
         const rowsDuring = readHandle.prepare('SELECT id FROM session').all() as Array<{
           id: string;
         }>;
@@ -201,20 +203,9 @@ describe('openCodeAdapter', () => {
         readHandle.exec('COMMIT');
         readHandle.close();
 
-        // Either the write was blocked (writeBlocked = true) or the read transaction
-        // snapshot protects us. Both outcomes satisfy isolation.
-        // Record a warning if isolation doesn't hold (non-blocking — test still passes).
-        const isolationHolds = writeBlocked || rowsDuring.length === rowsBefore.length;
-        if (!isolationHolds) {
-          console.warn(
-            '[openCodeAdapter] DIVERGENCE: WAL snapshot isolation does not hold — ' +
-              'concurrent write visible in open deferred read transaction; ' +
-              'per-session deferred-read mitigation is best-effort only'
-          );
-        }
-        // Always assert: the read transaction started with 1 row and sees at most 1
-        // (or the write was blocked). We simply confirm the behavior is recorded.
-        expect(writeBlocked || rowsDuring.length <= rowsBefore.length + 1).toBe(true);
+        // Falsifying assertion (F11): snapshot isolation must hold — the open
+        // deferred-read transaction must NOT see any concurrently written row.
+        expect(rowsDuring).toHaveLength(rowsBefore.length);
       } finally {
         try {
           fs.unlinkSync(readPath);
@@ -228,6 +219,58 @@ describe('openCodeAdapter', () => {
         }
         try {
           fs.unlinkSync(readPath + '-shm');
+        } catch {
+          /* ok */
+        }
+      }
+    });
+  });
+
+  describe('F10 — WAL-only readability', () => {
+    it('row written into WAL (uncheckpointed) is visible to a subsequent read-only handle', () => {
+      // This test proves that the node:sqlite read-only handle correctly reads
+      // uncheckpointed WAL data — i.e. WAL-correctness holds for our use case.
+      // Write a row via a write handle (in WAL mode), then immediately open a
+      // fresh read-only handle without checkpointing and assert the row is visible.
+      const walPath = tmpPath();
+      try {
+        // Step 1: create DB in WAL mode and insert a row via write handle
+        const writeDb = new DatabaseSync(walPath);
+        writeDb.exec(`
+          CREATE TABLE IF NOT EXISTS session (
+            id TEXT PRIMARY KEY,
+            directory TEXT NOT NULL
+          );
+          PRAGMA journal_mode=WAL;
+        `);
+        writeDb
+          .prepare('INSERT INTO session (id, directory) VALUES (?, ?)')
+          .run('wal-row', '/wal-workspace');
+        // Close write handle WITHOUT checkpointing — row stays in WAL file
+        writeDb.close();
+
+        // Step 2: open a fresh read-only handle and verify the WAL row is readable
+        const readDb = new DatabaseSync(walPath, { readOnly: true });
+        const rows = readDb.prepare('SELECT id FROM session').all() as Array<{
+          id: string;
+        }>;
+        readDb.close();
+
+        expect(rows).toHaveLength(1);
+        expect(rows[0]!.id).toBe('wal-row');
+      } finally {
+        try {
+          fs.unlinkSync(walPath);
+        } catch {
+          /* ok */
+        }
+        try {
+          fs.unlinkSync(walPath + '-wal');
+        } catch {
+          /* ok */
+        }
+        try {
+          fs.unlinkSync(walPath + '-shm');
         } catch {
           /* ok */
         }

@@ -252,6 +252,82 @@ describe('OpenCodeProvider', () => {
       vi.resetModules();
     });
 
+    it('F2 — Tier-2 failure emits user-visible showWarningMessage (not just log warn)', async () => {
+      vi.resetModules();
+      process.env['OPENCODE_DB'] = '/some/locked/opencode.db';
+
+      vi.doMock(
+        '../../../../../src/features/agentSessionsArchiving/providers/openCodeAdapter',
+        () => ({
+          sqliteAvailable: true,
+          openDb: vi.fn().mockImplementation(() => {
+            throw new Error('SQLITE_CANTOPEN: unable to open database file');
+          }),
+          closeDb: vi.fn(),
+          getAllSessionRows: vi.fn(),
+          getMessagesForSession: vi.fn(),
+          getPartsForMessage: vi.fn(),
+          readSessionWithTransaction: vi.fn(),
+          materializeSession: vi.fn(),
+          SqliteUnavailableError: class extends Error {},
+        })
+      );
+
+      const { OpenCodeProvider: F2Provider } =
+        await import('../../../../../src/features/agentSessionsArchiving/providers/openCodeProvider');
+      const f2provider = new F2Provider(logger as any);
+      await f2provider.findSessions('/workspace');
+      expect(window.showWarningMessage).toHaveBeenCalledTimes(1);
+      expect(window.showWarningMessage).toHaveBeenCalledWith(
+        expect.stringContaining('/some/locked/opencode.db')
+      );
+
+      // Second call for the same store path must NOT re-emit (throttled per path)
+      await f2provider.findSessions('/workspace');
+      expect(window.showWarningMessage).toHaveBeenCalledTimes(1);
+
+      vi.doUnmock(
+        '../../../../../src/features/agentSessionsArchiving/providers/openCodeAdapter'
+      );
+      vi.resetModules();
+    });
+
+    it('F8 — ENOENT on OPENCODE_DB path is a silent no-op (no warn, no showWarning)', async () => {
+      vi.resetModules();
+      process.env['OPENCODE_DB'] = '/nonexistent/path/opencode.db';
+
+      vi.doMock(
+        '../../../../../src/features/agentSessionsArchiving/providers/openCodeAdapter',
+        () => ({
+          sqliteAvailable: true,
+          openDb: vi.fn().mockImplementation(() => {
+            throw new Error('ENOENT: no such file or directory');
+          }),
+          closeDb: vi.fn(),
+          getAllSessionRows: vi.fn(),
+          getMessagesForSession: vi.fn(),
+          getPartsForMessage: vi.fn(),
+          readSessionWithTransaction: vi.fn(),
+          materializeSession: vi.fn(),
+          SqliteUnavailableError: class extends Error {},
+        })
+      );
+
+      const { OpenCodeProvider: F8Provider } =
+        await import('../../../../../src/features/agentSessionsArchiving/providers/openCodeProvider');
+      const f8provider = new F8Provider(logger as any);
+      const sessions = await f8provider.findSessions('/workspace');
+      expect(sessions).toHaveLength(0);
+      expect(logger.warn).not.toHaveBeenCalled();
+      expect(window.showWarningMessage).not.toHaveBeenCalled();
+      expect(window.showInformationMessage).not.toHaveBeenCalled();
+
+      vi.doUnmock(
+        '../../../../../src/features/agentSessionsArchiving/providers/openCodeAdapter'
+      );
+      vi.resetModules();
+    });
+
     it('absent store no-op: returns [] with no warning when store dir does not exist', async () => {
       const { workspace } = await import('vscode');
       vi.mocked(workspace.fs.readDirectory).mockRejectedValue(new Error('ENOENT'));

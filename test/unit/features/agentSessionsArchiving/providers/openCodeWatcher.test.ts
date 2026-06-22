@@ -146,8 +146,8 @@ describe('OpenCodeProvider — change detection and watch patterns (Activity 4)'
     });
   });
 
-  describe('watch patterns (Task 4.1)', () => {
-    it('returns exactly two patterns: opencode.db and opencode.db-wal, no -shm', async () => {
+  describe('watch patterns (Task 4.1 / F3)', () => {
+    it('default: returns wildcard globs matching discovery pattern (opencode*.db / opencode*.db-wal)', async () => {
       const storeDir = path.join(os.homedir(), '.local', 'share', 'opencode');
       const { OpenCodeProvider } =
         await import('../../../../../src/features/agentSessionsArchiving/providers/openCodeProvider');
@@ -156,8 +156,9 @@ describe('OpenCodeProvider — change detection and watch patterns (Activity 4)'
 
       expect(patterns).toHaveLength(2);
       const globs = patterns.map((p) => p.glob);
-      expect(globs).toContain('opencode.db');
-      expect(globs).toContain('opencode.db-wal');
+      // Wildcard glob covers opencode.db, opencode-beta.db, opencode-stable.db, etc.
+      expect(globs).toContain('opencode*.db');
+      expect(globs).toContain('opencode*.db-wal');
       expect(globs).not.toContain('opencode.db-shm');
       // All patterns point to the default store dir
       for (const p of patterns) {
@@ -165,7 +166,26 @@ describe('OpenCodeProvider — change detection and watch patterns (Activity 4)'
       }
     });
 
-    it('uses dirname(OPENCODE_DB) as baseUri when env var is set', async () => {
+    it('OPENCODE_DB: watches exact filename (plus WAL) in its directory', async () => {
+      const customDir = path.join(os.tmpdir(), 'custom-opencode');
+      const customDb = path.join(customDir, 'mystore.db');
+      process.env['OPENCODE_DB'] = customDb;
+
+      const { OpenCodeProvider } =
+        await import('../../../../../src/features/agentSessionsArchiving/providers/openCodeProvider');
+      const provider = new OpenCodeProvider(createLogger() as any);
+      const patterns = provider.getWatchPatterns('/workspace');
+
+      expect(patterns).toHaveLength(2);
+      const globs = patterns.map((p) => p.glob);
+      expect(globs).toContain('mystore.db');
+      expect(globs).toContain('mystore.db-wal');
+      for (const p of patterns) {
+        expect(p.baseUri.fsPath).toBe(customDir);
+      }
+    });
+
+    it('OPENCODE_DB with opencode.db filename: watches opencode.db and opencode.db-wal', async () => {
       const customDir = path.join(os.tmpdir(), 'custom-opencode');
       const customDb = path.join(customDir, 'opencode.db');
       process.env['OPENCODE_DB'] = customDb;
@@ -176,6 +196,9 @@ describe('OpenCodeProvider — change detection and watch patterns (Activity 4)'
       const patterns = provider.getWatchPatterns('/workspace');
 
       expect(patterns).toHaveLength(2);
+      const globs = patterns.map((p) => p.glob);
+      expect(globs).toContain('opencode.db');
+      expect(globs).toContain('opencode.db-wal');
       for (const p of patterns) {
         expect(p.baseUri.fsPath).toBe(customDir);
       }

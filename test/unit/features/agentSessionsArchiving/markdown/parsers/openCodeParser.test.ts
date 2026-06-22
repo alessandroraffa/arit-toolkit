@@ -322,6 +322,148 @@ describe('OpenCodeParser', () => {
     });
   });
 
+  describe('agentName population (F1)', () => {
+    it('sets agentName on every turn when session.agent is non-empty', () => {
+      const doc = makeDoc({
+        session: {
+          id: 'sess-1',
+          directory: '/ws',
+          title: 'Test',
+          agent: 'claude-4',
+          parentId: null,
+          timeCreated: 1000,
+          timeUpdated: 2000,
+          timeCompacting: null,
+          summary: { additions: 0, deletions: 0, files: 0, diffs: '' },
+        },
+        messages: [
+          { id: 'm1', role: 'user', timeCreated: 1100, parts: [] },
+          { id: 'm2', role: 'assistant', timeCreated: 1200, parts: [] },
+        ],
+      });
+      const session = expectParsed(parser.parse(doc, 'sess-1'));
+      expect(session.turns).toHaveLength(2);
+      // session.agent 'claude-4' is already kebab-case — sanitizeName returns it as-is
+      expect(session.turns[0]!.agentName).toBe('claude-4');
+      expect(session.turns[1]!.agentName).toBe('claude-4');
+    });
+
+    it('applies kebab-case normalization to session.agent', () => {
+      const doc = makeDoc({
+        session: {
+          id: 'sess-1',
+          directory: '/ws',
+          title: null,
+          agent: 'ClaudeCode',
+          parentId: null,
+          timeCreated: 1000,
+          timeUpdated: 2000,
+          timeCompacting: null,
+          summary: { additions: 0, deletions: 0, files: 0, diffs: '' },
+        },
+        messages: [{ id: 'm1', role: 'assistant', timeCreated: 1100, parts: [] }],
+      });
+      const session = expectParsed(parser.parse(doc, 'sess-1'));
+      expect(session.turns[0]!.agentName).toBe('claude-code');
+    });
+
+    it('leaves agentName undefined when session.agent is null', () => {
+      const doc = makeDoc({
+        session: {
+          id: 'sess-1',
+          directory: '/ws',
+          title: null,
+          agent: null,
+          parentId: null,
+          timeCreated: 1000,
+          timeUpdated: 2000,
+          timeCompacting: null,
+          summary: { additions: 0, deletions: 0, files: 0, diffs: '' },
+        },
+        messages: [{ id: 'm1', role: 'user', timeCreated: 1100, parts: [] }],
+      });
+      const session = expectParsed(parser.parse(doc, 'sess-1'));
+      expect(session.turns[0]!.agentName).toBeUndefined();
+    });
+
+    it('leaves agentName undefined when session.agent is empty string', () => {
+      const doc = makeDoc({
+        session: {
+          id: 'sess-1',
+          directory: '/ws',
+          title: null,
+          agent: '',
+          parentId: null,
+          timeCreated: 1000,
+          timeUpdated: 2000,
+          timeCompacting: null,
+          summary: { additions: 0, deletions: 0, files: 0, diffs: '' },
+        },
+        messages: [{ id: 'm1', role: 'user', timeCreated: 1100, parts: [] }],
+      });
+      const session = expectParsed(parser.parse(doc, 'sess-1'));
+      expect(session.turns[0]!.agentName).toBeUndefined();
+    });
+  });
+
+  describe('tool output stringify-fallback (F6)', () => {
+    it('serializes object state.output to JSON string instead of dropping it', () => {
+      const doc = makeDoc({
+        messages: [
+          {
+            id: 'm1',
+            role: 'assistant',
+            timeCreated: 1100,
+            parts: [
+              {
+                id: 'p1',
+                type: 'tool',
+                data: {
+                  type: 'tool',
+                  tool: 'list_files',
+                  state: {
+                    input: '{}',
+                    output: { files: ['a.ts', 'b.ts'] },
+                    status: 'completed',
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const session = expectParsed(parser.parse(doc, 'sess-1'));
+      const tc = session.turns[0]!.toolCalls[0]!;
+      expect(tc.name).toBe('list_files');
+      expect(tc.output).toBe('{"files":["a.ts","b.ts"]}');
+    });
+
+    it('omits output when state.output is absent', () => {
+      const doc = makeDoc({
+        messages: [
+          {
+            id: 'm1',
+            role: 'assistant',
+            timeCreated: 1100,
+            parts: [
+              {
+                id: 'p1',
+                type: 'tool',
+                data: {
+                  type: 'tool',
+                  tool: 'running_tool',
+                  state: { input: '{}', status: 'running' },
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const session = expectParsed(parser.parse(doc, 'sess-1'));
+      expect('output' in session.turns[0]!.toolCalls[0]!).toBe(false);
+    });
+  });
+
   describe('compaction', () => {
     it('returns compactionSummaries as [] when no compaction events in messages', () => {
       // Confirmed in WS-0022 Task 1.3: OpenCode carries no per-event compaction

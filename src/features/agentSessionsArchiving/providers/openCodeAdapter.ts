@@ -13,17 +13,26 @@
  *   - Compaction: session-level summary_x / time_compacting only; no per-event
  *     compaction message/part found in available v1.17.9 store. compactionSummaries
  *     will be empty in the parser.
- *   - Windows store path: TBV (%USERPROFILE%\.local\share\opencode vs %LOCALAPPDATA%).
- *     Degrades safely to absent-store no-op when resolved path does not exist.
+ *   - Windows store path: os.homedir() on Windows returns %USERPROFILE%, so the
+ *     resolved path is %USERPROFILE%\.local\share\opencode — the correct OpenCode
+ *     CLI store path. The desktop app's %LOCALAPPDATA% store is intentionally out
+ *     of scope. Degrades safely to absent-store no-op when the path does not exist.
  *   - Snapshot isolation: confirmed under Node 22.22 — concurrent writes blocked
  *     ("database is locked") while a deferred read transaction is open.
  *   - Extension-host node:sqlite: available under Node 22.22 (sqliteAvailable = true).
  *     VS Code extension host on Node < 22 would set false, triggering Tier-1.
- *   - readOnly: true option does NOT enforce SQL-level read-only on exec — writes go
- *     to an in-memory overlay, leaving the DB file byte-unchanged (AC-7 satisfied).
+ *   - readOnly: true enforces full SQL-level read-only (exec INSERT throws
+ *     "attempt to write a readonly database"); the DB file is byte-unchanged after
+ *     any read cycle (AC-7 confirmed by test).
  */
 
 import type { DatabaseSync } from 'node:sqlite';
+import type {
+  Section3Part,
+  Section3Message,
+  Section3Subagent,
+  Section3Document,
+} from './openCodeTypes';
 
 type DbHandle = DatabaseSync;
 
@@ -162,53 +171,6 @@ export function getPartsForMessage(db: DbHandle, messageId: string): PartRow[] {
        ORDER BY time_created ASC, id ASC`
     )
     .all(messageId) as unknown as PartRow[];
-}
-
-interface Section3Part {
-  id: string;
-  type: string;
-  data: Record<string, unknown>;
-}
-
-interface Section3Message {
-  id: string;
-  role: string;
-  timeCreated: number;
-  parts: Section3Part[];
-}
-
-interface Section3SubagentSession {
-  id: string;
-  agent: string | null;
-  title: string | null;
-  parentId: string | null;
-}
-
-interface Section3Subagent {
-  session: Section3SubagentSession;
-  messages: Section3Message[];
-}
-
-interface Section3Document {
-  schemaVersion: 1;
-  session: {
-    id: string;
-    directory: string;
-    title: string | null;
-    agent: string | null;
-    parentId: string | null;
-    timeCreated: number;
-    timeUpdated: number;
-    timeCompacting: number | null;
-    summary: {
-      additions: number;
-      deletions: number;
-      files: number;
-      diffs: string;
-    };
-  };
-  messages: Section3Message[];
-  subagents: Section3Subagent[];
 }
 
 function buildMessage(db: DbHandle, msgRow: MessageRow): Section3Message {
