@@ -40,3 +40,33 @@
   finding_count: 13
   blocking_count: 0
   produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: implementation_plan
+  artifact_version: PLAN-005 draft (docs/plans/PLAN-005-opencode-provider.md; created 2026-06-22; governed by approved SPEC-003 and in-progress INIT-005)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 23
+  blocking_count: 8
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: implementation_plan
+  artifact_version: PLAN-005 revised (docs/plans/PLAN-005-opencode-provider.md; second revision 2026-06-22, verification follow-up of the PASS_WITH_CONDITIONS gate above; adds a "Schema verification status" table)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 11
+  blocking_count: 2
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: implementation_plan
+  artifact_version: PLAN-005 third revision (docs/plans/PLAN-005-opencode-provider.md; 2026-06-22, focused verification follow-up of the 2-blocking PASS_WITH_CONDITIONS gate above; closes §3 contract completeness and the readContent() exception-isolation path)
+  verdict: PASS
+  risk_classification: high
+  perspectives_activated: [white, black]
+  finding_count: 0
+  blocking_count: 0
+  produced_at: 2026-06-22

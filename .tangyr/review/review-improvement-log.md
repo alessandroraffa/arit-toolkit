@@ -264,4 +264,124 @@ This log captures process-level improvements proposed during multi-perspective r
     "reduce vs expand" disagreements resolve against the rule rather than escalating.
   target: skills/review-gate (checklist) and skills/authoring-standards
   owner: Human
+
+- id: KZ-2026-06-22-007
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: implementation_plan
+  status: open
+  classification: checklist-update
+  pattern: >
+    PLAN-005 deferred resolvable architectural choices to workstream authoring by
+    presenting them as open alternatives at plan altitude. Three distinct cases
+    appeared: the per-session change-detection fingerprint stated as "time_updated +
+    counts OR a content hash" (flagged independently by White, Black, and Orange);
+    the materialized-unit serialization "a deterministic serialization" with no named
+    format or schema; and the experimental-warning handling stated as "suppress or
+    ignore." Each unresolved choice is a plan-altitude instance of the "ambiguity does
+    not flow downstream" principle: the plan is the level that must resolve structural
+    trade-offs, yet these were pushed into execution. An "OR" between two strategies
+    with different cost/correctness profiles is the tell.
+  proposed_change: >
+    Add a plan review-gate (and plan-authoring) checklist item: scan every
+    Architectural-decision line for an unresolved alternative — an "OR" / "either…or"
+    between two mechanisms, a "deterministic serialization" / "some format" with no
+    named schema, or a "decided at workstream authoring" deferral. Each must be
+    resolved to a single stated choice with rationale before the plan exits draft.
+    An unresolved structural alternative is a blocking finding at pre-implementation
+    review, not a workstream-altitude detail.
+  target: skills/review-gate (checklist) and skills/plan-authoring-protocol
+  owner: Human
+
+- id: KZ-2026-06-22-008
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: implementation_plan
+  status: open
+  classification: checklist-update
+  pattern: >
+    PLAN-005 splits production across increments owned by potentially separate
+    workstreams (foundation increments 1–2 produce the materialized session
+    serialization; provider-completion increments 3–4 build the parser that
+    re-parses it), yet the wire format that couples the two halves — the field
+    names, JSON shape, ordering semantics, null handling — was left unspecified in
+    the plan. Green and Orange independently identified this implicit provider->parser
+    contract as the largest cross-increment coupling point and as a silent integration
+    bug waiting to surface only when the parser first consumes the content. A plan
+    that hands the two ends of one internal data contract to two different workstreams
+    must fix that contract at plan altitude.
+  proposed_change: >
+    Add a plan review-gate (and plan-authoring) checklist item: whenever a plan's
+    increments split the producer and the consumer of an internal data format across
+    different increments/workstreams, the plan must specify that format's schema (named
+    serialization, top-level envelope, field names, ordering guarantees) at plan
+    altitude — not defer it to either workstream. An internal cross-workstream contract
+    described only by a property ("deterministic", "self-contained") and not by a schema
+    is incomplete.
+  target: skills/review-gate (checklist) and skills/plan-authoring-protocol
+  owner: Human
+
+- id: KZ-2026-06-22-009
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: implementation_plan
+  status: open
+  classification: checklist-update
+  pattern: >
+    PLAN-005 cited an empirical smoke-check (node:sqlite {readonly:true} returned
+    WAL-correct counts 11/52 against the real store) as the evidence clearing the
+    SPEC-003 §6 mechanism gate, but treated the single validated fact as if it
+    validated the whole mechanism. Black and White independently surfaced claims that
+    rode along as "verified" without being part of what the smoke-check actually
+    tested: read-only WAL behavior with respect to the -shm/-wal sidecars and AC-7
+    byte-unchanged guarantee; the tool-part JSON field path (state.input/state.output);
+    and the Windows default store path. Counts matching is necessary but not sufficient
+    evidence for "read-only, journal-correct, byte-unchanged, schema-faithful." A plan
+    that leans on an empirical probe must enumerate the probe's scope so reviewers can
+    separate verified facts from assumptions inheriting the probe's credibility.
+  proposed_change: >
+    Add a plan review-gate (and plan-authoring) checklist item: when a plan cites an
+    empirical probe/smoke-check as evidence for a constraint or acceptance criterion,
+    require an explicit "verified / not verified by this probe" enumeration — what the
+    probe measured (e.g., row counts), and which adjacent claims it did NOT establish
+    (e.g., sidecar mutation / byte-unchanged, inner JSON field paths, platform-specific
+    paths). Adjacent schema-field-path and platform-path claims must each carry their
+    own verification source or a to-be-verified-in-which-increment annotation rather
+    than inheriting the probe's credibility.
+  target: skills/review-gate (checklist) and skills/plan-authoring-protocol
+  owner: Human
+
+- id: KZ-2026-06-22-010
+  created: 2026-06-22
+  gate: pre-implementation
+  artifact_type: implementation_plan
+  status: open
+  classification: checklist-update
+  pattern: >
+    On the PLAN-005 verification pass, the prior condition "name the internal
+    producer/consumer contract" (C7, derived from KZ-2026-06-22-008) was satisfied
+    at the envelope level — the plan named a schemaVersion'd JSON document — yet the
+    contract was still incomplete: two sub-objects the consumer (§4 parser) reads by
+    name were left as placeholders in the producer's schema (session.summary as
+    {"...":0} with no named fields and no time_compacting; subagents[].session as
+    {} while the parser reads child id/agent/title). A contract can pass "is it
+    named?" and still fail "is every consumed field named on both ends?". Separately,
+    the revision's new skip-when-readContent guard (C6 resolution) introduced an
+    unspecified accessor-throw path: the plan defined the absent-resource and
+    store-level failure scopes but not what happens when the per-session readContent()
+    accessor itself throws — a silent-session-drop or whole-cycle-abort risk that the
+    "named the mechanism" check does not surface. Both are the same meta-pattern: a
+    remediation that names a structure or a happy/absent path without enumerating the
+    structure's full field set or the mechanism's exception path.
+  proposed_change: >
+    Add a plan review-gate (and plan-authoring) checklist item with two parts:
+    (a) contract field-level self-consistency — for every internal data contract, each
+    field the consuming section references by name must appear by name in the producing
+    section's schema, and vice versa; a placeholder ({}, "...", or "etc.") for any
+    consumed sub-object fails the check; (b) accessor exception path — whenever a plan
+    introduces a deferred content accessor or a skip/guard around a fallible call, the
+    plan must specify the accessor's throw behaviour (isolation scope, log level, and
+    whether it propagates), not only its absent-resource behaviour.
+  target: skills/review-gate (checklist) and skills/plan-authoring-protocol
+  owner: Human
 ```
