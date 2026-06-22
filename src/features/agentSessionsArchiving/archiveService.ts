@@ -310,6 +310,12 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   }> {
     const parser = getParserForProvider(session.providerName);
     if (!parser) {
+      if (session.readContent !== undefined) {
+        this.logger.warn(
+          `No parser for content-backed session ${session.displayName} (provider: ${session.providerName}) — skipping`
+        );
+        return { fileName: undefined, companionPartial: false };
+      }
       return {
         fileName: await this.copyRawArchive(session, archiveUri, timestamp),
         companionPartial: false,
@@ -325,6 +331,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         this.logger.warn(
           `Unrecognized format for ${session.displayName}: ${result.reason}`
         );
+        if (session.readContent !== undefined) {
+          return { fileName: undefined, companionPartial };
+        }
         return {
           fileName: await this.copyRawArchive(session, archiveUri, timestamp),
           companionPartial,
@@ -415,6 +424,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
       this.logger.warn(
         `Failed to convert ${session.displayName} to markdown: ${String(err)}`
       );
+      if (session.readContent !== undefined) {
+        return { fileName: undefined, companionPartial: false };
+      }
       return {
         fileName: await this.copyRawArchive(session, archiveUri, timestamp),
         companionPartial: false,
