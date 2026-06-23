@@ -1,3 +1,9 @@
+## [2.8.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.8.0...v2.8.1) (2026-06-23)
+
+### Bug Fixes
+
+* **archiving:** authenticate popularity star reads with the auto-provided github_token ([38dd828](https://github.com/alessandroraffa/tangyr-vscode/commit/38dd8287a501253e59f1b8b54ed14c5727c00484))
+
 ## [2.8.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.7.0...v2.8.0) (2026-06-23)
 
 ### Features
