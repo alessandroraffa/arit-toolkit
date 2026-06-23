@@ -54,24 +54,36 @@ const RESOLVED_ORDER: readonly string[] = Object.freeze([
   'Claude Code',
   'OpenAI Codex',
   'Cline',
-  'RooCode',
-  'Aider',
-  'Continue',
   'GitHub Copilot Chat',
   'OpenCode',
+  'Aider',
+  'Continue',
+  'RooCode',
 ]);
 
 const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
   {
     canonicalName: 'Claude Code',
     providerName: 'claude-code',
-    score: 0,
+    score: 0.1865079365079365,
     positions: {
-      stars: 0,
+      cli: 0.25,
+      ext: 0.16666666666666666,
+      stars: 0.14285714285714285,
     },
     signals: {
+      cli: {
+        value: 41390483,
+        source: 'npm',
+        period: '2026-06',
+      },
+      ext: {
+        value: 18374426,
+        source: 'marketplace',
+        period: 'cumulative',
+      },
       stars: {
-        value: 133880,
+        value: 133943,
         source: 'github',
         period: 'cumulative',
       },
@@ -80,13 +92,25 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
   {
     canonicalName: 'OpenAI Codex',
     providerName: 'codex',
-    score: 0.16666666666666666,
+    score: 0.20634920634920637,
     positions: {
-      stars: 0.16666666666666666,
+      cli: 0,
+      ext: 0.3333333333333333,
+      stars: 0.2857142857142857,
     },
     signals: {
+      cli: {
+        value: 47546213,
+        source: 'npm',
+        period: '2026-06',
+      },
+      ext: {
+        value: 10768985,
+        source: 'marketplace',
+        period: 'cumulative',
+      },
       stars: {
-        value: 92927,
+        value: 93030,
         source: 'github',
         period: 'cumulative',
       },
@@ -95,64 +119,19 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
   {
     canonicalName: 'Cline',
     providerName: 'cline',
-    score: 0.3333333333333333,
+    score: 0.4642857142857143,
     positions: {
-      stars: 0.3333333333333333,
-    },
-    signals: {
-      stars: {
-        value: 63722,
-        source: 'github',
-        period: 'cumulative',
-      },
-    },
-  },
-  {
-    canonicalName: 'RooCode',
-    providerName: 'roo-code',
-    score: 0.4166666666666667,
-    positions: {
-      ext: 0,
-      stars: 0.8333333333333334,
+      ext: 0.5,
+      stars: 0.42857142857142855,
     },
     signals: {
       ext: {
-        value: 1860099,
-        source: 'open-vsx',
+        value: 4409104,
+        source: 'marketplace',
         period: 'cumulative',
       },
       stars: {
-        value: 24267,
-        source: 'github',
-        period: 'cumulative',
-      },
-    },
-  },
-  {
-    canonicalName: 'Aider',
-    providerName: 'aider',
-    score: 0.5,
-    positions: {
-      stars: 0.5,
-    },
-    signals: {
-      stars: {
-        value: 46594,
-        source: 'github',
-        period: 'cumulative',
-      },
-    },
-  },
-  {
-    canonicalName: 'Continue',
-    providerName: 'continue',
-    score: 0.6666666666666666,
-    positions: {
-      stars: 0.6666666666666666,
-    },
-    signals: {
-      stars: {
-        value: 34289,
+        value: 63741,
         source: 'github',
         period: 'cumulative',
       },
@@ -161,11 +140,17 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
   {
     canonicalName: 'GitHub Copilot Chat',
     providerName: 'copilot-chat',
-    score: 1,
+    score: 0.5,
     positions: {
+      ext: 0,
       stars: 1,
     },
     signals: {
+      ext: {
+        value: 75811403,
+        source: 'marketplace',
+        period: 'cumulative',
+      },
       stars: {
         value: 9977,
         source: 'github',
@@ -176,14 +161,95 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
   {
     canonicalName: 'OpenCode',
     providerName: 'open-code',
-    score: 1,
+    score: 0.5,
     positions: {
+      cli: 0.5,
       ext: 1,
+      stars: 0,
+    },
+    signals: {
+      cli: {
+        value: 8963423,
+        source: 'npm',
+        period: '2026-06',
+      },
+      ext: {
+        value: 743627,
+        source: 'marketplace',
+        period: 'cumulative',
+      },
+      stars: {
+        value: 177694,
+        source: 'github',
+        period: 'cumulative',
+      },
+    },
+  },
+  {
+    canonicalName: 'Aider',
+    providerName: 'aider',
+    score: 0.6607142857142857,
+    positions: {
+      cli: 0.75,
+      stars: 0.5714285714285714,
+    },
+    signals: {
+      cli: {
+        value: 857966,
+        source: 'pypi',
+        period: '2026-06',
+      },
+      stars: {
+        value: 46608,
+        source: 'github',
+        period: 'cumulative',
+      },
+    },
+  },
+  {
+    canonicalName: 'Continue',
+    providerName: 'continue',
+    score: 0.7936507936507936,
+    positions: {
+      cli: 1,
+      ext: 0.6666666666666666,
+      stars: 0.7142857142857143,
+    },
+    signals: {
+      cli: {
+        value: 24232,
+        source: 'npm',
+        period: '2026-06',
+      },
+      ext: {
+        value: 3433958,
+        source: 'marketplace',
+        period: 'cumulative',
+      },
+      stars: {
+        value: 34311,
+        source: 'github',
+        period: 'cumulative',
+      },
+    },
+  },
+  {
+    canonicalName: 'RooCode',
+    providerName: 'roo-code',
+    score: 0.8452380952380952,
+    positions: {
+      ext: 0.8333333333333334,
+      stars: 0.8571428571428571,
     },
     signals: {
       ext: {
-        value: 393722,
-        source: 'open-vsx',
+        value: 1766252,
+        source: 'marketplace',
+        period: 'cumulative',
+      },
+      stars: {
+        value: 24266,
+        source: 'github',
         period: 'cumulative',
       },
     },
@@ -194,7 +260,7 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
 export const POPULARITY_DATA: PopularityData = Object.freeze({
   resolvedOrder: RESOLVED_ORDER,
   targets: TARGETS_DATA,
-  refreshedAt: '2026-06-23T09:29:18.454Z',
+  refreshedAt: '2026-06-23T15:45:21.543Z',
   refreshPeriod: '2026-06',
   poolSizeAcknowledgment: POOL_SIZE_ACKNOWLEDGMENT,
   disclaimer: DISCLAIMER,

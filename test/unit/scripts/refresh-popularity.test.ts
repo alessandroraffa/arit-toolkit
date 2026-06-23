@@ -31,6 +31,7 @@ function makeHttpsGetMock(statusCode: number, body: unknown): void {
           : (callbackOrUndefined as (res: IncomingMessage) => void);
       const res = {
         statusCode,
+        headers: {},
         on: vi.fn((event: string, handler: (chunk?: Buffer) => void) => {
           if (event === 'data') {
             handler(Buffer.from(JSON.stringify(body)));
@@ -91,11 +92,14 @@ describe('refresh-popularity', () => {
   });
 
   describe('fetchNpm', () => {
-    it('should accept a valid npm response with matching start month', async () => {
+    it('should accept a valid npm last-month response carrying its window', async () => {
+      // The tool queries npm's `last-month` trailing-30-day metric; a valid
+      // response carries the window (start/end). The recorded period is the
+      // refresh's target month, independent of the window's calendar bounds.
       makeHttpsGetMock(200, {
         downloads: 5000000,
-        start: '2026-06-01',
-        end: '2026-06-30',
+        start: '2026-05-24',
+        end: '2026-06-22',
       });
       const signal = await fetchNpm('@anthropic-ai/claude-code', '2026-06');
       expect(signal).not.toBeNull();
@@ -104,12 +108,9 @@ describe('refresh-popularity', () => {
       expect(signal!.period).toBe('2026-06');
     });
 
-    it('should reject a stale window (start does not begin with targetMonth)', async () => {
-      makeHttpsGetMock(200, {
-        downloads: 0,
-        start: '2026-05-01',
-        end: '2026-05-31',
-      });
+    it('should reject a response missing the trailing-month window fields', async () => {
+      // A malformed/partial body lacking the start/end window is treated as absent.
+      makeHttpsGetMock(200, { downloads: 5000000 });
       const signal = await fetchNpm('@anthropic-ai/claude-code', '2026-06');
       expect(signal).toBeNull();
     });
@@ -192,6 +193,31 @@ describe('refresh-popularity', () => {
       makeHttpsGetMock(500, { message: 'server error' });
       const signal = await fetchGithubStars('anthropics/claude-code');
       expect(signal).toBeNull();
+    });
+
+    it('should follow a 301 redirect for a renamed repository', async () => {
+      // First call: 301 with a Location header (GitHub returns this for a moved repo)
+      vi.mocked(https.get).mockImplementationOnce(
+        (_url: unknown, optsOrCb: unknown, cbOrUndef?: unknown) => {
+          const callback =
+            typeof optsOrCb === 'function'
+              ? (optsOrCb as (res: IncomingMessage) => void)
+              : (cbOrUndef as (res: IncomingMessage) => void);
+          const res = {
+            statusCode: 301,
+            headers: { location: 'https://api.github.com/repositories/975734319' },
+            resume: vi.fn(),
+            on: vi.fn(),
+          } as unknown as IncomingMessage;
+          callback(res);
+          return { on: vi.fn(), end: vi.fn() } as unknown as ClientRequest;
+        }
+      );
+      // Second call (after following the redirect): 200 with the star count
+      makeHttpsGetMock(200, { stargazers_count: 12345 });
+      const signal = await fetchGithubStars('sst/opencode');
+      expect(signal).not.toBeNull();
+      expect(signal!.value).toBe(12345);
     });
   });
 

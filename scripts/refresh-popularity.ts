@@ -58,7 +58,7 @@ export const TARGETS: TargetDescriptor[] = [
     marketplaceItem: 'anthropic.claude-code',
     githubRepo: 'anthropics/claude-code',
     readmeRow: {
-      sessionLocation: '~/.claude/projects/<workspace-path>/',
+      sessionLocation: '`~/.claude/projects/<workspace-path>/`',
       workspaceMatching: 'Project path derived from workspace',
     },
   },
@@ -79,8 +79,8 @@ export const TARGETS: TargetDescriptor[] = [
     marketplaceItem: 'GitHub.copilot-chat',
     githubRepo: 'microsoft/vscode-copilot-chat',
     readmeRow: {
-      sessionLocation: 'VS Code workspace storage (chatSessions/)',
-      workspaceMatching: 'Per-workspace storage (.json and .jsonl)',
+      sessionLocation: 'VS Code workspace storage (`chatSessions/`)',
+      workspaceMatching: 'Per-workspace storage (`.json` and `.jsonl`)',
     },
   },
   {
@@ -90,8 +90,8 @@ export const TARGETS: TargetDescriptor[] = [
     marketplaceItem: 'openai.chatgpt',
     githubRepo: 'openai/codex',
     readmeRow: {
-      sessionLocation: '~/.codex/sessions/<YYYY>/<MM>/<DD>/',
-      workspaceMatching: 'cwd field in session metadata',
+      sessionLocation: '`~/.codex/sessions/<YYYY>/<MM>/<DD>/`',
+      workspaceMatching: '`cwd` field in session metadata',
     },
   },
   {
@@ -102,8 +102,8 @@ export const TARGETS: TargetDescriptor[] = [
     openVsxItem: 'sst-dev.opencode',
     githubRepo: 'sst/opencode',
     readmeRow: {
-      sessionLocation: '~/.local/share/opencode/opencode.db',
-      workspaceMatching: 'directory field in session row',
+      sessionLocation: '`~/.local/share/opencode/opencode.db`',
+      workspaceMatching: '`directory` field in session row',
     },
   },
   {
@@ -113,7 +113,7 @@ export const TARGETS: TargetDescriptor[] = [
     // No ext: no first-party editor extension
     githubRepo: 'aider-ai/aider',
     readmeRow: {
-      sessionLocation: 'Workspace root (.aider.* files)',
+      sessionLocation: 'Workspace root (`.aider.*` files)',
       workspaceMatching: 'Files present in the workspace root',
     },
   },
@@ -136,7 +136,7 @@ export const TARGETS: TargetDescriptor[] = [
     marketplaceItem: 'Continue.continue',
     githubRepo: 'continuedev/continue',
     readmeRow: {
-      sessionLocation: '~/.continue/sessions/',
+      sessionLocation: '`~/.continue/sessions/`',
       workspaceMatching: 'Session content references workspace path',
     },
   },
@@ -147,17 +147,33 @@ interface HttpResponse {
   body: string;
 }
 
-/** Wraps https.get in a Promise. Resolves to { statusCode, body }. */
-export async function httpsGet(url: string, headers: Record<string, string> = {}): Promise<HttpResponse> {
+/**
+ * Wraps https.get in a Promise. Resolves to { statusCode, body }.
+ * Follows HTTP redirects (e.g. GitHub returns 301 for a renamed repository),
+ * up to maxRedirects hops, so a moved source is not recorded as absent.
+ */
+export async function httpsGet(
+  url: string,
+  headers: Record<string, string> = {},
+  maxRedirects = 5
+): Promise<HttpResponse> {
   return new Promise((resolve, reject) => {
     const options = { headers };
     https.get(url, options, (res) => {
+      const statusCode = res.statusCode ?? 0;
+      const location = res.headers.location;
+      if (statusCode >= 300 && statusCode < 400 && location && maxRedirects > 0) {
+        res.resume();
+        const nextUrl = new URL(location, url).toString();
+        httpsGet(nextUrl, headers, maxRedirects - 1).then(resolve, reject);
+        return;
+      }
       let body = '';
       res.on('data', (chunk: Buffer) => {
         body += chunk.toString();
       });
       res.on('end', () => {
-        resolve({ statusCode: res.statusCode ?? 0, body });
+        resolve({ statusCode, body });
       });
     }).on('error', reject);
   });
@@ -194,13 +210,18 @@ export async function httpsPost(url: string, headers: Record<string, string>, re
 /** Fetches npm monthly downloads for a package. Returns null if the validity contract fails. */
 export async function fetchNpm(pkg: string, targetMonth: string): Promise<RawSignal | null> {
   try {
-    const url = `https://api.npmjs.org/downloads/point/${targetMonth}-01:${targetMonth}-31/${encodeURIComponent(pkg)}`;
+    // Use npm's canonical trailing-month metric. A calendar range like
+    // `${targetMonth}-01:${targetMonth}-31` returns HTTP 400 for 30-day months
+    // and queries an incomplete current month; `last-month` is always a valid,
+    // fresh, server-computed trailing-30-day window.
+    const url = `https://api.npmjs.org/downloads/point/last-month/${encodeURIComponent(pkg)}`;
     const resp = await httpsGet(url);
     if (resp.statusCode < 200 || resp.statusCode >= 300) return null;
     const json = JSON.parse(resp.body) as Record<string, unknown>;
     if (typeof json['downloads'] !== 'number') return null;
-    if (typeof json['start'] !== 'string') return null;
-    if (!(json['start'] as string).startsWith(targetMonth)) return null;
+    // Window-presence check: a valid response carries its trailing-month window;
+    // a malformed/partial body lacking the window is treated as absent.
+    if (typeof json['start'] !== 'string' || typeof json['end'] !== 'string') return null;
     return { value: json['downloads'] as number, source: 'npm', period: targetMonth };
   } catch {
     return null;
@@ -228,9 +249,12 @@ export async function fetchPypi(pkg: string): Promise<RawSignal | null> {
 export async function fetchMarketplace(itemName: string): Promise<RawSignal | null> {
   try {
     const url = 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery';
+    // flags must include IncludeStatistics (256) — flag 512 (LatestVersionOnly)
+    // alone omits the statistics array, so the install count is never returned.
+    // 914 = Files(2)+VersionProperties(16)+AssetUri(128)+Statistics(256)+LatestVersionOnly(512).
     const body = JSON.stringify({
       filters: [{ criteria: [{ filterType: 7, value: itemName }], pageSize: 1 }],
-      flags: 512,
+      flags: 914,
     });
     const resp = await httpsPost(url, {
       'Content-Type': 'application/json; charset=utf-8',
@@ -538,10 +562,11 @@ async function run(): Promise<void> {
     targetMap.set(t.canonicalName, t);
   }
 
-  // Fetch all signals concurrently
+  // Fetch signals one target at a time. The public endpoints (especially the
+  // Marketplace gallery and pypistats) throttle concurrent bursts; sequential
+  // requests stay well within every source's anonymous rate limit.
   type SignalResult = { cli?: RawSignal | null; ext?: RawSignal | null; stars?: RawSignal | null };
-  const fetchResults = await Promise.allSettled(
-    TARGETS.map(async (t): Promise<{ canonicalName: string; signals: SignalResult }> => {
+  const fetchOne = async (t: TargetDescriptor): Promise<{ canonicalName: string; signals: SignalResult }> => {
       const signals: SignalResult = {};
 
       // CLI signal
@@ -577,8 +602,16 @@ async function run(): Promise<void> {
       }
 
       return { canonicalName: t.canonicalName, signals };
-    })
-  );
+  };
+
+  const fetchResults: PromiseSettledResult<{ canonicalName: string; signals: SignalResult }>[] = [];
+  for (const t of TARGETS) {
+    try {
+      fetchResults.push({ status: 'fulfilled', value: await fetchOne(t) });
+    } catch (reason) {
+      fetchResults.push({ status: 'rejected', reason });
+    }
+  }
 
   // Build TargetSignals for scoring
   const targetSignals: TargetSignals[] = [];

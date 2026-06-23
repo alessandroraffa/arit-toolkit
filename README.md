@@ -16,7 +16,7 @@ Tangyr Workbench is the VS Code companion for agentic coding and vibe coding —
 
 <!-- POPULARITY-INTRO:START -->
 
-Chat sessions with Claude Code, OpenAI Codex, Cline, RooCode, Aider, Continue, GitHub Copilot Chat, and OpenCode are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. Tangyr Workbench collects them automatically into your workspace, organized by date, as project artifacts.
+Chat sessions with Claude Code, OpenAI Codex, Cline, GitHub Copilot Chat, OpenCode, Aider, Continue, and RooCode are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. Tangyr Workbench collects them automatically into your workspace, organized by date, as project artifacts.
 
 <!-- POPULARITY-INTRO:END -->
 
@@ -43,11 +43,11 @@ AI coding assistants store their session files in different locations and format
 | Claude Code         | `~/.claude/projects/<workspace-path>/`      | Project path derived from workspace          |
 | OpenAI Codex        | `~/.codex/sessions/<YYYY>/<MM>/<DD>/`       | `cwd` field in session metadata              |
 | Cline               | VS Code global storage                      | Session content references workspace path    |
-| RooCode             | VS Code global storage                      | Session content references workspace path    |
-| Aider               | Workspace root (.aider.\* files)            | Files present in the workspace root          |
-| Continue            | `~/.continue/sessions/`                     | Session content references workspace path    |
 | GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`) | Per-workspace storage (`.json` and `.jsonl`) |
 | OpenCode            | `~/.local/share/opencode/opencode.db`       | `directory` field in session row             |
+| Aider               | Workspace root (`.aider.*` files)           | Files present in the workspace root          |
+| Continue            | `~/.continue/sessions/`                     | Session content references workspace path    |
+| RooCode             | VS Code global storage                      | Session content references workspace path    |
 
 > **Note:** This popularity order is derived from public signals (downloads, installs, stars) and is not an endorsement, recommendation, or quality judgment of any assistant.
 > Method: [PLAN-006](docs/plans/PLAN-006-assistant-popularity-ranking.md)
@@ -193,8 +193,10 @@ Command Palette → "Tangyr: Toggle Extension (Enable/Disable)" or "Tangyr: Chec
 
 <!-- POPULARITY-FEATURES:START -->
 
-- Archives sessions from Claude Code, OpenAI Codex, Cline, RooCode, Aider, Continue, GitHub Copilot Chat, and OpenCode into one place — no other extension does this
+- Archives sessions from Claude Code, OpenAI Codex, Cline, GitHub Copilot Chat, OpenCode, Aider, Continue, and RooCode into one place — no other extension does this
+
 <!-- POPULARITY-FEATURES:END -->
+
 - Archived files live in your workspace: version them with Git, share them with your team
 - Real-time token counting with OpenAI and Anthropic tokenizers — know the cost of every file before you send it to an AI assistant
 - Timestamps give you a consultable timeline of the work done on a project
