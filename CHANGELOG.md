@@ -1,3 +1,16 @@
+## [2.8.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.7.0...v2.8.0) (2026-06-23)
+
+### Features
+
+* **archiving:** add popularity artifact shape and wire runtime registry sort ([68e794f](https://github.com/alessandroraffa/tangyr-vscode/commit/68e794f847d160d27d541ba0caf4434ff8011927))
+* **archiving:** add popularity refresh tool, scheduled workflow, and first real artifact ([48aed04](https://github.com/alessandroraffa/tangyr-vscode/commit/48aed04e93adfe849344f106078e17b5d236fd2e))
+* **archiving:** add pure popularity scoring and ordering component ([69667ba](https://github.com/alessandroraffa/tangyr-vscode/commit/69667bafc09b4560caa52a2a2447f202d37f8be9))
+* **archiving:** add readme regions, consistency gate, and swap-invariance tests ([f874d18](https://github.com/alessandroraffa/tangyr-vscode/commit/f874d184fa469e6ce1ec113f00e7c8a980eb8549))
+
+### Bug Fixes
+
+* **archiving:** correct popularity refresh data sources and regenerate artifact ([6e04c10](https://github.com/alessandroraffa/tangyr-vscode/commit/6e04c107af983fb42773ebed7e0ebfa0134fb129))
+
 ## [2.7.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.6.0...v2.7.0) (2026-06-22)
 
 ### Features
