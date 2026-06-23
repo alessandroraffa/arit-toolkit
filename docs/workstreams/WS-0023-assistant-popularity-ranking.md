@@ -2,7 +2,7 @@
 title: 'Assistant popularity ranking — single-source ordering mechanism'
 plan: PLAN-006-assistant-popularity-ranking
 workstream: WS-0023
-status: 'in-progress'
+status: 'completed'
 workspaces: []
 dependencies: []
 created: 2026-06-23
@@ -265,11 +265,11 @@ Note OR-003: this task also records the operational note that `GITHUB_POPULARITY
 
 Commit: `scripts/refresh-popularity.ts`, the updated `package.json`, `.github/workflows/popularity-refresh.yml`, `.github/PULL_REQUEST_TEMPLATE/popularity-refresh.md`, the generated `src/features/agentSessionsArchiving/providers/popularityData.ts`, the updated `README.md` (if modified by the tool run in Task 3.3), the updated `docs/technical-context.md`, and the test files from Task 3.1. Commit message: `feat(archiving): add popularity refresh tool, scheduled workflow, and first real artifact`.
 
-### [ ] Activity 4: README bootstrap, consistency gate, swap-invariance, and discoverability
+### [x] Activity 4: README bootstrap, consistency gate, swap-invariance, and discoverability
 
 Insert the four generated-region delimiter pairs into the README, prove documentation/runtime/artifact agreement across all four regions with a failing consistency test, prove archiving isolation with the static search and the swap-invariance regression test, and verify all 21 AC traces.
 
-#### [ ] Task 4.1: Bootstrap the four README generated regions
+#### [x] Task 4.1: Bootstrap the four README generated regions
 
 Read `README.md` in full before editing it. Locate each of the four order-bearing fragments and wrap each one in its own delimiter pair:
 
@@ -282,7 +282,7 @@ Add the four `buildRegion*` functions to `scripts/refresh-popularity.ts` if they
 
 Run the full quality gate after editing `README.md`. Confirm all tests pass. Record the bootstrap edit in "Divergences and notes" as a one-time manual step (subsequent updates are automated by the refresh tool).
 
-#### [ ] Task 4.2: Write failing consistency tests
+#### [x] Task 4.2: Write failing consistency tests
 
 Create `test/unit/features/agentSessionsArchiving/providers/popularityConsistency.test.ts`. Import `fs` from `node:fs`, `path` from `node:path`, `POPULARITY_DATA` from `src/features/agentSessionsArchiving/providers/popularityData.ts`, and `providerNameToCanonical` from `src/features/agentSessionsArchiving/providers/index.ts`. Read `README.md` synchronously using `fs.readFileSync(path.resolve(__dirname, '../../../../README.md'), 'utf8')`. Write failing tests:
 
@@ -298,7 +298,7 @@ Create `test/unit/features/agentSessionsArchiving/providers/popularityConsistenc
 
 Confirm all new tests fail before proceeding. These tests read the real files committed in Activities 1–3 and bootstrapped in Task 4.1, so they fail until all four regions are present and in agreement.
 
-#### [ ] Task 4.3: Write failing swap-invariance tests
+#### [x] Task 4.3: Write failing swap-invariance tests
 
 Create `test/unit/features/agentSessionsArchiving/providers/popularitySwapInvariance.test.ts`. The tests run archive-cycle mock scenarios using the `AgentSessionArchiveService` test pattern from `test/unit/features/agentSessionsArchiving/archiveService.test.ts`. Write failing tests:
 
@@ -309,7 +309,7 @@ Create `test/unit/features/agentSessionsArchiving/providers/popularitySwapInvari
 
 Confirm all new tests fail before proceeding.
 
-#### [ ] Task 4.4: Conduct the order-sensitivity static search and complete test verification
+#### [x] Task 4.4: Conduct the order-sensitivity static search and complete test verification
 
 Conduct the static search:
 
@@ -322,7 +322,7 @@ If an order-sensitive path is found, stop and escalate to the Human before proce
 
 Run the full quality gate. Confirm the consistency tests (Task 4.2) pass — they read the real artifact and README updated in Activities 1–3 and Task 4.1. Confirm the swap-invariance tests (Task 4.3) pass. Confirm all pre-existing tests remain green and the test count exceeds 1113.
 
-#### [ ] Task 4.5: Verify all 21 AC traces
+#### [x] Task 4.5: Verify all 21 AC traces
 
 Verify every SPEC-004 acceptance criterion is covered by at least one passing test. Run `pnpm run test:unit` and confirm zero failures. The AC coverage map:
 
@@ -350,11 +350,11 @@ Verify every SPEC-004 acceptance criterion is covered by at least one passing te
 
 If any AC lacks a covering test or structural verification, add the missing test or record the structural verification in "Divergences and notes" before proceeding.
 
-#### [ ] Task 4.6: Update impacted documentation
+#### [x] Task 4.6: Update impacted documentation
 
 Add a `### Order-sensitivity audit` subsection under the `## Popularity refresh` section in `docs/technical-context.md` recording: the static search finding (no order-sensitive path found), the four swap-invariance scenarios exercised (natural vs. reversed; Cline/RooCode adjacent swap; shared-`archiveName` collision; no cross-provider leakage), and the conclusion (AC13 and AC18 satisfied). Update the `Last updated` field in the `docs/technical-context.md` header.
 
-#### [ ] Task 4.7: Commit changes
+#### [x] Task 4.7: Commit changes
 
 Commit: the updated `README.md` (with four generated-region delimiters and eight-target content from Task 4.1 — if not already committed in Task 3.6), `test/unit/features/agentSessionsArchiving/providers/popularityConsistency.test.ts`, `test/unit/features/agentSessionsArchiving/providers/popularitySwapInvariance.test.ts`, and the updated `docs/technical-context.md`. Commit message: `feat(archiving): add README generated regions, consistency gate, swap-invariance tests, and order-sensitivity audit`.
 
@@ -415,4 +415,33 @@ only (AC13, AC18 satisfied by construction). Static search conducted on:
 
 ### Reflection
 
-_To be compiled at StepLedger completion._
+**Divergence count by cause:**
+
+- Runtime side-effect during Vitest import (1): entry-point guard needed for TypeScript scripts
+  that execute at module top-level (`run()` call). Fixed with `isMain` guard. Generalizable:
+  any build-time script should include this guard from the start.
+- External signal unavailability (1): most npm/PyPI/Marketplace endpoints returned 429/403
+  from the developer machine. Stars-only artifact is valid per missing-surface tolerance.
+  CI environment should have better network access.
+- Delimiter validation at tool run time (1): expected and correct. Task 3.3 ran the tool before
+  Task 4.1 bootstrapped delimiters. The tool's delimiter validation correctly rejected the rewrite.
+- Markdown lint new-file constraint (1): PR template required `<!-- markdownlint-disable MD041 -->`
+  following the existing `PULL_REQUEST_TEMPLATE.md` convention.
+
+**Recurring patterns:**
+
+- The `vi.hoisted()` pattern was essential for ESM module mock factories. Any future test that
+  needs complex mock data in a `vi.mock()` factory must use `vi.hoisted()`.
+- Separating "start + runArchiveCycle" (double-run) from "inject config + runArchiveCycle"
+  (single-run) is a recurring test-pattern choice. The swap-invariance tests use the single-run
+  pattern to avoid mtime-based re-triggers confounding the assertion.
+
+**Proposed improvements:**
+
+- Add a project-level note about the `isMain` entry-point guard for build-time scripts.
+- Document the `vi.hoisted()` requirement in the codebase's test conventions.
+
+**Assessment:** All 4 activities completed. 1184 unit tests pass (21 new for this WS).
+90 integration tests pass including the bundle-asset guard. The popularity pipeline is
+fully wired: scoring → data artifact → runtime sort → README regions → consistency gate →
+swap-invariance → CI refresh workflow. Zero new runtime dependencies introduced.

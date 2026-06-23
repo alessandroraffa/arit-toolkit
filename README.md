@@ -14,9 +14,21 @@
 
 Tangyr Workbench is the VS Code companion for agentic coding and vibe coding — turning AI coding sessions, decision logs, and prompt artifacts into versioned project material.
 
-Chat sessions with Claude Code, GitHub Copilot Chat, OpenAI Codex, Cline, and OpenCode are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. Tangyr Workbench collects them automatically into your workspace, organized by date, as project artifacts.
+<!-- POPULARITY-INTRO:START -->
 
-In agentic and vibe coding workflows, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. Tangyr Workbench archives AI sessions from 5 assistants, creates timestamped files and folders for chronological project documentation, prefixes existing items with their creation date, and gives you real-time token counts and text metrics in the status bar — all without leaving VS Code.
+Chat sessions with Claude Code, OpenAI Codex, Cline, RooCode, Aider, Continue, GitHub Copilot Chat, and OpenCode are scattered across your filesystem — global storage, hidden directories, workspace storage. They don't survive a machine change, they aren't versioned with your code, and they're invisible to your team. Tangyr Workbench collects them automatically into your workspace, organized by date, as project artifacts.
+
+<!-- POPULARITY-INTRO:END -->
+
+In agentic and vibe coding workflows, documentation is not an afterthought — it is a project artifact. Decision logs, meeting notes, AI session transcripts: they all belong in the repository alongside the code they shaped. And the text you write — prompts, specs, context files — has a direct cost measured in tokens. Tangyr Workbench archives AI sessions from
+
+<!-- POPULARITY-COUNT:START -->
+
+8
+
+<!-- POPULARITY-COUNT:END -->
+
+assistants, creates timestamped files and folders for chronological project documentation, prefixes existing items with their creation date, and gives you real-time token counts and text metrics in the status bar — all without leaving VS Code.
 
 ## Agent Sessions Archiving
 
@@ -24,13 +36,24 @@ AI coding assistants store their session files in different locations and format
 
 **Supported assistants:**
 
+<!-- POPULARITY-TABLE:START -->
+
 | Assistant           | Session location                            | Workspace matching                           |
 | ------------------- | ------------------------------------------- | -------------------------------------------- |
 | Claude Code         | `~/.claude/projects/<workspace-path>/`      | Project path derived from workspace          |
-| Cline               | VS Code global storage                      | Session content references workspace path    |
-| GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`) | Per-workspace storage (`.json` and `.jsonl`) |
 | OpenAI Codex        | `~/.codex/sessions/<YYYY>/<MM>/<DD>/`       | `cwd` field in session metadata              |
+| Cline               | VS Code global storage                      | Session content references workspace path    |
+| RooCode             | VS Code global storage                      | Session content references workspace path    |
+| Aider               | Workspace root (.aider.\* files)            | Files present in the workspace root          |
+| Continue            | `~/.continue/sessions/`                     | Session content references workspace path    |
+| GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`) | Per-workspace storage (`.json` and `.jsonl`) |
 | OpenCode            | `~/.local/share/opencode/opencode.db`       | `directory` field in session row             |
+
+> **Note:** This popularity order is derived from public signals (downloads, installs, stars) and is not an endorsement, recommendation, or quality judgment of any assistant.
+> Method: [PLAN-006](docs/plans/PLAN-006-assistant-popularity-ranking.md)
+> As of: 2026-06
+
+<!-- POPULARITY-TABLE:END -->
 
 Missing your assistant? Contact the maintainer to request support.
 
@@ -168,7 +191,10 @@ Command Palette → "Tangyr: Toggle Extension (Enable/Disable)" or "Tangyr: Chec
 
 ## Why Tangyr Workbench
 
-- Archives sessions from Claude Code, Cline, GitHub Copilot Chat, OpenAI Codex, and OpenCode into one place — no other extension does this
+<!-- POPULARITY-FEATURES:START -->
+
+- Archives sessions from Claude Code, OpenAI Codex, Cline, RooCode, Aider, Continue, GitHub Copilot Chat, and OpenCode into one place — no other extension does this
+<!-- POPULARITY-FEATURES:END -->
 - Archived files live in your workspace: version them with Git, share them with your team
 - Real-time token counting with OpenAI and Anthropic tokenizers — know the cost of every file before you send it to an AI assistant
 - Timestamps give you a consultable timeline of the work done on a project

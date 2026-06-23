@@ -963,8 +963,11 @@ discovered/matched/archived sets:
 
 - Natural vs. fully reversed provider order (baseline)
 - Cline / RooCode adjacent-pair swap (targeted stress of the closest sibling pair)
-- Shared `archiveName` collision with identical mtime (fingerprint guard)
-- No cross-provider session leakage (`archiveName` prefix isolation)
+- Shared `archiveName` collision with identical mtime (fingerprint guard: `writeFile`
+  called exactly once regardless of order)
+- Shared `archiveName` collision with differing mtime (confirms `deleteOldArchive`
+  branch fires; outcome is identical under both orderings)
+- No cross-provider session leakage (`archiveName` prefix isolation under both orderings)
 
 ---
 
