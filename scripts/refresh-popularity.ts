@@ -17,8 +17,14 @@ import * as fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolveOrder, POOL_SIZE_ACKNOWLEDGMENT } from '../src/features/agentSessionsArchiving/providers/popularityScoring.js';
-import type { RawSignal, TargetSignals } from '../src/features/agentSessionsArchiving/providers/popularityScoring.js';
+import {
+  resolveOrder,
+  POOL_SIZE_ACKNOWLEDGMENT,
+} from '../src/features/agentSessionsArchiving/providers/popularityScoring.js';
+import type {
+  RawSignal,
+  TargetSignals,
+} from '../src/features/agentSessionsArchiving/providers/popularityScoring.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -159,28 +165,34 @@ export async function httpsGet(
 ): Promise<HttpResponse> {
   return new Promise((resolve, reject) => {
     const options = { headers };
-    https.get(url, options, (res) => {
-      const statusCode = res.statusCode ?? 0;
-      const location = res.headers.location;
-      if (statusCode >= 300 && statusCode < 400 && location && maxRedirects > 0) {
-        res.resume();
-        const nextUrl = new URL(location, url).toString();
-        httpsGet(nextUrl, headers, maxRedirects - 1).then(resolve, reject);
-        return;
-      }
-      let body = '';
-      res.on('data', (chunk: Buffer) => {
-        body += chunk.toString();
-      });
-      res.on('end', () => {
-        resolve({ statusCode, body });
-      });
-    }).on('error', reject);
+    https
+      .get(url, options, (res) => {
+        const statusCode = res.statusCode ?? 0;
+        const location = res.headers.location;
+        if (statusCode >= 300 && statusCode < 400 && location && maxRedirects > 0) {
+          res.resume();
+          const nextUrl = new URL(location, url).toString();
+          httpsGet(nextUrl, headers, maxRedirects - 1).then(resolve, reject);
+          return;
+        }
+        let body = '';
+        res.on('data', (chunk: Buffer) => {
+          body += chunk.toString();
+        });
+        res.on('end', () => {
+          resolve({ statusCode, body });
+        });
+      })
+      .on('error', reject);
   });
 }
 
 /** Wraps https.request in a Promise for POST requests. */
-export async function httpsPost(url: string, headers: Record<string, string>, requestBody: string): Promise<HttpResponse> {
+export async function httpsPost(
+  url: string,
+  headers: Record<string, string>,
+  requestBody: string
+): Promise<HttpResponse> {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const options = {
@@ -208,7 +220,10 @@ export async function httpsPost(url: string, headers: Record<string, string>, re
 }
 
 /** Fetches npm monthly downloads for a package. Returns null if the validity contract fails. */
-export async function fetchNpm(pkg: string, targetMonth: string): Promise<RawSignal | null> {
+export async function fetchNpm(
+  pkg: string,
+  targetMonth: string
+): Promise<RawSignal | null> {
   try {
     // Use npm's canonical trailing-month metric. A calendar range like
     // `${targetMonth}-01:${targetMonth}-31` returns HTTP 400 for 30-day months
@@ -248,7 +263,8 @@ export async function fetchPypi(pkg: string): Promise<RawSignal | null> {
 /** Fetches VS Code Marketplace install count for an extension. */
 export async function fetchMarketplace(itemName: string): Promise<RawSignal | null> {
   try {
-    const url = 'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery';
+    const url =
+      'https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery';
     // flags must include IncludeStatistics (256) — flag 512 (LatestVersionOnly)
     // alone omits the statistics array, so the install count is never returned.
     // 914 = Files(2)+VersionProperties(16)+AssetUri(128)+Statistics(256)+LatestVersionOnly(512).
@@ -256,18 +272,28 @@ export async function fetchMarketplace(itemName: string): Promise<RawSignal | nu
       filters: [{ criteria: [{ filterType: 7, value: itemName }], pageSize: 1 }],
       flags: 914,
     });
-    const resp = await httpsPost(url, {
-      'Content-Type': 'application/json; charset=utf-8',
-      Accept: 'application/json;api-version=7.2-preview.1',
-    }, body);
+    const resp = await httpsPost(
+      url,
+      {
+        'Content-Type': 'application/json; charset=utf-8',
+        Accept: 'application/json;api-version=7.2-preview.1',
+      },
+      body
+    );
     if (resp.statusCode < 200 || resp.statusCode >= 300) return null;
     const json = JSON.parse(resp.body) as Record<string, unknown>;
     const results = json['results'] as Array<Record<string, unknown>> | undefined;
-    const ext = results?.[0]?.['extensions'] as Array<Record<string, unknown>> | undefined;
+    const ext = results?.[0]?.['extensions'] as
+      | Array<Record<string, unknown>>
+      | undefined;
     const stats = ext?.[0]?.['statistics'] as Array<Record<string, unknown>> | undefined;
     const installStat = stats?.find((s) => s['statisticName'] === 'install');
     if (!installStat || typeof installStat['value'] !== 'number') return null;
-    return { value: installStat['value'] as number, source: 'marketplace', period: 'cumulative' };
+    return {
+      value: installStat['value'] as number,
+      source: 'marketplace',
+      period: 'cumulative',
+    };
   } catch {
     return null;
   }
@@ -283,7 +309,11 @@ export async function fetchOpenVsx(itemName: string): Promise<RawSignal | null> 
     if (resp.statusCode < 200 || resp.statusCode >= 300) return null;
     const json = JSON.parse(resp.body) as Record<string, unknown>;
     if (typeof json['downloadCount'] !== 'number') return null;
-    return { value: json['downloadCount'] as number, source: 'open-vsx', period: 'cumulative' };
+    return {
+      value: json['downloadCount'] as number,
+      source: 'open-vsx',
+      period: 'cumulative',
+    };
   } catch {
     return null;
   }
@@ -294,7 +324,10 @@ export async function fetchGithubStars(ownerRepo: string): Promise<RawSignal | n
   try {
     const url = `https://api.github.com/repos/${ownerRepo}`;
     const headers: Record<string, string> = { 'User-Agent': 'tangyr-popularity-refresh' };
-    const token = process.env['GITHUB_POPULARITY_TOKEN'];
+    // Authenticate star reads. In CI the auto-provided GITHUB_TOKEN is used
+    // (authenticated, ~1000 req/h on public repos; a GITHUB_-prefixed repo secret
+    // cannot be created); a local GITHUB_POPULARITY_TOKEN env var may override it.
+    const token = process.env['GITHUB_POPULARITY_TOKEN'] ?? process.env['GITHUB_TOKEN'];
     if (token) {
       headers['Authorization'] = `token ${token}`;
     }
@@ -302,7 +335,11 @@ export async function fetchGithubStars(ownerRepo: string): Promise<RawSignal | n
     if (resp.statusCode < 200 || resp.statusCode >= 300) return null;
     const json = JSON.parse(resp.body) as Record<string, unknown>;
     if (typeof json['stargazers_count'] !== 'number') return null;
-    return { value: json['stargazers_count'] as number, source: 'github', period: 'cumulative' };
+    return {
+      value: json['stargazers_count'] as number,
+      source: 'github',
+      period: 'cumulative',
+    };
   } catch {
     return null;
   }
@@ -314,7 +351,10 @@ export async function fetchGithubStars(ownerRepo: string): Promise<RawSignal | n
  * When signal.value === 0 and priorCliValue is a positive number (known history): return null (absent).
  * When signal.value === 0 and priorCliValue is null or 0 (first-seen): return signal.
  */
-export function applyZeroFloor(signal: RawSignal, priorCliValue: number | null): RawSignal | null {
+export function applyZeroFloor(
+  signal: RawSignal,
+  priorCliValue: number | null
+): RawSignal | null {
   if (signal.value > 0) return signal;
   if (priorCliValue !== null && priorCliValue > 0) return null;
   return signal;
@@ -325,7 +365,10 @@ export function applyZeroFloor(signal: RawSignal, priorCliValue: number | null):
  * Returns true when the inversion count exceeds INVERSION_THRESHOLD.
  * Returns false when priorOrder is null (first run — no comparison).
  */
-export function shouldFlagForReview(priorOrder: string[] | null, newOrder: string[]): boolean {
+export function shouldFlagForReview(
+  priorOrder: string[] | null,
+  newOrder: string[]
+): boolean {
   if (priorOrder === null) return false;
   let inversions = 0;
   for (let i = 0; i < priorOrder.length; i++) {
@@ -436,7 +479,10 @@ export const POPULARITY_DATA: PopularityData = Object.freeze({
 }
 
 /** Builds the TABLE region content (between delimiter lines). */
-export function buildRegionTable(data: PopularityData, targetMap: Map<string, TargetDescriptor>): string {
+export function buildRegionTable(
+  data: PopularityData,
+  targetMap: Map<string, TargetDescriptor>
+): string {
   const rows = Array.from(data.resolvedOrder)
     .map((name) => {
       const t = targetMap.get(name);
@@ -480,11 +526,18 @@ export function buildRegionCount(_data: PopularityData): string {
 }
 
 /** Replaces the content between two delimiter lines in a string, preserving the delimiters. */
-function replaceRegion(content: string, startDelimiter: string, endDelimiter: string, newContent: string): string {
+function replaceRegion(
+  content: string,
+  startDelimiter: string,
+  endDelimiter: string,
+  newContent: string
+): string {
   const startIdx = content.indexOf(startDelimiter);
   const endIdx = content.indexOf(endDelimiter);
   if (startIdx === -1 || endIdx === -1 || startIdx >= endIdx) {
-    throw new Error(`Delimiter pair not found or mismatched: "${startDelimiter}" / "${endDelimiter}"`);
+    throw new Error(
+      `Delimiter pair not found or mismatched: "${startDelimiter}" / "${endDelimiter}"`
+    );
   }
   const before = content.substring(0, startIdx + startDelimiter.length);
   const after = content.substring(endIdx);
@@ -506,7 +559,7 @@ function validateDelimiters(content: string): void {
     if (startCount !== 1 || endCount !== 1) {
       throw new Error(
         `Delimiter pair must appear exactly once in README. Found ${startCount}x "${start}" and ${endCount}x "${end}". ` +
-        'A malformed or duplicated delimiter would corrupt the rewrite.'
+          'A malformed or duplicated delimiter would corrupt the rewrite.'
       );
     }
   }
@@ -515,7 +568,10 @@ function validateDelimiters(content: string): void {
 /** Main entry point. */
 async function run(): Promise<void> {
   const repoRoot = path.resolve(__dirname, '..');
-  const artifactPath = path.join(repoRoot, 'src/features/agentSessionsArchiving/providers/popularityData.ts');
+  const artifactPath = path.join(
+    repoRoot,
+    'src/features/agentSessionsArchiving/providers/popularityData.ts'
+  );
   const readmePath = path.join(repoRoot, 'README.md');
 
   // Read current artifact to extract prior order and prior CLI values for zero-floor
@@ -524,7 +580,9 @@ async function run(): Promise<void> {
 
   try {
     const current = fs.readFileSync(artifactPath, 'utf8');
-    const orderMatch = /RESOLVED_ORDER[^=]*=\s*Object\.freeze\(\s*(\[[^\]]+\])/s.exec(current);
+    const orderMatch = /RESOLVED_ORDER[^=]*=\s*Object\.freeze\(\s*(\[[^\]]+\])/s.exec(
+      current
+    );
     if (orderMatch?.[1]) {
       try {
         const parsed = JSON.parse(orderMatch[1]) as string[];
@@ -534,10 +592,15 @@ async function run(): Promise<void> {
       }
     }
     // Extract prior CLI values from targets for zero-floor
-    const targetsMatch = /TARGETS_DATA[^=]*=\s*Object\.freeze\((\[[\s\S]*?\])\s*\);/.exec(current);
+    const targetsMatch = /TARGETS_DATA[^=]*=\s*Object\.freeze\((\[[\s\S]*?\])\s*\);/.exec(
+      current
+    );
     if (targetsMatch?.[1]) {
       try {
-        const targets = JSON.parse(targetsMatch[1]) as Array<{ canonicalName: string; signals?: { cli?: { value: number } } }>;
+        const targets = JSON.parse(targetsMatch[1]) as Array<{
+          canonicalName: string;
+          signals?: { cli?: { value: number } };
+        }>;
         for (const t of targets) {
           const cliVal = t.signals?.cli?.value ?? null;
           priorCliValues.set(t.canonicalName, cliVal);
@@ -565,46 +628,55 @@ async function run(): Promise<void> {
   // Fetch signals one target at a time. The public endpoints (especially the
   // Marketplace gallery and pypistats) throttle concurrent bursts; sequential
   // requests stay well within every source's anonymous rate limit.
-  type SignalResult = { cli?: RawSignal | null; ext?: RawSignal | null; stars?: RawSignal | null };
-  const fetchOne = async (t: TargetDescriptor): Promise<{ canonicalName: string; signals: SignalResult }> => {
-      const signals: SignalResult = {};
+  type SignalResult = {
+    cli?: RawSignal | null;
+    ext?: RawSignal | null;
+    stars?: RawSignal | null;
+  };
+  const fetchOne = async (
+    t: TargetDescriptor
+  ): Promise<{ canonicalName: string; signals: SignalResult }> => {
+    const signals: SignalResult = {};
 
-      // CLI signal
-      if (t.npmPackage) {
-        signals.cli = await fetchNpm(t.npmPackage, targetMonth);
-      } else if (t.pypiPackage) {
-        const raw = await fetchPypi(t.pypiPackage);
-        if (raw !== null) {
-          const prior = priorCliValues.get(t.canonicalName) ?? null;
-          signals.cli = applyZeroFloor(raw, prior);
-        } else {
-          signals.cli = null;
-        }
+    // CLI signal
+    if (t.npmPackage) {
+      signals.cli = await fetchNpm(t.npmPackage, targetMonth);
+    } else if (t.pypiPackage) {
+      const raw = await fetchPypi(t.pypiPackage);
+      if (raw !== null) {
+        const prior = priorCliValues.get(t.canonicalName) ?? null;
+        signals.cli = applyZeroFloor(raw, prior);
+      } else {
+        signals.cli = null;
       }
+    }
 
-      // EXT signal (Marketplace primary, Open VSX secondary for targets that have it)
-      if (t.marketplaceItem) {
-        const marketResult = await fetchMarketplace(t.marketplaceItem);
-        if (marketResult !== null) {
-          signals.ext = marketResult;
-        } else if (t.openVsxItem) {
-          signals.ext = await fetchOpenVsx(t.openVsxItem);
-        } else {
-          signals.ext = null;
-        }
+    // EXT signal (Marketplace primary, Open VSX secondary for targets that have it)
+    if (t.marketplaceItem) {
+      const marketResult = await fetchMarketplace(t.marketplaceItem);
+      if (marketResult !== null) {
+        signals.ext = marketResult;
       } else if (t.openVsxItem) {
         signals.ext = await fetchOpenVsx(t.openVsxItem);
+      } else {
+        signals.ext = null;
       }
+    } else if (t.openVsxItem) {
+      signals.ext = await fetchOpenVsx(t.openVsxItem);
+    }
 
-      // STARS signal
-      if (t.githubRepo) {
-        signals.stars = await fetchGithubStars(t.githubRepo);
-      }
+    // STARS signal
+    if (t.githubRepo) {
+      signals.stars = await fetchGithubStars(t.githubRepo);
+    }
 
-      return { canonicalName: t.canonicalName, signals };
+    return { canonicalName: t.canonicalName, signals };
   };
 
-  const fetchResults: PromiseSettledResult<{ canonicalName: string; signals: SignalResult }>[] = [];
+  const fetchResults: PromiseSettledResult<{
+    canonicalName: string;
+    signals: SignalResult;
+  }>[] = [];
   for (const t of TARGETS) {
     try {
       fetchResults.push({ status: 'fulfilled', value: await fetchOne(t) });
@@ -637,12 +709,15 @@ async function run(): Promise<void> {
 
   console.log(`Resolved order: ${newOrder.join(', ')}`);
   if (flagged) {
-    console.warn(`SANITY BOUND EXCEEDED: More than ${INVERSION_THRESHOLD} pairwise inversions from prior order.`);
+    console.warn(
+      `SANITY BOUND EXCEEDED: More than ${INVERSION_THRESHOLD} pairwise inversions from prior order.`
+    );
   }
 
   // Build scored targets for the artifact
   // We need the score values from the scoring component
-  const { scoreTargets } = await import('../src/features/agentSessionsArchiving/providers/popularityScoring.js');
+  const { scoreTargets } =
+    await import('../src/features/agentSessionsArchiving/providers/popularityScoring.js');
   const scored = scoreTargets(targetSignals);
   const scoreMap = new Map(scored.map((s) => [s.name, s]));
 
@@ -688,26 +763,48 @@ async function run(): Promise<void> {
   let readmeContent = await fsPromises.readFile(readmePath, 'utf8');
   validateDelimiters(readmeContent);
 
-  readmeContent = replaceRegion(readmeContent, '<!-- POPULARITY-TABLE:START -->', '<!-- POPULARITY-TABLE:END -->', buildRegionTable(data, targetMap));
-  readmeContent = replaceRegion(readmeContent, '<!-- POPULARITY-INTRO:START -->', '<!-- POPULARITY-INTRO:END -->', buildRegionIntro(data));
-  readmeContent = replaceRegion(readmeContent, '<!-- POPULARITY-FEATURES:START -->', '<!-- POPULARITY-FEATURES:END -->', buildRegionFeatures(data));
-  readmeContent = replaceRegion(readmeContent, '<!-- POPULARITY-COUNT:START -->', '<!-- POPULARITY-COUNT:END -->', buildRegionCount(data));
+  readmeContent = replaceRegion(
+    readmeContent,
+    '<!-- POPULARITY-TABLE:START -->',
+    '<!-- POPULARITY-TABLE:END -->',
+    buildRegionTable(data, targetMap)
+  );
+  readmeContent = replaceRegion(
+    readmeContent,
+    '<!-- POPULARITY-INTRO:START -->',
+    '<!-- POPULARITY-INTRO:END -->',
+    buildRegionIntro(data)
+  );
+  readmeContent = replaceRegion(
+    readmeContent,
+    '<!-- POPULARITY-FEATURES:START -->',
+    '<!-- POPULARITY-FEATURES:END -->',
+    buildRegionFeatures(data)
+  );
+  readmeContent = replaceRegion(
+    readmeContent,
+    '<!-- POPULARITY-COUNT:START -->',
+    '<!-- POPULARITY-COUNT:END -->',
+    buildRegionCount(data)
+  );
 
   await fsPromises.writeFile(readmePath, readmeContent, 'utf8');
   console.log(`Updated ${readmePath}`);
 
   // Print PR body
-  const inversionsFromPrior = priorOrder ? (() => {
-    let count = 0;
-    for (let i = 0; i < priorOrder.length; i++) {
-      for (let j = i + 1; j < priorOrder.length; j++) {
-        const pi = newOrder.indexOf(priorOrder[i] ?? '');
-        const pj = newOrder.indexOf(priorOrder[j] ?? '');
-        if (pi !== -1 && pj !== -1 && pi > pj) count++;
-      }
-    }
-    return count;
-  })() : 0;
+  const inversionsFromPrior = priorOrder
+    ? (() => {
+        let count = 0;
+        for (let i = 0; i < priorOrder.length; i++) {
+          for (let j = i + 1; j < priorOrder.length; j++) {
+            const pi = newOrder.indexOf(priorOrder[i] ?? '');
+            const pj = newOrder.indexOf(priorOrder[j] ?? '');
+            if (pi !== -1 && pj !== -1 && pi > pj) count++;
+          }
+        }
+        return count;
+      })()
+    : 0;
 
   const zeroOrSingleSignalTargets = targetSignals
     .filter((t) => {
@@ -721,11 +818,18 @@ async function run(): Promise<void> {
 ### Editorial checklist
 
 - [ ] **Sanity bound**: ${flagged ? `FLAGGED for heightened review — ${inversionsFromPrior} inverted pairs` : `Routine — ${inversionsFromPrior} inverted pairs`}
-- [ ] **Position delta**: ${priorOrder ? newOrder.map((n, i) => {
-    const prev = priorOrder?.indexOf(n) ?? -1;
-    if (prev === -1 || prev === i) return null;
-    return `${n}: ${prev + 1} → ${i + 1}`;
-  }).filter(Boolean).join(', ') || 'No changes' : 'First run'}
+- [ ] **Position delta**: ${
+    priorOrder
+      ? newOrder
+          .map((n, i) => {
+            const prev = priorOrder?.indexOf(n) ?? -1;
+            if (prev === -1 || prev === i) return null;
+            return `${n}: ${prev + 1} → ${i + 1}`;
+          })
+          .filter(Boolean)
+          .join(', ') || 'No changes'
+      : 'First run'
+  }
 - [ ] **Signal coverage**: ${zeroOrSingleSignalTargets.length > 0 ? zeroOrSingleSignalTargets.join(', ') : 'All targets have 2+ signals'}
 
 ### Method
@@ -744,9 +848,11 @@ See \`docs/plans/PLAN-006-assistant-popularity-ranking.md\`.`;
 // the entry point. We guard with a try-catch in case the env differs.
 const isMain = (() => {
   try {
-    return process.argv[1] === fileURLToPath(import.meta.url) ||
+    return (
+      process.argv[1] === fileURLToPath(import.meta.url) ||
       process.argv[1]?.endsWith('refresh-popularity.ts') ||
-      process.argv[1]?.endsWith('refresh-popularity.js');
+      process.argv[1]?.endsWith('refresh-popularity.js')
+    );
   } catch {
     return false;
   }

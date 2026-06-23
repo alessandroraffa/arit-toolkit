@@ -33,7 +33,9 @@ jobs:
 
       - name: Run popularity refresh and open PR
         env:
-          GITHUB_POPULARITY_TOKEN: ${{ secrets.GITHUB_POPULARITY_TOKEN }}
+          # The auto-provided GITHUB_TOKEN authenticates GitHub star reads
+          # (~1000 req/h on public repos) and opens the refresh PR. No custom
+          # secret is needed — and a GITHUB_-prefixed secret cannot be created.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BRANCH="chore/popularity-refresh-$(date +%Y-%m)"
