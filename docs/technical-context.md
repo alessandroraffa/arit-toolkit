@@ -17,7 +17,7 @@
 | Licence            | MIT                                                                                                                                         |
 | Architecture style | Feature-based modular architecture, dependency injection                                                                                    |
 | Runtime deps       | None at runtime (VS Code API only). `js-tiktoken` and `@anthropic-ai/tokenizer` are dev dependencies bundled into the extension by esbuild. |
-| Last updated       | 2026-06-21                                                                                                                                  |
+| Last updated       | 2026-06-23                                                                                                                                  |
 
 ---
 
@@ -866,6 +866,105 @@ extension. The bundled vocabularies increase the extension size from
 **Backup collision:** if the target `.bak` (or `.malformed.bak`) path already exists, `findAvailableBackupPath()` appends a UTC timestamp suffix `YYYYMMDDHHmm` before returning the path (e.g., `.arit-toolkit.jsonc.bak.202605271045`).
 
 **Scope:** single-root workspaces only. Multi-root and no-workspace modes are skipped by the upstream guard in `initialize()` and by a `_workspaceRoot` null-check inside the method itself. The check fires once per activation — no file-watcher-based re-check is performed.
+
+---
+
+## Popularity refresh
+
+The provider registry in `src/features/agentSessionsArchiving/providers/index.ts` orders
+the eight supported assistants by popularity — the order derives from a single versioned
+artifact module (`src/features/agentSessionsArchiving/providers/popularityData.ts`) that
+is regenerated monthly by a build-time tool.
+
+### Command and script
+
+```sh
+pnpm run refresh:popularity
+```
+
+This invokes `npx tsx scripts/refresh-popularity.ts`, which:
+
+1. Queries public sources (npm, PyPI, VS Code Marketplace, Open VSX, GitHub) for each
+   of the eight assistants' download/install/star counts.
+2. Applies per-source validity contracts (period check for npm; zero-floor for PyPI
+   known-history packages; non-2xx treated as absent).
+3. Computes scores using `popularityScoring.ts` (dense rank + normalization + average).
+4. Writes the generated `popularityData.ts` artifact module.
+5. Regenerates all four README generated regions
+   (`POPULARITY-TABLE`, `POPULARITY-INTRO`, `POPULARITY-FEATURES`, `POPULARITY-COUNT`).
+6. Prints the PR body including sanity-bound flag status and editorial checklist.
+
+### Scheduled CI workflow
+
+`.github/workflows/popularity-refresh.yml` runs on the first of every month at 06:00 UTC
+and on `workflow_dispatch`. It creates a branch `chore/popularity-refresh-YYYY-MM`,
+commits the updated artifact and README, and opens a pull request via `gh pr create`.
+The PR uses the editorial checklist template at
+`.github/PULL_REQUEST_TEMPLATE/popularity-refresh.md`.
+
+A staleness-probe job (independent, same schedule) reads the artifact's `refreshedAt`
+field and opens a GitHub issue when more than two cadence periods (two months) have
+elapsed since the last refresh.
+
+### Credentials
+
+| Credential                | Scope                 | Presence  | Purpose                                      |
+| ------------------------- | --------------------- | --------- | -------------------------------------------- |
+| `GITHUB_POPULARITY_TOKEN` | Public-repo read only | Optional  | Raises GitHub star-query rate limit (5 k/hr) |
+| `GITHUB_TOKEN`            | Contents + PR write   | Automatic | Action job token; opens the refresh PR       |
+
+`GITHUB_POPULARITY_TOKEN` must be provisioned as a repository secret before the first
+scheduled run. Its absence causes GitHub star queries to run under the anonymous ceiling
+(60 req/hr per IP) — throttled responses are recorded as absent signals, not errors.
+The workflow still completes and opens a PR with the signals that did succeed.
+
+### Maintenance ownership and acceptable staleness
+
+**Maintenance owner:** the project maintainer (same human who holds the merge
+authorization and the dual governance-and-editorial gate, per INIT-006).
+
+**Acceptable-staleness window:** one calendar month beyond the monthly cadence.
+The staleness-probe job opens a GitHub issue after two months have elapsed
+without a refresh, so abandonment is actively surfaced rather than left to a
+reader noticing the "as of" marker in the README.
+
+### Editorial PR checklist (dual governance-and-editorial gate, INIT-006)
+
+Each monthly refresh PR carries a three-item editorial checklist in the PR template.
+The maintainer must confirm each item before merging:
+
+1. **Sanity bound** — whether the refresh exceeded the two-inverted-pair bound (more
+   than two pairwise position inversions from the prior committed order flags the PR
+   for heightened review).
+2. **Position delta** — which targets moved in the resolved order and by how much.
+3. **Signal coverage** — any target with zero or one counted signal this refresh.
+
+This checklist is the auditable trace of the dual governance-and-editorial gate
+required by INIT-006. It is recorded in the PR description, not just in the maintainer's
+memory.
+
+### Order-sensitivity audit
+
+Static search conducted on:
+
+- `src/features/agentSessionsArchiving/providers/index.ts` (full file)
+- `src/features/agentSessionsArchiving/archiveService.ts` (full file, specifically
+  `archiveFromProviders` ~line 187, `archiveSession` ~lines 221--280,
+  `deleteOldArchive` branch ~lines 245--248)
+
+**Finding:** No index-referencing or position-referencing branch found in session
+discovery, workspace matching, deduplication, or archiving. Provider list position
+influences enumeration sequence only (AC13, AC18 satisfied by construction).
+
+The finding is locked by the swap-invariance regression test
+(`test/unit/features/agentSessionsArchiving/providers/popularitySwapInvariance.test.ts`)
+which runs archive cycles under the following permutations and asserts identical
+discovered/matched/archived sets:
+
+- Natural vs. fully reversed provider order (baseline)
+- Cline / RooCode adjacent-pair swap (targeted stress of the closest sibling pair)
+- Shared `archiveName` collision with identical mtime (fingerprint guard)
+- No cross-provider session leakage (`archiveName` prefix isolation)
 
 ---
 

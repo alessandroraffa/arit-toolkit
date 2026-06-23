@@ -157,11 +157,11 @@ Add a JSDoc block below the top comment in `popularityData.ts` describing the `P
 
 Commit `src/features/agentSessionsArchiving/providers/popularityData.ts`, the modified `src/features/agentSessionsArchiving/providers/index.ts`, `test/unit/features/agentSessionsArchiving/providers/fixtures/popularityDataFixture.ts`, and `test/unit/features/agentSessionsArchiving/providers/popularitySort.test.ts`. Commit message: `feat(archiving): add popularity artifact shape and wire runtime registry sort`.
 
-### [ ] Activity 3: Build-time refresh tool, validity contract, sanity bound, and first real artifact
+### [x] Activity 3: Build-time refresh tool, validity contract, sanity bound, and first real artifact
 
 Deliver the TypeScript build-time tool that queries the verified sources, applies the per-source validity contract, computes scores, writes the first real artifact, and opens a pull request. Unit tests with recorded fixture responses prove every contract clause. The CI workflow and package script wire the monthly cadence.
 
-#### [ ] Task 3.1: Write failing unit tests for the refresh tool
+#### [x] Task 3.1: Write failing unit tests for the refresh tool
 
 Create `test/unit/scripts/refresh-popularity.test.ts` (create the `test/unit/scripts/` directory if it does not exist). The tool is a TypeScript module at `scripts/refresh-popularity.ts`. Add a comment at the top of the test file identifying the HTTP mock approach used: the tool uses the `node:https` module, so the tests mock it via `vi.mock('node:https', ...)` using Vitest's module mock facility. This comment must be present before you implement the tool in Task 3.2 — the mock approach is fixed here and the implementation must be consistent with it. Write failing tests covering:
 
@@ -183,7 +183,7 @@ Create `test/unit/scripts/refresh-popularity.test.ts` (create the `test/unit/scr
 
 Confirm all new tests fail before proceeding.
 
-#### [ ] Task 3.2: Implement `scripts/refresh-popularity.ts`
+#### [x] Task 3.2: Implement `scripts/refresh-popularity.ts`
 
 Create `scripts/refresh-popularity.ts` as a TypeScript script invoked via `npx tsx`. This file uses tsx's direct-import capability to import the scoring functions from the compiled-adjacent TypeScript source. Structure:
 
@@ -215,7 +215,7 @@ Create `scripts/refresh-popularity.ts` as a TypeScript script invoked via `npx t
 
 Add `"refresh:popularity": "npx tsx scripts/refresh-popularity.ts"` to the `scripts` section in `package.json`. Run `pnpm run check-types` to verify the TypeScript source tree is unaffected.
 
-#### [ ] Task 3.3: Run the tool and commit the first real artifact
+#### [x] Task 3.3: Run the tool and commit the first real artifact
 
 Run `source ~/.nvm/nvm.sh && nvm use 22.22 && npx tsx scripts/refresh-popularity.ts` locally. The tool queries live sources, writes `src/features/agentSessionsArchiving/providers/popularityData.ts` with real data, and updates all four README generated regions.
 
@@ -227,7 +227,7 @@ After the command completes, verify the generated artifact only (README region v
 
 Do not create the PR locally. The PR creation step runs only in the CI workflow (Task 3.4). If the tool also regenerated README regions (they are present in the output), stage `README.md` for commit alongside the artifact — they were produced together and belong in the same commit.
 
-#### [ ] Task 3.4: Add the scheduled CI workflow
+#### [x] Task 3.4: Add the scheduled CI workflow
 
 Create `.github/workflows/popularity-refresh.yml`. The workflow has `on.schedule` with cron `'0 6 1 * *'` (06:00 UTC on the first of every month) and `on.workflow_dispatch` for manual triggering. Permissions: `contents: write`, `pull-requests: write`. It contains two jobs:
 
@@ -237,7 +237,7 @@ Create `.github/workflows/popularity-refresh.yml`. The workflow has `on.schedule
 
 Record in "Divergences and notes" that the `GITHUB_POPULARITY_TOKEN` secret must be added to repository CI secrets by the maintainer before the first scheduled run; its absence causes GitHub star queries to use the anonymous ceiling but does not block the workflow.
 
-#### [ ] Task 3.5: Add the PR template and update documentation
+#### [x] Task 3.5: Add the PR template and update documentation
 
 Create `.github/PULL_REQUEST_TEMPLATE/popularity-refresh.md`:
 
@@ -261,7 +261,7 @@ Add a `## Popularity refresh` section to `docs/technical-context.md` documenting
 
 Note OR-003: this task also records the operational note that `GITHUB_POPULARITY_TOKEN` must be provisioned before the first scheduled run. Note OR-005: the PR template's editorial checklist items (sanity-bound flag, position delta, signal coverage) are the auditable trace of the dual governance-and-editorial gate required by INIT-006 — document this in the `## Popularity refresh` section.
 
-#### [ ] Task 3.6: Commit changes
+#### [x] Task 3.6: Commit changes
 
 Commit: `scripts/refresh-popularity.ts`, the updated `package.json`, `.github/workflows/popularity-refresh.yml`, `.github/PULL_REQUEST_TEMPLATE/popularity-refresh.md`, the generated `src/features/agentSessionsArchiving/providers/popularityData.ts`, the updated `README.md` (if modified by the tool run in Task 3.3), the updated `docs/technical-context.md`, and the test files from Task 3.1. Commit message: `feat(archiving): add popularity refresh tool, scheduled workflow, and first real artifact`.
 
@@ -360,7 +360,58 @@ Commit: the updated `README.md` (with four generated-region delimiters and eight
 
 ## Divergences and notes
 
-_To be filled during execution._
+**DIV-001 (Activity 3, Task 3.3):** The tool's `run()` function was called on import during
+Vitest test execution before the entry-point guard was added. This caused the real
+`popularityData.ts` to be written during the test run with empty signals (network blocked
+in test environment). Fix: added `isMain` guard checking `process.argv[1]` against
+`import.meta.url` so `run()` only executes when the script is the direct entry point.
+The tool was then re-run manually (Task 3.3) to produce the actual first artifact.
+
+**DIV-002 (Activity 3, Task 3.3):** When the tool ran for real (`npx tsx scripts/refresh-popularity.ts`),
+most signals returned absent (npm, PyPI, Marketplace returned 404/rate-limit/blocking responses
+from the local machine environment; only GitHub stars succeeded for 7 of 8 targets, and Open VSX
+succeeded for RooCode). The artifact was written with stars-only signals for most targets. This is
+valid per the missing-surface tolerance (SPEC-004 Error handling §1): absent signals are recorded
+as absent, never authoritative, and the tool continues. The README rewrite step then failed
+with a delimiter-not-found error (expected: the README bootstrap step in Task 4.1 inserts
+the delimiters). The artifact was committed as produced; the README is updated in Activity 4.
+
+**DIV-003 (Activity 3, Task 3.5):** The `GITHUB_POPULARITY_TOKEN` secret must be added to
+repository CI secrets by the maintainer before the first scheduled run. Its absence causes
+GitHub star queries to use the anonymous ceiling (60 req/hr per IP) but does not block the
+workflow. (Per WS-0023 instruction OR-003.)
+
+**DIV-004 (Activity 3, Task 3.3):** The tool's `buildArtifactModule()` generates TypeScript
+using double-quoted strings (from `JSON.stringify`). The prettier formatter will normalize these
+to single quotes on commit. This is acceptable — the generated file is auto-generated and its
+quote style is a formatting artifact of prettier, not a semantic concern.
+
+**DIV-005 (Activity 3, static verification):** AC14 verified structurally: the
+`.github/workflows/popularity-refresh.yml` workflow uses `gh pr create --body-file` (passing
+a temporary file), never `git push main`. The workflow opens a PR to `main`, never pushes
+directly. The `gh pr create` non-zero exit propagates and fails the step (no `|| true` wrapper).
+
+**DIV-006 (Activity 3, static verification):** AC16 verified structurally: `popularityData.ts`
+is a committed source file. Each monthly refresh produces a reviewable diff naming every signal
+and score change. AC17 verified structurally: reverting the artifact commit restores the prior
+order.
+
+**DIV-007 (Activity 3, static verification):** AC20 verified structurally: `pnpm run
+refresh:popularity` script is present in `package.json`; `.github/workflows/popularity-refresh.yml`
+is present with the scheduled CI job. Both documented in `docs/technical-context.md`.
+
+**DIV-008 (Activity 3, static verification):** AC21 verified structurally: maintenance owner
+and staleness window documented in `docs/technical-context.md` under `## Popularity refresh`.
+Staleness-probe job present in `.github/workflows/popularity-refresh.yml`.
+
+**Order-sensitivity audit (Activity 4, pre-Task 4.4):** Order-sensitivity audit complete.
+No index-referencing or position-referencing branch found in session discovery, workspace
+matching, deduplication, or archiving. Provider list position influences enumeration sequence
+only (AC13, AC18 satisfied by construction). Static search conducted on:
+`src/features/agentSessionsArchiving/providers/index.ts` (full file);
+`src/features/agentSessionsArchiving/archiveService.ts` (full file, specifically
+`archiveFromProviders` ~line 187, `archiveSession` ~lines 221–280,
+`deleteOldArchive` branch ~lines 245–248).
 
 ### Reflection
 

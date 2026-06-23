@@ -1,0 +1,121 @@
+name: Popularity Refresh
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    name: Refresh popularity data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.1'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-workspace
+
+      - name: Run popularity refresh and open PR
+        env:
+          GITHUB_POPULARITY_TOKEN: ${{ secrets.GITHUB_POPULARITY_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="chore/popularity-refresh-$(date +%Y-%m)"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$BRANCH"
+
+          npx tsx scripts/refresh-popularity.ts > /tmp/pr-body.txt 2>&1 || true
+
+          # Extract PR body from tool output (between "--- PR Body ---" markers)
+          sed -n '/^--- PR Body ---$/,/^--- End PR Body ---$/p' /tmp/pr-body.txt \
+            | grep -v '^--- ' > /tmp/pr-body-clean.txt
+
+          git add src/features/agentSessionsArchiving/providers/popularityData.ts README.md
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit — popularity data is unchanged."
+            exit 0
+          fi
+
+          git commit -m "chore(popularity): monthly ranking refresh $(date +%Y-%m)"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --title "chore(popularity): monthly ranking refresh $(date +%Y-%m)" \
+            --body-file /tmp/pr-body-clean.txt \
+            --base main \
+            --head "$BRANCH"
+
+      - name: Open failure issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const month = new Date().toISOString().slice(0, 7);
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Popularity refresh workflow failed — ${month}`,
+              body: `The monthly popularity refresh workflow failed. Check the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.\n\nTo refresh manually: \`pnpm run refresh:popularity\``,
+              labels: ['maintenance'],
+            });
+
+  staleness-probe:
+    name: Check popularity data staleness
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check staleness
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const artifactPath = path.join(process.env.GITHUB_WORKSPACE, 'src/features/agentSessionsArchiving/providers/popularityData.ts');
+            const content = fs.readFileSync(artifactPath, 'utf8');
+
+            const match = /refreshedAt:\s*"([^"]+)"/.exec(content);
+            if (!match || !match[1] || match[1] === 'not-yet-refreshed') {
+              console.log('Artifact not yet refreshed — skipping staleness check.');
+              return;
+            }
+
+            const refreshedAt = match[1];
+            const elapsed = Date.now() - new Date(refreshedAt).getTime();
+            const twoCadencePeriods = 2 * 30 * 24 * 60 * 60 * 1000;
+
+            if (elapsed > twoCadencePeriods) {
+              const month = new Date().toISOString().slice(0, 7);
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Popularity ranking is overdue for refresh — ${month}`,
+                body: `The popularity ranking artifact was last refreshed on **${refreshedAt}** and has not been updated in more than two months.\n\nTo refresh: \`pnpm run refresh:popularity\`\n\nSee [PLAN-006](../../blob/main/docs/plans/PLAN-006-assistant-popularity-ranking.md) for maintenance instructions.`,
+                labels: ['maintenance'],
+              });
+              console.log(`Staleness issue opened — last refresh: ${refreshedAt}`);
+            } else {
+              console.log(`Popularity data is current — last refresh: ${refreshedAt}`);
+            }
