@@ -644,4 +644,191 @@ This log captures process-level improvements proposed during multi-perspective r
     wordings.
   target: skills/review-gate (checklist) and skills/coding-standards
   owner: Human
+
+- id: KZ-2026-06-22-019
+  created: 2026-06-22
+  gate: pre-approval
+  artifact_type: specification
+  status: open
+  classification: checklist-update
+  pattern: >
+    SPEC-004 specifies a rank-based ordering with two distinct tie/equality layers
+    that need separate resolution rules, and the first review pass + remediation only
+    closed ONE of them. The author correctly fixed the aggregate-score tie-break
+    (equal average-rank scores -> alphabetical by canonical name, ascending; WT-001
+    from the prior gate) and explicitly claimed the order is "fixed at the
+    specification level" and "independent of input or iteration arrangement" (AC2).
+    But the WITHIN-SIGNAL raw-value tie — what rank two targets receive when they have
+    EQUAL raw values on a single signal, BEFORE the per-signal ranks are averaged — was
+    left unspecified (FR Aggregation model item 2). Standard/dense/ordinal ranking
+    conventions assign different per-signal ranks for tied raw values, producing
+    different average-rank scores and a different final order, which falsifies the
+    reproducibility guarantees in FR Aggregation model item 5, AC3, and AC5 and the
+    input-order-independence claim in AC2. This is the KZ-2026-06-22-004 family
+    (override/edge dispositions survive the first review and surface on the
+    verification pass) applied to ranking: the SALIENT tie-break (post-aggregation)
+    was specified while the LESS-salient tie (within-signal, pre-aggregation) was
+    missed, even though both must be fixed for the order to be deterministic.
+  occurrences: 1
+  proposed_change: >
+    Add a review-gate (and authoring-standards) checklist item for any ranking- or
+    ordering-based specification: enumerate EVERY layer at which a tie or equality can
+    arise and require a stated resolution rule for each. For a rank-then-aggregate
+    model that means (a) within-signal raw-value ties (which named ranking convention —
+    dense, standard-competition, ordinal — and therefore whether input order can leak
+    in), AND (b) post-aggregation score ties (the final tie-break). A spec that fixes
+    only the final tie-break while leaving the within-signal tie unspecified has an
+    under-determined order and a false reproducibility claim, even though it reads as
+    complete. Cross-check every "same data always yields the same order / independent
+    of input arrangement" claim against the fully-specified tie ladder.
+  target: skills/review-gate (checklist) and skills/authoring-standards
+  owner: Human
+
+- id: KZ-2026-06-22-020
+  created: 2026-06-22
+  gate: pre-approval
+  artifact_type: specification
+  status: open
+  classification: checklist-update
+  pattern: >
+    SPEC-004's rank-based aggregation asserts a property about its own scoring method
+    that is true on one axis and false on another, and presents it as fully solved:
+    "Averaging the ranks ... makes the score cardinality-neutral: a target with fewer
+    available signals is neither penalized nor rewarded" (FR Aggregation model item 3)
+    and "no per-signal normalization step is required" (item 4). Averaging IS neutral
+    with respect to signal COUNT (how many signals a target possesses), but it is NOT
+    neutral with respect to signal POOL SIZE (how many targets compete in each signal's
+    ranking): rank 1-of-2 and rank 1-of-8 are both recorded as "1" and contribute
+    identically to the average, so a narrow target that wins a thinly-possessed signal
+    can outrank a broadly-strong target — undermining the spec's own stated reader value
+    ("most-recognizable/most-used first"). Three reviewers (Black, Green, Orange)
+    independently flagged the same evidence location while splitting on severity (false
+    correctness claim vs. imprecise wording vs. value-integrity trade-off). The model
+    itself is the simplest construction satisfying scale-invariance + missing-surface
+    tolerance (no concretely simpler alternative survives Green's check), so the defect
+    is the OVERSTATED neutrality CLAIM, not the model. A specification that states a
+    false/overbroad property about its own algorithm is a factual defect even when the
+    algorithm is the right choice.
+  occurrences: 1
+  proposed_change: >
+    Add a review-gate (and authoring-standards) checklist item: any specification that
+    claims a normalization, neutrality, invariance, or fairness PROPERTY of its own
+    scoring/aggregation method must state precisely which dimension the property holds
+    on and which dimension(s) it does NOT, and must explicitly disposition the
+    non-neutral dimension (accepted trade-off with rationale, or deferred to the plan
+    gate for evaluation). For rank-based aggregation specifically, distinguish
+    signal-COUNT neutrality (averaging delivers it) from signal-POOL-SIZE comparability
+    (averaging does NOT deliver it — rank 1-of-2 != rank 1-of-8) and require the spec to
+    confirm the produced order is consistent with the stated user-value promise under
+    the non-neutral dimension.
+  target: skills/review-gate (checklist) and skills/authoring-standards
+  owner: Human
+
+- id: KZ-2026-06-23-001
+  created: 2026-06-23
+  gate: pre-implementation
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0023 specifies a build-time tool that writes into a delimited README region
+    (replace-between `<!-- POPULARITY-ORDER:START/END -->`) and a consistency test
+    that parses inside those delimiters, but no task creates the delimiters or performs
+    the one-time prose restructuring the governing plan (PLAN-006 Decision 5) explicitly
+    accepted ("consolidating the currently-scattered order-bearing prose into one
+    contiguous region"). The real README.md has no such markers (verified by grep) and
+    its order-bearing prose is scattered across at least three locations (intro
+    enumeration, a "from 5 assistants" count claim, the table) plus a second
+    "Why Tangyr Workbench" enumeration that names only five. Two consequences both
+    survive a green test suite: (1) the first tool run has no anchor to target, so the
+    generated region is never produced; (2) every enumeration/count claim OUTSIDE the
+    single generated region is neither regenerated nor checked by the in-region
+    consistency test, so an acceptance criterion requiring "every prose enumeration and
+    every count claim names all eight and reports eight" (AC9) is unmet for the
+    out-of-region copies and undetected. The structural tell is a generator/consistency
+    pair that assumes a single contiguous region the StepLedger never establishes, while
+    equivalent content lives in additional un-anchored locations.
+  proposed_change: >
+    Add a stepledger-authoring and review-gate checklist item for any "regenerate a
+    delimited region + assert consistency inside it" mechanism: (a) require an explicit
+    one-time bootstrap task that inserts the delimiters and performs the prose
+    consolidation BEFORE the first generator run, committed ahead of the generate step;
+    and (b) require an inventory pass over the real target document for EVERY semantically
+    equivalent occurrence (enumerations, count claims) and a disposition for each — moved
+    inside the region, converted to a checked static value, or covered by an
+    out-of-region assertion. A generated-region design is incomplete until both the
+    region's creation and every out-of-region duplicate are assigned to a task.
+  target: skills/review-gate (checklist) and skills/stepledger-authoring
+  owner: Human
+
+- id: KZ-2026-06-23-002
+  created: 2026-06-23
+  gate: pre-implementation
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0023's order-sensitivity audit (SPEC-004 Constraint 9 / AC18) is bounded to a
+    static search of "archiveService.ts lines 1–150" and a swap-invariance test whose
+    stub providers return sessions with disjoint archiveName namespaces
+    ('cline-task-001' vs 'roo-code-task-001'). Both miss the only genuinely
+    order-sensitive path, which sits OUTSIDE the searched range: archiveSession()
+    (lines 221–280) reads lastArchivedMap.get(session.archiveName) and, at lines
+    245–248, deletes a prior provider's archive when entry.archiveFileName differs for a
+    SHARED archiveName key — a collision whose outcome depends on provider iteration
+    order. Because the test's stub archiveNames never collide, the assertion
+    expect(setA).toEqual(setB) is vacuously true under any implementation; the audit's
+    line-range stops before archiveFromProviders() (line 187) and archiveSession() (line
+    221). This is the KZ-2026-06-22-012 attribution-drift family at the audit-scope
+    level: a real test and a real static search are cited as proving AC18, but their
+    scope excludes the exact path the AC exists to protect, so the gate can pass while
+    the order-sensitive branch is unexamined.
+  proposed_change: >
+    Add a review-gate and stepledger-authoring checklist item: an order-sensitivity /
+    invariance audit must (a) state its static-search scope as whole-file-or-named-method
+    coverage and explicitly include the methods that mutate the shared dedup/replacement
+    state (here lastArchivedMap and deleteOldArchive), never a line-range that stops
+    before them; and (b) construct the invariance test so its inputs ACTUALLY exercise the
+    collision/contention branch the audit identifies as the hazard — for a dedup keyed by
+    a shared identifier, at least one scenario must feed two providers the SAME key under
+    both orderings, so the assertion is not vacuously satisfied by disjoint inputs. A
+    swap-invariance test over disjoint keys proves a property of the stubs, not of the
+    archiving path.
+  target: skills/review-gate (checklist) and skills/stepledger-authoring
+  owner: Human
+
+- id: KZ-2026-06-23-003
+  created: 2026-06-23
+  gate: pre-implementation
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0023 reproduces the same scoring logic (computeDenseRanks, scoreTargets,
+    resolveOrder, normalization) in two places — the pure TypeScript module
+    popularityScoring.ts and, inlined as plain JavaScript, in scripts/refresh-popularity.mjs
+    (Task 3.2 explicitly forbids importing from the TS tree) — while the StepLedger's own
+    Architectural Decision 8 and the governing PLAN-006 Decision 1 both state the component
+    is "reused identically by the build-time tool via a direct import." The instruction
+    contradicts the recorded decision with no notation of the divergence, and no task in
+    the workstream asserts the two implementations produce identical output for the same
+    input. The .ts module's 21-AC unit coverage therefore does not protect the .mjs copy
+    that actually computes the shipped artifact; a future formula or tie-break change to
+    the TS source leaves the JS copy silently stale, falsifying the single-source-of-truth
+    and recompute-from-raw guarantees the feature exists to provide. The tell is a Task
+    instruction that overrides an Architectural Decision without a stated rationale, plus
+    a duplicated algorithm with no cross-implementation parity test.
+  proposed_change: >
+    Add two coupled checklist items. (1) Stepledger-authoring: whenever a Task instruction
+    contradicts a recorded Architectural Decision (or a governing plan decision), the task
+    must carry an explicit "diverges from Decision N because: <reason>" notation;
+    an unannotated contradiction between the decision layer and the task layer is a
+    blocking authoring defect. (2) Review-gate and tdd-workflow: whenever the same
+    load-bearing algorithm is implemented in two runtimes/languages that cannot share a
+    single source (e.g. a .ts module and a Node .mjs that may not import it), require a
+    parity test that runs both implementations on a shared committed fixture and asserts
+    identical output — a duplicated algorithm with no equivalence test is an unguarded
+    drift surface even when each copy is individually unit-tested.
+  target: skills/review-gate (checklist) and skills/stepledger-authoring
+  owner: Human
 ```
