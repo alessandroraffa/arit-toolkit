@@ -104,11 +104,11 @@ Add a JSDoc block at the top of `popularityScoring.ts` summarising: the normaliz
 
 Commit `src/features/agentSessionsArchiving/providers/popularityScoring.ts` and `test/unit/features/agentSessionsArchiving/providers/popularityScoring.test.ts`. Commit message: `feat(archiving): add pure popularity scoring and ordering component`.
 
-### [ ] Activity 2: Versioned artifact shape, runtime registry sort, and bundle-asset guard
+### [x] Activity 2: Versioned artifact shape, runtime registry sort, and bundle-asset guard
 
 Define the typed artifact shape module (no real data — shape and placeholder only), wire the runtime sort into `getDefaultProviders()`, and verify with unit tests. The existing bundle-asset integration test confirms the artifact module introduces no new external dependency and is the enforcing guard.
 
-#### [ ] Task 2.1: Write failing unit tests for the artifact shape and runtime sort
+#### [x] Task 2.1: Write failing unit tests for the artifact shape and runtime sort
 
 Create `test/unit/features/agentSessionsArchiving/providers/fixtures/popularityDataFixture.ts`. This file exports one constant `FIXTURE_POPULARITY_DATA` of type `PopularityData` (imported from `src/features/agentSessionsArchiving/providers/popularityData.ts` — the shape module created in Task 2.2). The fixture must satisfy the full `PopularityData` interface with synthetic values: eight target entries in the alphabetical resolved order `['Aider', 'Claude Code', 'Cline', 'Continue', 'GitHub Copilot Chat', 'OpenAI Codex', 'OpenCode', 'RooCode']` as `resolvedOrder`; each target entry carries the signal fields appropriate to its verified feasibility profile (Aider: `cli` + `stars`, no `ext`; Cline: `ext` + `stars`, no `cli`; GitHub Copilot Chat: `ext` + `stars`, no `cli`; RooCode: `ext` + `stars`, no `cli`; the other four: all three); plausible `score` and `positions` values; `refreshedAt: '2025-01-01T00:00:00.000Z'` (a deliberately stale timestamp — more than two cadence periods before any realistic test run date — so that staleness-aware tests can distinguish the fixture from a fresh artifact without requiring wall-clock mocking); `refreshPeriod: '2025-01'`; `poolSizeAcknowledgment`, `disclaimer`, and `methodPointer` imported from their respective source modules.
 
@@ -121,7 +121,7 @@ Create `test/unit/features/agentSessionsArchiving/providers/popularitySort.test.
 
 Confirm all new tests fail before proceeding to Task 2.2.
 
-#### [ ] Task 2.2: Implement the `popularityData.ts` shape module
+#### [x] Task 2.2: Implement the `popularityData.ts` shape module
 
 Create `src/features/agentSessionsArchiving/providers/popularityData.ts`. Structure:
 
@@ -135,7 +135,7 @@ Create `src/features/agentSessionsArchiving/providers/popularityData.ts`. Struct
 
 Keep the module under 100 lines. Run `pnpm run check-types` to confirm the shape compiles before proceeding.
 
-#### [ ] Task 2.3: Wire the runtime sort into `getDefaultProviders()`
+#### [x] Task 2.3: Wire the runtime sort into `getDefaultProviders()`
 
 Read `src/features/agentSessionsArchiving/providers/index.ts` in full before modifying it.
 
@@ -149,11 +149,11 @@ Run the full quality gate (check-types + lint + test:unit + test:integration:vit
 
 Note OR-004: `providerNameToCanonical` is exported from this file (not deferred to Activity 4) so the consistency test in Task 4.2 can import it without a separate export task. Note BK-007: the eight-provider sort added here runs on every call to `getDefaultProviders()`; if profiling later indicates cost, memoization is a separate optimization — do not memoize here.
 
-#### [ ] Task 2.4: Update impacted documentation
+#### [x] Task 2.4: Update impacted documentation
 
 Add a JSDoc block below the top comment in `popularityData.ts` describing the `PopularityData` interface fields, the `DISCLAIMER` and `METHOD_POINTER` constants, and the do-not-edit provenance note. Record any deviation from PLAN-006 Decision 2 in "Divergences and notes".
 
-#### [ ] Task 2.5: Commit changes
+#### [x] Task 2.5: Commit changes
 
 Commit `src/features/agentSessionsArchiving/providers/popularityData.ts`, the modified `src/features/agentSessionsArchiving/providers/index.ts`, `test/unit/features/agentSessionsArchiving/providers/fixtures/popularityDataFixture.ts`, and `test/unit/features/agentSessionsArchiving/providers/popularitySort.test.ts`. Commit message: `feat(archiving): add popularity artifact shape and wire runtime registry sort`.
 

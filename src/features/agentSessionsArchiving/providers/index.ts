@@ -9,6 +9,29 @@ import { CopilotChatProvider } from './copilotChatProvider';
 import { ContinueProvider } from './continueProvider';
 import { CodexProvider } from './codexProvider';
 import { OpenCodeProvider } from './openCodeProvider';
+import { POPULARITY_DATA } from './popularityData';
+
+/**
+ * Maps a stable provider `name` (the immutable identity each provider exposes)
+ * to the canonical display name used in the popularity artifact's resolvedOrder.
+ * Returns the input unchanged for any unrecognized name.
+ *
+ * Exported so consistency tests in Activity 4 can import it directly.
+ * Note OR-004: exported here (not deferred to Activity 4) per WS-0023 note.
+ */
+export function providerNameToCanonical(name: string): string {
+  const map: Record<string, string> = {
+    aider: 'Aider',
+    'claude-code': 'Claude Code',
+    cline: 'Cline',
+    continue: 'Continue',
+    'copilot-chat': 'GitHub Copilot Chat',
+    codex: 'OpenAI Codex',
+    'open-code': 'OpenCode',
+    'roo-code': 'RooCode',
+  };
+  return map[name] ?? name;
+}
 
 export function getDefaultProviders(
   context: vscode.ExtensionContext,
@@ -32,6 +55,19 @@ export function getDefaultProviders(
   if (workspaceStorageDir) {
     providers.push(new CopilotChatProvider(workspaceStorageDir));
   }
+
+  // Sort by popularity order from the single versioned artifact.
+  // Presentational only: does not affect which sessions any provider discovers,
+  // matches, parses, or archives. Note BK-007: memoization deferred per WS-0023.
+  providers.sort((a, b) => {
+    const order = POPULARITY_DATA.resolvedOrder;
+    const ia = order.indexOf(providerNameToCanonical(a.name));
+    const ib = order.indexOf(providerNameToCanonical(b.name));
+    const ra = ia === -1 ? order.length : ia;
+    const rb = ib === -1 ? order.length : ib;
+    if (ra !== rb) return ra - rb;
+    return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+  });
 
   return providers;
 }
