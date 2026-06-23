@@ -110,3 +110,23 @@
   finding_count: 5
   blocking_count: 0
   produced_at: 2026-06-22
+
+- gate: pre-approval
+  artifact_type: specification
+  artifact_version: SPEC-004 third revision (docs/specifications/SPEC-004-assistant-popularity-ranking.md; status draft; 2026-06-22; focused re-verification follow-up of the prior 7-blocking PASS_WITH_CONDITIONS gate — verifies WT-001, WT-002 cluster, BK-001, BK-002, BK-003, OR-001, OR-002 closed and hunts new blockers from the rank-based aggregation switch)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 6
+  blocking_count: 2
+  produced_at: 2026-06-22
+
+- gate: pre-implementation
+  artifact_type: stepledger
+  artifact_version: WS-0023 draft (docs/workstreams/WS-0023-assistant-popularity-ranking.md; status draft; created 2026-06-23; governed by approved SPEC-004 and PLAN-006, active INIT-006; branch feat/assistant-popularity-ranking not yet created)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 21
+  blocking_count: 6
+  produced_at: 2026-06-23
