@@ -3,6 +3,7 @@ import {
   transformHeadings,
   splitLines,
   isAtLimit,
+  transformHeadingsInScope,
 } from '../../../../src/features/markdownHeadings/headingTransform';
 
 describe('transformHeadings', () => {
@@ -242,5 +243,69 @@ describe('isAtLimit', () => {
 
   it('returns false for level 3 increment', () => {
     expect(isAtLimit(3, 'increment')).toBe(false);
+  });
+});
+
+describe('transformHeadingsInScope', () => {
+  it('whole-document scope: all headings shift and outcome is changed', () => {
+    const input = '# Title\n\n## Section\n\n### Sub';
+    const lines = splitLines(input);
+    const scopeLines = new Set(lines.map((_, i) => i));
+    const result = transformHeadingsInScope(input, 'increment', scopeLines);
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('## Title\n\n### Section\n\n#### Sub');
+  });
+
+  it('scope restricted to subset: only in-scope headings shift', () => {
+    // Lines: 0='# Title', 1='', 2='## Section', 3='', 4='### Sub'
+    const input = '# Title\n\n## Section\n\n### Sub';
+    // Only lines 2-4 in scope
+    const scopeLines = new Set([2, 3, 4]);
+    const result = transformHeadingsInScope(input, 'increment', scopeLines);
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('# Title\n\n### Section\n\n#### Sub');
+  });
+
+  it('scope with no headings: outcome is no-op: no transformable heading in scope', () => {
+    const input = '# Title\n\nJust text here';
+    const scopeLines = new Set([1, 2]); // lines with '' and 'Just text here'
+    const result = transformHeadingsInScope(input, 'increment', scopeLines);
+    expect(result.outcome).toBe('no-op: no transformable heading in scope');
+    expect(result.text).toBe(input);
+  });
+
+  it('all in-scope headings at H6 limit (increment): outcome is no-op: all in-scope headings at the limit', () => {
+    const input = '###### A\n\n###### B';
+    const scopeLines = new Set([0, 1, 2]);
+    const result = transformHeadingsInScope(input, 'increment', scopeLines);
+    expect(result.outcome).toBe('no-op: all in-scope headings at the limit');
+    expect(result.text).toBe(input);
+  });
+
+  it('all in-scope headings at H1 limit (decrement): outcome is no-op: all in-scope headings at the limit', () => {
+    const input = '# A\n\n# B';
+    const scopeLines = new Set([0, 1, 2]);
+    const result = transformHeadingsInScope(input, 'decrement', scopeLines);
+    expect(result.outcome).toBe('no-op: all in-scope headings at the limit');
+    expect(result.text).toBe(input);
+  });
+
+  it('heading inside fenced code block is not transformed', () => {
+    const input = '# Title\n\n```\n## Inside code\n```\n\n## Real';
+    const lines = splitLines(input);
+    const scopeLines = new Set(lines.map((_, i) => i));
+    const result = transformHeadingsInScope(input, 'increment', scopeLines);
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('## Title\n\n```\n## Inside code\n```\n\n### Real');
+  });
+
+  it('heading inside indented code block fence is not transformed', () => {
+    // Three-space indented fence (per existing test pattern)
+    const input = '# Title\n\n   ```\n   # In code\n   ```\n\n## Section';
+    const lines = splitLines(input);
+    const scopeLines = new Set(lines.map((_, i) => i));
+    const result = transformHeadingsInScope(input, 'increment', scopeLines);
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('## Title\n\n   ```\n   # In code\n   ```\n\n### Section');
   });
 });

@@ -491,7 +491,13 @@ Files: `README.md`, `CHANGELOG.md`.
 
 **Task 1.3 — `Line` interface required instead of `type`.** The project ESLint config enforces `@typescript-eslint/consistent-type-definitions` (interface over type). The `Line` type added in Task 1.2 was initially declared as `export type Line = {...}` which triggered a lint error. Converted to `export interface Line { ... }` to comply.
 
-**Activity 1 — Progress:** Tasks 1.1, 1.2, 1.3 completed. Task 1.4 (commit) pending.
+**Activity 1 — Completed.**
+
+**Task 2.2 — `applyTransform` removed in Activity 2 (compile necessity).** Task 2.2 said "Do not modify... `applyTransform`." However, `transformHeadings` shim now calls `transformHeadingsInScope` instead of `applyTransform`, making `applyTransform` unreachable dead code. TypeScript `noUnusedLocals: true` blocks compilation unless removed. Removing `applyTransform` has no behavioral effect — its logic is fully superseded by `transformHeadingsInScope`. Recorded as compile-necessity divergence.
+
+**Task 2.2 — Commit scope name adjusted.** StepLedger specifies commit scope `markdownHeadings` (camelCase) but the project's commitlint `subject-case: lower-case` rule rejects uppercase in subjects. All activity commits use `markdown-headings` (kebab-case) matching existing project commit history.
+
+**Activity 2 — Progress:** Tasks 2.1, 2.2, 2.3 completed. Task 2.4 (commit) pending.
 
 ## Reflection
 

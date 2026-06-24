@@ -4,6 +4,11 @@ export type TransformResult =
   | { success: true; text: string }
   | { success: false; error: string };
 
+export type TransformOutcome =
+  | 'changed'
+  | 'no-op: no transformable heading in scope'
+  | 'no-op: all in-scope headings at the limit';
+
 export interface Line {
   content: string;
   terminator: string;
@@ -104,27 +109,66 @@ function validateHeadings(
   return undefined;
 }
 
-function applyTransform(
-  lines: readonly string[],
-  codeBlockFlags: readonly boolean[],
-  direction: Direction
-): string[] {
-  return lines.map((line, i) => {
-    if (codeBlockFlags[i]) {
+/**
+ * Transforms headings in scope within a document.
+ *
+ * @param text - Full document text.
+ * @param direction - 'increment' or 'decrement'.
+ * @param scopeLines - Zero-based set of line indices that are in scope.
+ *   Lines outside `scopeLines` pass through unchanged.
+ *   Code-block context is tracked across ALL lines regardless of scope membership
+ *   (SR-1/SR-2 correctness: a heading inside a code block opened before the
+ *   selection is not transformed even when its line index is in scope).
+ * @returns An object with `outcome` (three-state) and `text` (full reconstructed
+ *   document). When `outcome` starts with 'no-op', `text` equals the input exactly.
+ */
+export function transformHeadingsInScope(
+  text: string,
+  direction: Direction,
+  scopeLines: Set<number>
+): { outcome: TransformOutcome; text: string } {
+  if (text === '') {
+    return { outcome: 'no-op: no transformable heading in scope', text: '' };
+  }
+
+  const lines = splitLines(text);
+  const contentLines = lines.map((l) => l.content);
+  const codeBlockFlags = isInsideCodeBlock(contentLines);
+
+  let changedCount = 0;
+  let atLimitCount = 0;
+  let inScopeHeadingCount = 0;
+
+  const transformedLines: Line[] = lines.map((line, i) => {
+    const inScope = scopeLines.has(i);
+    if (!inScope || codeBlockFlags[i]) {
       return line;
     }
-    const match = HEADING_RE.exec(line);
+    const match = HEADING_RE.exec(line.content);
     if (!match?.[1]) {
       return line;
     }
-    const fullMatch = match[0]; // e.g. '   ## '
-    const hashes = match[1]; // e.g. '##'
-    // leading spaces = fullMatch minus the hashes and the trailing space
+    inScopeHeadingCount++;
+    const hashes = match[1];
+    if (isAtLimit(hashes.length, direction)) {
+      atLimitCount++;
+      return line;
+    }
+    changedCount++;
+    const fullMatch = match[0];
     const leadingSpaces = fullMatch.slice(0, fullMatch.indexOf(hashes));
-    const rest = line.slice(fullMatch.length - 1); // keep the space after hashes
+    const rest = line.content.slice(fullMatch.length - 1);
     const newHashes = direction === 'increment' ? '#' + hashes : hashes.slice(1);
-    return leadingSpaces + newHashes + rest;
+    return { content: leadingSpaces + newHashes + rest, terminator: line.terminator };
   });
+
+  if (inScopeHeadingCount === 0) {
+    return { outcome: 'no-op: no transformable heading in scope', text };
+  }
+  if (changedCount === 0 && atLimitCount > 0) {
+    return { outcome: 'no-op: all in-scope headings at the limit', text };
+  }
+  return { outcome: 'changed', text: joinLines(transformedLines) };
 }
 
 export function transformHeadings(text: string, direction: Direction): TransformResult {
@@ -132,14 +176,16 @@ export function transformHeadings(text: string, direction: Direction): Transform
     return { success: true, text: '' };
   }
 
-  const lines = text.split('\n');
-  const codeBlockFlags = isInsideCodeBlock(lines);
-
-  const error = validateHeadings(lines, codeBlockFlags, direction);
+  // Preserve old abort behaviour: validate first; any at-limit heading aborts.
+  const rawLines = text.split('\n');
+  const codeBlockFlags = isInsideCodeBlock(rawLines);
+  const error = validateHeadings(rawLines, codeBlockFlags, direction);
   if (error) {
     return { success: false, error };
   }
 
-  const transformed = applyTransform(lines, codeBlockFlags, direction);
-  return { success: true, text: transformed.join('\n') };
+  const lineCount = splitLines(text).length;
+  const scopeLines = new Set(Array.from({ length: lineCount }, (_, i) => i));
+  const result = transformHeadingsInScope(text, direction, scopeLines);
+  return { success: true, text: result.text };
 }
