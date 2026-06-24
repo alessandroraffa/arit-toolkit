@@ -503,6 +503,10 @@ Files: `README.md`, `CHANGELOG.md`.
 
 **Activity 3 — Completed.**
 
+**Task 4.3 — column-based recognition tests also migrated.** The three `describe('column-based recognition')` tests from Activity 1 still called `transformHeadings` (removed in Activity 4). Migrated them to `transformHeadingsInScope` with `allLines()` helper alongside the other migrations. Not mentioned in Task 4.3's scope but required for compile/test correctness.
+
+**Activity 4 — Completed.**
+
 ## Reflection
 
 No reflection entries yet.

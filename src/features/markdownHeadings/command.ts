@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { Logger } from '../../core/logger';
-import { transformHeadings } from './headingTransform';
+import { transformHeadingsInScope, splitLines } from './headingTransform';
 import type { Direction } from './headingTransform';
 
 function isMarkdownUri(uri: vscode.Uri): boolean {
@@ -42,26 +42,27 @@ async function handleExplorer(
 
   const bytes = await vscode.workspace.fs.readFile(uri);
   const text = new TextDecoder().decode(bytes);
-  const result = transformHeadings(text, direction);
 
-  if (!result.success) {
-    void vscode.window.showWarningMessage(`Tangyr: ${result.error}`);
+  const lineCount = splitLines(text).length;
+  const scopeLines = new Set(Array.from({ length: lineCount }, (_, i) => i));
+  const result = transformHeadingsInScope(text, direction, scopeLines);
+
+  if (result.outcome === 'no-op: no transformable heading in scope') {
+    void vscode.window.showInformationMessage('Tangyr: No Markdown heading to change.');
+    return;
+  }
+
+  if (result.outcome === 'no-op: all in-scope headings at the limit') {
+    void vscode.window.showInformationMessage(
+      direction === 'increment'
+        ? 'Tangyr: All headings are already at the maximum level (H6).'
+        : 'Tangyr: All headings are already at the minimum level (H1).'
+    );
     return;
   }
 
   await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(result.text));
   logger.info(`${direction} headings in file: ${uri.fsPath}`);
-}
-
-function getTargetRange(editor: vscode.TextEditor): vscode.Range {
-  if (!editor.selection.isEmpty) {
-    const startLine = editor.document.lineAt(editor.selection.start.line);
-    const endLine = editor.document.lineAt(editor.selection.end.line);
-    return new vscode.Range(startLine.range.start, endLine.range.end);
-  }
-
-  const lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-  return new vscode.Range(editor.document.lineAt(0).range.start, lastLine.range.end);
 }
 
 function getMarkdownEditor(): vscode.TextEditor | undefined {
@@ -79,25 +80,70 @@ function getMarkdownEditor(): vscode.TextEditor | undefined {
   return editor;
 }
 
+/**
+ * Handles heading transformation for the active editor.
+ *
+ * Builds the in-scope line set from `editor.selections`. When all selections are
+ * empty (cursor-only, no text selected), whole-document scope is used. Calls
+ * `transformHeadingsInScope` with that set. On `'changed'`, replaces the whole
+ * document range (start line 0 through last line) with the transformed text —
+ * never a fragment range. On `'no-op'` outcomes, shows an information-level notice
+ * in the VS Code notification area. Never aborts on limit.
+ */
 async function handleEditor(direction: Direction, logger: Logger): Promise<void> {
   const editor = getMarkdownEditor();
   if (!editor) {
     return;
   }
 
-  const range = getTargetRange(editor);
-  const result = transformHeadings(editor.document.getText(range), direction);
+  const text = editor.document.getText();
 
-  if (!result.success) {
-    void vscode.window.showWarningMessage(`Tangyr: ${result.error}`);
+  // Build scope from selections. If all selections are empty (cursor only), use whole document.
+  const allEmpty = editor.selections.every((s) => s.isEmpty);
+  let scopeLines: Set<number>;
+  if (allEmpty) {
+    const lineCount = splitLines(text).length;
+    scopeLines = new Set(Array.from({ length: lineCount }, (_, i) => i));
+  } else {
+    scopeLines = new Set<number>();
+    for (const sel of editor.selections) {
+      for (let ln = sel.start.line; ln <= sel.end.line; ln++) {
+        scopeLines.add(ln);
+      }
+    }
+  }
+
+  const result = transformHeadingsInScope(text, direction, scopeLines);
+
+  if (result.outcome === 'no-op: no transformable heading in scope') {
+    void vscode.window.showInformationMessage('Tangyr: No Markdown heading to change.');
     return;
   }
 
+  if (result.outcome === 'no-op: all in-scope headings at the limit') {
+    void vscode.window.showInformationMessage(
+      direction === 'increment'
+        ? 'Tangyr: All headings are already at the maximum level (H6).'
+        : 'Tangyr: All headings are already at the minimum level (H1).'
+    );
+    return;
+  }
+
+  // outcome === 'changed': replace the whole document range
+  const lastLineNum = editor.document.lineCount - 1;
+  const lastLineLength = (
+    editor.document.lineAt(lastLineNum).range.end as { character: number }
+  ).character;
+  const wholeDocRange = {
+    start: { line: 0, character: 0 },
+    end: { line: lastLineNum, character: lastLineLength },
+  };
+
   await editor.edit((editBuilder) => {
-    editBuilder.replace(range, result.text);
+    editBuilder.replace(wholeDocRange as never, result.text);
   });
 
-  const scope = editor.selection.isEmpty ? '' : ' (selection)';
+  const scope = editor.selections.every((s) => s.isEmpty) ? '' : ' (selection)';
   logger.info(`${direction} headings in editor${scope}`);
 }
 

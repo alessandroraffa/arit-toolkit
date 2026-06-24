@@ -1,9 +1,5 @@
 export type Direction = 'increment' | 'decrement';
 
-export type TransformResult =
-  | { success: true; text: string }
-  | { success: false; error: string };
-
 export type TransformOutcome =
   | 'changed'
   | 'no-op: no transformable heading in scope'
@@ -84,31 +80,6 @@ export function isAtLimit(level: number, direction: Direction): boolean {
   );
 }
 
-const LIMIT_ERRORS: Record<Direction, string> = {
-  increment: 'Cannot increment: one or more headings are already at level 6 (maximum).',
-  decrement: 'Cannot decrement: one or more headings are already at level 1 (minimum).',
-};
-
-function validateHeadings(
-  lines: readonly string[],
-  codeBlockFlags: readonly boolean[],
-  direction: Direction
-): string | undefined {
-  for (let i = 0; i < lines.length; i++) {
-    if (codeBlockFlags[i]) {
-      continue;
-    }
-    const match = HEADING_RE.exec(lines[i] ?? '');
-    if (!match) {
-      continue;
-    }
-    if (isAtLimit(match[1]?.length ?? 0, direction)) {
-      return LIMIT_ERRORS[direction];
-    }
-  }
-  return undefined;
-}
-
 /**
  * Transforms headings in scope within a document.
  *
@@ -176,23 +147,4 @@ export function transformHeadingsInScope(
     return { outcome: 'no-op: all in-scope headings at the limit', text };
   }
   return { outcome: 'changed', text: joinLines(transformedLines) };
-}
-
-export function transformHeadings(text: string, direction: Direction): TransformResult {
-  if (text === '') {
-    return { success: true, text: '' };
-  }
-
-  // Preserve old abort behaviour: validate first; any at-limit heading aborts.
-  const rawLines = text.split('\n');
-  const codeBlockFlags = isInsideCodeBlock(rawLines);
-  const error = validateHeadings(rawLines, codeBlockFlags, direction);
-  if (error) {
-    return { success: false, error };
-  }
-
-  const lineCount = splitLines(text).length;
-  const scopeLines = new Set(Array.from({ length: lineCount }, (_, i) => i));
-  const result = transformHeadingsInScope(text, direction, scopeLines);
-  return { success: true, text: result.text };
 }
