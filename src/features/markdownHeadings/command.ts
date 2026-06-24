@@ -141,14 +141,14 @@ async function handleEditor(direction: Direction, logger: Logger): Promise<void>
   }
 
   // outcome === 'changed': replace the whole document range.
-  // Derive the end position from splitLines so the line model is consistent with the
-  // in-scope set above. The last line index is lineCount - 1; its character length is
-  // the content length (splitLines strips the terminator).
-  const lastLineIdx = lineCount - 1;
-  const lastLineContentLen = (docLines[lastLineIdx]?.content ?? '').length;
+  // Use positionAt(text.length) for the end so the range covers every character
+  // including any trailing terminator (e.g. the '\n' at the end of a
+  // trailing-newline document). A splitLines-derived end position sits before
+  // the terminator of the last line and would leave a residual character when
+  // result.text (which includes that terminator) replaces a range that does not.
   const wholeDocRange = new vscode.Range(
     new vscode.Position(0, 0),
-    new vscode.Position(lastLineIdx, lastLineContentLen)
+    editor.document.positionAt(text.length)
   );
 
   await editor.edit((editBuilder) => {

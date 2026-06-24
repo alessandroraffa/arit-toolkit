@@ -284,6 +284,53 @@ describe('markdownHeadings commands', () => {
       expect(editor.edit).not.toHaveBeenCalled();
     });
 
+    describe('trailing-newline editor path (BK-001)', () => {
+      it('increment on "# Title\\n" replaces with "## Title\\n" — not "## Title\\n\\n"', async () => {
+        // BK-001: for a trailing-newline document, the whole-doc Range end must cover
+        // the trailing '\n' so that editBuilder.replace does not leave a residual '\n'
+        // behind, which would double the terminator.
+        const editor = createMockEditor('# Title\n', 'markdown');
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        expect(editor.edit).toHaveBeenCalled();
+        const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+        const mockBuilder = { replace: vi.fn() };
+        editCallback?.(mockBuilder as never);
+
+        // The replacement text must be exactly '## Title\n' — no extra newline.
+        expect(mockBuilder.replace).toHaveBeenCalledWith(expect.anything(), '## Title\n');
+        const [[, replacementText]] = vi.mocked(mockBuilder.replace).mock.calls;
+        expect(replacementText).toBe('## Title\n');
+        expect(replacementText).not.toBe('## Title\n\n');
+      });
+
+      it('the Range end covers offset text.length so the trailing "\\n" is within the replaced range', async () => {
+        // Verify that the Range end position is positionAt(text.length) = { line: 1, character: 0 }
+        // for '# Title\n' (length 9), not { line: 0, character: 7 } (the buggy value).
+        const docText = '# Title\n';
+        const editor = createMockEditor(docText, 'markdown');
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        expect(editor.edit).toHaveBeenCalled();
+        const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+        const mockBuilder = { replace: vi.fn() };
+        editCallback?.(mockBuilder as never);
+
+        const [[range]] = vi.mocked(mockBuilder.replace).mock.calls;
+        // positionAt(docText.length) = positionAt(9) = { line: 1, character: 0 }
+        expect((range as { end: { line: number; character: number } }).end).toEqual({
+          line: 1,
+          character: 0,
+        });
+      });
+    });
+
     describe('explorer path', () => {
       it('trailing-newline: lineCount via splitLines is 2 (not 3)', async () => {
         const fileContent = '# Title\n## Section\n';
@@ -438,6 +485,34 @@ type MockSelection = {
   isEmpty: boolean;
 };
 
+/**
+ * Converts an absolute character offset into a { line, character } position,
+ * matching VS Code's document.positionAt semantics (handles LF and CRLF).
+ */
+function offsetToPosition(
+  text: string,
+  offset: number
+): { line: number; character: number } {
+  const clamped = Math.max(0, Math.min(offset, text.length));
+  let line = 0;
+  let lineStart = 0;
+  let i = 0;
+  while (i < clamped) {
+    if (text[i] === '\r' && text[i + 1] === '\n') {
+      line++;
+      i += 2;
+      lineStart = i;
+    } else if (text[i] === '\n') {
+      line++;
+      i++;
+      lineStart = i;
+    } else {
+      i++;
+    }
+  }
+  return { line, character: clamped - lineStart };
+}
+
 function createMockEditor(
   text: string,
   languageId: string,
@@ -448,6 +523,7 @@ function createMockEditor(
     languageId: string;
     lineAt: ReturnType<typeof vi.fn>;
     lineCount: number;
+    positionAt: (offset: number) => { line: number; character: number };
   };
   selection: MockSelection;
   selections: MockSelection[];
@@ -498,6 +574,7 @@ function createMockEditor(
         },
       })),
       lineCount: lines.length,
+      positionAt: (offset: number) => offsetToPosition(text, offset),
     },
     selection: sel,
     selections: sels,
