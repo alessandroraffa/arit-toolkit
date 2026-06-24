@@ -318,6 +318,47 @@ describe('markdownHeadings commands', () => {
         const writtenText = new TextDecoder().decode(writtenBytes);
         expect(writtenText).toBe('## Title\r\n### Section\r\n');
       });
+
+      it('CRLF all-at-H6-limit: showInformationMessage, writeFile not called', async () => {
+        const fileContent = '###### Deep\r\n';
+        const encoded = new TextEncoder().encode(fileContent);
+        workspace.fs.readFile = vi.fn().mockResolvedValue(encoded);
+        workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+        const uri = { fsPath: '/workspace/doc.md' };
+
+        const command = createIncrementCommand(mockLogger);
+        await command(uri as never);
+
+        expect(window.showInformationMessage).toHaveBeenCalledWith(
+          'Tangyr: All headings are already at the maximum level (H6).'
+        );
+        expect(workspace.fs.writeFile).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('SR-1 command-path (handleEditor)', () => {
+      it('fence-state tracking: heading inside code block not transformed through command dispatch', async () => {
+        // Document: fenced code block containing a line that looks like an ATX heading.
+        // The command must NOT transform '## Inside' because it is inside the fence.
+        const docText = '```\n## Inside\n```';
+        const editor = createMockEditor(docText, 'markdown', [
+          {
+            start: { line: 0, character: 0 },
+            end: { line: 2, character: 3 },
+            isEmpty: false,
+          },
+        ]);
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        // No replacement — no real heading found
+        expect(editor.edit).not.toHaveBeenCalled();
+        expect(window.showInformationMessage).toHaveBeenCalledWith(
+          'Tangyr: No Markdown heading to change.'
+        );
+      });
     });
   });
 });

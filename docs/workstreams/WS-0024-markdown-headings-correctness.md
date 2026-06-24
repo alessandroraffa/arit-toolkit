@@ -507,6 +507,8 @@ Files: `README.md`, `CHANGELOG.md`.
 
 **Activity 4 — Completed.**
 
+**Activity 5 — Completed.**
+
 ## Reflection
 
 No reflection entries yet.

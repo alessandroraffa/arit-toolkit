@@ -330,3 +330,27 @@ describe('transformHeadingsInScope', () => {
     expect(result.text).toBe('## H1\n### H2\n#### H3\n##### H4');
   });
 });
+
+describe('SR-1 representative', () => {
+  it('scope inside a code block: heading inside code block is not transformed', () => {
+    // Fence opens before scope; scope lines 1-2 are inside the code block.
+    // '## Inside' looks like a heading but is inside the fence.
+    const input = '```\n## Inside\n```';
+    // Lines: 0='```', 1='## Inside', 2='```'
+    // All lines in scope — but line 1 is inside a code block
+    const result = transformHeadingsInScope(input, 'increment', new Set([0, 1, 2]));
+    // No real headings found — fence-state tracking prevents ## from being treated as heading
+    expect(result.outcome).toBe('no-op: no transformable heading in scope');
+    expect(result.text).toBe(input);
+  });
+
+  it('real heading above code block + fake heading inside: only real heading transforms', () => {
+    // '# Title' is a real heading; '## Inside' is inside the fence.
+    const input = '# Title\n```\n## Inside\n```';
+    // Lines: 0='# Title', 1='```', 2='## Inside', 3='```'
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    // Only '# Title' shifts; '## Inside' is code and stays
+    expect(result.text).toBe('## Title\n```\n## Inside\n```');
+  });
+});
