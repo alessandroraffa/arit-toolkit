@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   refresh:
@@ -16,6 +17,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Check out with the bot PAT so the branch push and the opened PR are
+          # attributed to a non-default identity. A PR opened by the default
+          # GITHUB_TOKEN does NOT trigger the on:pull_request CI workflow.
+          token: ${{ secrets.POPULARITY_BOT_TOKEN }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -33,10 +39,13 @@ jobs:
 
       - name: Run popularity refresh and open PR
         env:
-          # The auto-provided GITHUB_TOKEN authenticates GitHub star reads
-          # (~1000 req/h on public repos) and opens the refresh PR. No custom
-          # secret is needed — and a GITHUB_-prefixed secret cannot be created.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use the bot PAT so the PR is opened by a non-default identity and
+          # therefore triggers the on:pull_request CI checks (a PR opened by the
+          # default GITHUB_TOKEN does not). The PAT also authenticates the GitHub
+          # star reads (~5000 req/h). gh reads GH_TOKEN; the refresh tool reads
+          # GITHUB_POPULARITY_TOKEN ?? GITHUB_TOKEN.
+          GH_TOKEN: ${{ secrets.POPULARITY_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.POPULARITY_BOT_TOKEN }}
         run: |
           BRANCH="chore/popularity-refresh-$(date +%Y-%m)"
 
