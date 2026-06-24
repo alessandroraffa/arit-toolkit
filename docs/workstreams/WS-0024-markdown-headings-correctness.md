@@ -497,7 +497,11 @@ Files: `README.md`, `CHANGELOG.md`.
 
 **Task 2.2 — Commit scope name adjusted.** StepLedger specifies commit scope `markdownHeadings` (camelCase) but the project's commitlint `subject-case: lower-case` rule rejects uppercase in subjects. All activity commits use `markdown-headings` (kebab-case) matching existing project commit history.
 
-**Activity 2 — Progress:** Tasks 2.1, 2.2, 2.3 completed. Task 2.4 (commit) pending.
+**Activity 2 — Completed.**
+
+**Task 3.1 — Tests passed immediately (no failing phase).** Activity 2's implementation of `transformHeadingsInScope` already correctly handles partial transforms (mixed at-limit and non-limit headings). All three new Task 3.1 tests passed without code changes. This is correct behavior — the StepLedger's "write failing tests first" ordering assumes tests would fail, but the Activity 2 logic was already complete for this case.
+
+**Activity 3 — Completed.**
 
 ## Reflection
 

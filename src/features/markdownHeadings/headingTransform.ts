@@ -120,7 +120,14 @@ function validateHeadings(
  *   (SR-1/SR-2 correctness: a heading inside a code block opened before the
  *   selection is not transformed even when its line index is in scope).
  * @returns An object with `outcome` (three-state) and `text` (full reconstructed
- *   document). When `outcome` starts with 'no-op', `text` equals the input exactly.
+ *   document). Outcome values:
+ *   - `'changed'`: at least one in-scope heading was shifted. A mixed scope where
+ *     some headings are at the limit and others are not produces `'changed'` —
+ *     the at-limit headings are left unchanged; the remaining in-scope headings shift.
+ *   - `'no-op: no transformable heading in scope'`: no ATX heading was found in scope.
+ *   - `'no-op: all in-scope headings at the limit'`: every in-scope heading is already
+ *     at the boundary (H6 for increment, H1 for decrement).
+ *   When `outcome` starts with `'no-op'`, `text` equals the input exactly.
  */
 export function transformHeadingsInScope(
   text: string,

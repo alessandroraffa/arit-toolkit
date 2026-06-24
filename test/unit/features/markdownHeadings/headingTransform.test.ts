@@ -19,12 +19,12 @@ describe('transformHeadings', () => {
     });
 
     it('should handle h6 headings by aborting', () => {
-      const input = '## Section\n\n###### Deep heading';
-      const result = transformHeadings(input, 'increment');
-
+      // Rewritten in Activity 3: pure all-at-limit input uses transformHeadingsInScope
+      const input = '###### A\n\n###### B';
+      const result = transformHeadingsInScope(input, 'increment', new Set([0, 2]));
       expect(result).toEqual({
-        success: false,
-        error: 'Cannot increment: one or more headings are already at level 6 (maximum).',
+        outcome: 'no-op: all in-scope headings at the limit',
+        text: input,
       });
     });
 
@@ -84,12 +84,12 @@ describe('transformHeadings', () => {
     });
 
     it('should abort when any heading is already h1', () => {
-      const input = '# Title\n\n## Section';
-      const result = transformHeadings(input, 'decrement');
-
+      // Rewritten in Activity 3: pure all-at-limit input uses transformHeadingsInScope
+      const input = '# A\n\n# B';
+      const result = transformHeadingsInScope(input, 'decrement', new Set([0, 2]));
       expect(result).toEqual({
-        success: false,
-        error: 'Cannot decrement: one or more headings are already at level 1 (minimum).',
+        outcome: 'no-op: all in-scope headings at the limit',
+        text: input,
       });
     });
 
@@ -307,5 +307,34 @@ describe('transformHeadingsInScope', () => {
     const result = transformHeadingsInScope(input, 'increment', scopeLines);
     expect(result.outcome).toBe('changed');
     expect(result.text).toBe('## Title\n\n   ```\n   # In code\n   ```\n\n### Section');
+  });
+
+  it('mixed scope: some headings at limit, some not — only non-limit headings shift, outcome is changed', () => {
+    // H2 (not at limit) + H6 (at limit for increment) — H2 shifts, H6 stays
+    const input = '## Section\n\n###### Deep';
+    const scopeLines = new Set([0, 1, 2]);
+    const result = transformHeadingsInScope(input, 'increment', scopeLines);
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('### Section\n\n###### Deep');
+  });
+
+  it('scope spanning lines 1-3 of five-heading document: only those headings shift', () => {
+    // Lines: 0='# H1', 1='## H2', 2='### H3', 3='#### H4', 4='##### H5'
+    const input = '# H1\n## H2\n### H3\n#### H4\n##### H5';
+    const scopeLines = new Set([1, 2, 3]);
+    const result = transformHeadingsInScope(input, 'increment', scopeLines);
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('# H1\n### H2\n#### H3\n##### H4\n##### H5');
+  });
+
+  it('multi-selection dedup: overlapping union produces same result as union set applied once', () => {
+    // Two overlapping selections covering lines 0-2 and lines 1-3
+    const input = '# H1\n## H2\n### H3\n#### H4';
+    const sel1 = new Set([0, 1, 2]);
+    const sel2 = new Set([1, 2, 3]);
+    const union = new Set([...sel1, ...sel2]); // [0,1,2,3]
+    const result = transformHeadingsInScope(input, 'increment', union);
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('## H1\n### H2\n#### H3\n##### H4');
   });
 });
