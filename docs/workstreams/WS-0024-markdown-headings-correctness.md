@@ -1,7 +1,7 @@
 ---
 id: WS-0024
 title: 'Markdown Headings Correctness'
-status: in-progress
+status: completed
 plan: PLAN-007
 spec: SPEC-005
 branch: fix/markdown-headings-correctness
@@ -513,6 +513,31 @@ Files: `README.md`, `CHANGELOG.md`.
 
 **Activity 6 — Completed.**
 
+**Activity 7 — Completed.**
+
 ## Reflection
 
-No reflection entries yet.
+**Divergence count by cause:**
+
+- **Spec gap** (StepLedger did not specify something the agent had to decide): 2
+  - Task 1.2 sequencing: HEADING_RE and applyTransform needed to change in Task 1.3, but the boundary between 1.2 and 1.3 was authored as if they were independent. The agent correctly handled this in sequence.
+  - Task 4.3 column-based test migration: not listed in Task 4.3 scope but required since those tests called the removed shim.
+
+- **Convention ambiguity** (project conventions did not cover a situation encountered): 2
+  - Commit scope format: StepLedger prescribed `markdownHeadings` (camelCase) but the project enforces `subject-case: lower-case` and uses kebab-case scopes (`markdown-headings`). Every activity commit was adjusted.
+  - Commit subject length: the StepLedger's prescribed Activity 4 message exceeded the 100-character header limit and had to be shortened.
+
+- **Codebase drift** (StepLedger referenced something that had changed since authoring): 1
+  - `applyTransform` removal in Activity 2: the shim was redesigned to delegate to `transformHeadingsInScope` without calling `applyTransform`, making it dead code that TypeScript's `noUnusedLocals` rejected. Removed with no behavioral impact.
+
+- **Tooling limitation**: 0
+
+- **Other**: 2
+  - Task 1.3 ESLint `consistent-type-definitions`: `Line` needed `interface` not `type`. Minor; caught and fixed immediately.
+  - Tasks 3.1 and 6.1 immediate-pass: the StepLedger assumed tests would fail before implementation, but Activity 2's implementation was already complete for partial transforms, and the HEADING_RE was already correct for setext. Tests passed on first run with no code changes.
+
+**Recurring patterns:**
+
+- Commit conventions (scope + header length): the StepLedger's prescribed messages conflicted with the project's commitlint rules in two activities. **Proposed improvement**: add a commit-conventions note to the StepLedger authoring checklist that commit messages must pass `pnpm commitlint --from HEAD~1` before being prescribed — specifically scope must be kebab-case and header ≤ 100 characters for this project.
+
+**Assessment:** No systemic issues. All divergences were minor (compile necessity, lint hygiene, commit message format). The implementation is complete and the full quality gate passes at every activity commit. The core behavior changes (partial transform, multi-selection, direction-aware notices, CRLF preservation) are correctly implemented and verified.

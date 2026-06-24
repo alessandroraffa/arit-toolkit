@@ -166,7 +166,9 @@ Increment or decrement all markdown heading levels by one. Works on an entire fi
 **Increment** adds one `#` to each heading (`## Title` → `### Title`).
 **Decrement** removes one `#` from each heading (`### Title` → `## Title`).
 
-If any heading would exceed the valid range (h1–h6), the entire operation is aborted with a message. Headings inside fenced code blocks are left untouched.
+Headings at the level limit are skipped; the remaining headings in scope are still changed. When no heading is found or all headings are already at the limit, an information-level notice appears in the VS Code notification area. Headings inside fenced code blocks are left untouched.
+
+**Known limitations.** Setext-style headings (underline with `===` or `---`) are not recognised or transformed. If a document uses setext headings exclusively, the command will show "No Markdown heading to change." Converting setext headings to ATX style before using this command keeps the document visibly in sync.
 
 **Access:**
 
