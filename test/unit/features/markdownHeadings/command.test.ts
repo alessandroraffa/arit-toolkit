@@ -336,6 +336,75 @@ describe('markdownHeadings commands', () => {
       });
     });
 
+    describe('multi-selection (AC24 / AC25 — F6)', () => {
+      it('AC24: two disjoint selections each transform their own heading', async () => {
+        // Lines: 0='# H1', 1='', 2='## H2', 3='', 4='### H3'
+        // sel1 covers line 0, sel2 covers line 4; line 2 is outside both selections.
+        const fullText = '# H1\n\n## H2\n\n### H3';
+        const editor = createMockEditor(fullText, 'markdown', [
+          {
+            start: { line: 0, character: 0 },
+            end: { line: 0, character: 4 },
+            isEmpty: false,
+          },
+          {
+            start: { line: 4, character: 0 },
+            end: { line: 4, character: 7 },
+            isEmpty: false,
+          },
+        ]);
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        expect(editor.edit).toHaveBeenCalled();
+        const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+        const mockBuilder = { replace: vi.fn() };
+        editCallback?.(mockBuilder as never);
+
+        // Only lines 0 and 4 are in scope; line 2 (## H2) is untouched.
+        expect(mockBuilder.replace).toHaveBeenCalledWith(
+          expect.anything(),
+          '## H1\n\n## H2\n\n#### H3'
+        );
+      });
+
+      it('AC25: overlapping selections shift a shared heading exactly once', async () => {
+        // Lines: 0='# H1', 1='## H2', 2='### H3'
+        // sel1 covers lines 0-1, sel2 covers lines 1-2.
+        // Line 1 (## H2) is in both — must shift only once.
+        const fullText = '# H1\n## H2\n### H3';
+        const editor = createMockEditor(fullText, 'markdown', [
+          {
+            start: { line: 0, character: 0 },
+            end: { line: 1, character: 5 },
+            isEmpty: false,
+          },
+          {
+            start: { line: 1, character: 0 },
+            end: { line: 2, character: 7 },
+            isEmpty: false,
+          },
+        ]);
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        expect(editor.edit).toHaveBeenCalled();
+        const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+        const mockBuilder = { replace: vi.fn() };
+        editCallback?.(mockBuilder as never);
+
+        // All three headings are in union scope; each shifts by exactly one level.
+        expect(mockBuilder.replace).toHaveBeenCalledWith(
+          expect.anything(),
+          '## H1\n### H2\n#### H3'
+        );
+      });
+    });
+
     describe('SR-1 command-path (handleEditor)', () => {
       it('fence-state tracking: heading inside code block not transformed through command dispatch', async () => {
         // Document: fenced code block containing a line that looks like an ATX heading.

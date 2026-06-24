@@ -35,11 +35,38 @@ export function joinLines(lines: Line[]): string {
   return lines.map((l) => l.content + l.terminator).join('');
 }
 
-// ATX headings may be preceded by 0–3 spaces (column 0–3 after tab expansion at 4-column stops).
-// A tab counts as 4 columns, so a tab before # places it at column 4 (not a heading).
-// This regex matches 0–3 literal spaces before the # sequence.
-const HEADING_RE = /^ {0,3}(#{1,6})\s/;
+// ATX headings may be preceded by 0–3 literal spaces (CommonMark §4.2).
+// This regex matches exactly 0–3 literal space characters before the # run; a leading tab
+// does not match '^ {0,3}' and therefore correctly fails to match (a tab reaches column 4,
+// making the line indented code, not a heading — no explicit tab arithmetic is needed here).
+// The '(\s|$)' terminator covers space, tab, OR end-of-line (bare ATX heading, CommonMark §4.2).
+const HEADING_RE = /^ {0,3}(#{1,6})(\s|$)/;
+
+// Fence openers and closers must have 0–3 columns of leading indentation (CommonMark §4.5).
+// FENCE_RE matches any leading whitespace to extract the prefix for column measurement;
+// fence validity is enforced by leadingColumns() before accepting the match.
 const FENCE_RE = /^(\s*)(```+|~~~+)/;
+
+/**
+ * Measures the leading indentation of a line in columns, per CommonMark §2.2.
+ * Each tab advances to the next 4-column tab stop.
+ * A single leading tab reaches column 4 (≥ 4), making the line indented code.
+ * Three leading spaces occupy columns 0–2 (< 4), so they are within the heading/fence range.
+ */
+function leadingColumns(line: string): number {
+  let col = 0;
+  for (const ch of line) {
+    if (ch === ' ') {
+      col++;
+    } else if (ch === '\t') {
+      // Advance to the next 4-column tab stop
+      col = col + (4 - (col % 4));
+    } else {
+      break;
+    }
+  }
+  return col;
+}
 
 function isInsideCodeBlock(lines: readonly string[]): boolean[] {
   const result: boolean[] = [];
@@ -50,7 +77,8 @@ function isInsideCodeBlock(lines: readonly string[]): boolean[] {
   for (const line of lines) {
     const fenceMatch = FENCE_RE.exec(line);
 
-    if (fenceMatch && !insideCode) {
+    // A fence opener is only valid when its leading indentation is 0–3 columns (CommonMark §4.5).
+    if (fenceMatch && !insideCode && leadingColumns(line) <= 3) {
       insideCode = true;
       fenceChar = fenceMatch[2]?.[0] ?? '`';
       fenceLen = fenceMatch[2]?.length ?? 3;
@@ -67,10 +95,16 @@ function isInsideCodeBlock(lines: readonly string[]): boolean[] {
 }
 
 function isClosingFence(line: string, char: string, minLen: number): boolean {
+  // A closing fence must have 0–3 columns of leading indentation (CommonMark §4.5).
+  // Lines with 4+ columns of leading indentation are indented code, not fences.
+  if (leadingColumns(line) >= 4) {
+    return false;
+  }
   const trimmed = line.trimStart();
   if (!trimmed.startsWith(char.repeat(minLen))) {
     return false;
   }
+  // The remainder after the fence run must be only whitespace (trimming handles \r from CRLF).
   return trimmed.replace(new RegExp(`^\\${char}+`), '').trim() === '';
 }
 
@@ -135,7 +169,14 @@ export function transformHeadingsInScope(
     changedCount++;
     const fullMatch = match[0];
     const leadingSpaces = fullMatch.slice(0, fullMatch.indexOf(hashes));
-    const rest = line.content.slice(fullMatch.length - 1);
+    // match[2] is the separator: a space/tab character, or an empty string when the
+    // heading ends at the line boundary (bare ATX, e.g. '##'). When there is a
+    // separator character we keep it in `rest` by starting one character before the
+    // full-match end; when there is none ($), rest is empty.
+    const hasSeparator = (match[2] ?? '').length > 0;
+    const rest = hasSeparator
+      ? line.content.slice(fullMatch.length - 1)
+      : line.content.slice(fullMatch.length);
     const newHashes = direction === 'increment' ? '#' + hashes : hashes.slice(1);
     return { content: leadingSpaces + newHashes + rest, terminator: line.terminator };
   });

@@ -1,13 +1,3 @@
-## [Unreleased]
-
-### Fixed
-
-- Markdown Headings: partial transform — headings at the level limit are skipped; the remaining headings in scope are still changed
-- Markdown Headings: multi-selection support — union of all selection ranges determines the in-scope set
-- Markdown Headings: limit and no-heading cases now show an information-level notice instead of a warning
-- Markdown Headings: CRLF line endings are preserved in the output
-- Markdown Headings: known limitation — setext headings (underline style) are not recognised or transformed
-
 ## [2.8.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.8.0...v2.8.1) (2026-06-23)
 
 ### Bug Fixes

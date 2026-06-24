@@ -1,10 +1,31 @@
 import * as vscode from 'vscode';
 import type { Logger } from '../../core/logger';
 import { transformHeadingsInScope, splitLines } from './headingTransform';
-import type { Direction } from './headingTransform';
+import type { Direction, Line, TransformOutcome } from './headingTransform';
 
 function isMarkdownUri(uri: vscode.Uri): boolean {
   return uri.fsPath.endsWith('.md') || uri.fsPath.endsWith('.markdown');
+}
+
+/**
+ * Shows an information-level VS Code notification for a no-op transform outcome.
+ * Returns `true` if a notice was shown (caller should return early); `false` if
+ * the outcome is `'changed'` and execution should continue.
+ */
+function showOutcomeNotice(outcome: TransformOutcome, direction: Direction): boolean {
+  if (outcome === 'no-op: no transformable heading in scope') {
+    void vscode.window.showInformationMessage('Tangyr: No Markdown heading to change.');
+    return true;
+  }
+  if (outcome === 'no-op: all in-scope headings at the limit') {
+    void vscode.window.showInformationMessage(
+      direction === 'increment'
+        ? 'Tangyr: All headings are already at the maximum level (H6).'
+        : 'Tangyr: All headings are already at the minimum level (H1).'
+    );
+    return true;
+  }
+  return false;
 }
 
 function createHeadingCommand(
@@ -47,17 +68,7 @@ async function handleExplorer(
   const scopeLines = new Set(Array.from({ length: lineCount }, (_, i) => i));
   const result = transformHeadingsInScope(text, direction, scopeLines);
 
-  if (result.outcome === 'no-op: no transformable heading in scope') {
-    void vscode.window.showInformationMessage('Tangyr: No Markdown heading to change.');
-    return;
-  }
-
-  if (result.outcome === 'no-op: all in-scope headings at the limit') {
-    void vscode.window.showInformationMessage(
-      direction === 'increment'
-        ? 'Tangyr: All headings are already at the maximum level (H6).'
-        : 'Tangyr: All headings are already at the minimum level (H1).'
-    );
+  if (showOutcomeNotice(result.outcome, direction)) {
     return;
   }
 
@@ -89,6 +100,11 @@ function getMarkdownEditor(): vscode.TextEditor | undefined {
  * document range (start line 0 through last line) with the transformed text —
  * never a fragment range. On `'no-op'` outcomes, shows an information-level notice
  * in the VS Code notification area. Never aborts on limit.
+ *
+ * The in-scope set and the whole-document replace range are both derived from
+ * `splitLines(text)` so that trailing-newline documents are consistent: a text
+ * ending in '\n' produces N lines (the final empty content after the last '\n'
+ * is not a separate line in splitLines), matching the line count used by the transform.
  */
 async function handleEditor(direction: Direction, logger: Logger): Promise<void> {
   const editor = getMarkdownEditor();
@@ -98,11 +114,16 @@ async function handleEditor(direction: Direction, logger: Logger): Promise<void>
 
   const text = editor.document.getText();
 
+  // Build the in-scope line set from splitLines(text) so the line model is consistent
+  // with the transform (not with editor.document.lineCount, which counts differently
+  // for trailing-newline documents).
+  const docLines: Line[] = splitLines(text);
+  const lineCount = docLines.length;
+
   // Build scope from selections. If all selections are empty (cursor only), use whole document.
   const allEmpty = editor.selections.every((s) => s.isEmpty);
   let scopeLines: Set<number>;
   if (allEmpty) {
-    const lineCount = splitLines(text).length;
     scopeLines = new Set(Array.from({ length: lineCount }, (_, i) => i));
   } else {
     scopeLines = new Set<number>();
@@ -115,32 +136,23 @@ async function handleEditor(direction: Direction, logger: Logger): Promise<void>
 
   const result = transformHeadingsInScope(text, direction, scopeLines);
 
-  if (result.outcome === 'no-op: no transformable heading in scope') {
-    void vscode.window.showInformationMessage('Tangyr: No Markdown heading to change.');
+  if (showOutcomeNotice(result.outcome, direction)) {
     return;
   }
 
-  if (result.outcome === 'no-op: all in-scope headings at the limit') {
-    void vscode.window.showInformationMessage(
-      direction === 'increment'
-        ? 'Tangyr: All headings are already at the maximum level (H6).'
-        : 'Tangyr: All headings are already at the minimum level (H1).'
-    );
-    return;
-  }
-
-  // outcome === 'changed': replace the whole document range
-  const lastLineNum = editor.document.lineCount - 1;
-  const lastLineLength = (
-    editor.document.lineAt(lastLineNum).range.end as { character: number }
-  ).character;
-  const wholeDocRange = {
-    start: { line: 0, character: 0 },
-    end: { line: lastLineNum, character: lastLineLength },
-  };
+  // outcome === 'changed': replace the whole document range.
+  // Derive the end position from splitLines so the line model is consistent with the
+  // in-scope set above. The last line index is lineCount - 1; its character length is
+  // the content length (splitLines strips the terminator).
+  const lastLineIdx = lineCount - 1;
+  const lastLineContentLen = (docLines[lastLineIdx]?.content ?? '').length;
+  const wholeDocRange = new vscode.Range(
+    new vscode.Position(0, 0),
+    new vscode.Position(lastLineIdx, lastLineContentLen)
+  );
 
   await editor.edit((editBuilder) => {
-    editBuilder.replace(wholeDocRange as never, result.text);
+    editBuilder.replace(wholeDocRange, result.text);
   });
 
   const scope = editor.selections.every((s) => s.isEmpty) ? '' : ' (selection)';

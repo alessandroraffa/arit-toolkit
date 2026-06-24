@@ -355,6 +355,95 @@ describe('SR-1 representative', () => {
   });
 });
 
+describe('bare ATX heading (AC14 — F3)', () => {
+  // SPEC-005 Bare ATX §1: a line of only 1–6 '#' characters (with optional trailing
+  // whitespace but no title text) is a valid empty ATX heading.
+  // HEADING_RE must match with '(\s|$)' not '\s' so end-of-line is accepted.
+
+  it('bare "#" (no trailing char) is transformed by increment', () => {
+    const input = '#';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('##');
+  });
+
+  it('bare "##" (no trailing char) is transformed by increment', () => {
+    const input = '##';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('###');
+  });
+
+  it('bare "#" decrement is a boundary no-op', () => {
+    const input = '#';
+    const result = transformHeadingsInScope(input, 'decrement', allLines(input));
+    expect(result.outcome).toBe('no-op: all in-scope headings at the limit');
+    expect(result.text).toBe(input);
+  });
+
+  it('bare "##  " preserves trailing spaces on increment (AC14)', () => {
+    // '##  ' — two hashes followed by two trailing spaces, no title.
+    const input = '##  ';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('###  ');
+  });
+});
+
+describe('CRLF closing-fence round-trip (AC21 — F7)', () => {
+  it('CRLF document: closing fence is recognized and heading after fence is transformed', () => {
+    // Per SPEC-005 AC21: the trailing \r of a CRLF ending must not prevent
+    // closing-fence recognition. '# outside' must be transformed.
+    const input = '```\r\n# in code\r\n```\r\n# outside\r\n';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('```\r\n# in code\r\n```\r\n## outside\r\n');
+  });
+});
+
+describe('over-indented fence (AC17/AC18/AC19 — F2 fixtures)', () => {
+  // Per CommonMark and SPEC-005 Fenced-code-block boundary correctness:
+  // A fence opener or closer must have 0–3 columns of leading indentation.
+  // A line indented by 4+ columns (four spaces or a leading tab) is indented
+  // code content — not a fence opener or closer.
+
+  it('4-space indented fence opener is not a fence: heading after it is transformed (AC18)', () => {
+    // '    ```' has 4 spaces (column 4) — not a fence opener, just indented code.
+    // '# Real heading' should still be transformed.
+    const input = '    ```\n# Real heading';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('    ```\n## Real heading');
+  });
+
+  it('tab-indented fence opener is not a fence: heading after it is transformed (AC19)', () => {
+    // '\t```' — the tab reaches column 4, making this indented code, not a fence opener.
+    const input = '\t```\n# Real heading';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('\t```\n## Real heading');
+  });
+
+  it('4-space indented closing fence does not close block: in-code headings after it stay unchanged (AC17)', () => {
+    // The block opens with '```'. The 4-space indented '    ```' does NOT close it.
+    // '## also in code' appears after the 4-space fence — it must stay untransformed.
+    // The genuine closing '```' finally closes the block.
+    const input = '```\n# in code\n    ```\n## also in code\n```\n# outside';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    // Only '# outside' is transformed; the in-code lines are unchanged.
+    expect(result.text).toBe('```\n# in code\n    ```\n## also in code\n```\n## outside');
+  });
+
+  it('3-space indented fence is a valid fence (boundary case — must keep passing)', () => {
+    // Three-space indent is within the 0–3-column range — this is a valid fence.
+    const input = '# Title\n\n   ```\n   # In code\n   ```\n\n## Section';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('## Title\n\n   ```\n   # In code\n   ```\n\n### Section');
+  });
+});
+
 describe('setext headings (non-corruption)', () => {
   // Setext headings do not match HEADING_RE — no code change required.
   // These tests confirm that setext-style headings are simply ignored (not corrupted).
