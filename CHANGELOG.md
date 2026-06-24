@@ -1,3 +1,18 @@
+## [2.9.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.8.1...v2.9.0) (2026-06-24)
+
+### Features
+
+* **markdown-headings:** add splitlines, joinlines, and column-based atx recognition ([f10ce19](https://github.com/alessandroraffa/tangyr-vscode/commit/f10ce194d837a9f3be82a3d9f37d50e885c7a78e))
+* **markdown-headings:** add transformheadingsinscope with three-state outcome ([2187cb3](https://github.com/alessandroraffa/tangyr-vscode/commit/2187cb35ef5189b517dc3b70bbe31182e0053433))
+
+### Bug Fixes
+
+* **markdown-headings:** enforce 0-3-column fence indentation, bare atx, and multi-selection ([0786579](https://github.com/alessandroraffa/tangyr-vscode/commit/0786579d0ef5d337b3ed2cfce07cd2b2c0245121))
+* **markdown-headings:** partial transform, multi-selection, direction-aware notices, crlf ([1700050](https://github.com/alessandroraffa/tangyr-vscode/commit/1700050dfa83b88587a83a4ffd5956c93e779987))
+* **markdown-headings:** remove limit abort and finalize three-state partial-transform outcome ([344cf8c](https://github.com/alessandroraffa/tangyr-vscode/commit/344cf8ca5ba3ea6d12982de2d1f1cc2314c9fc7a))
+* **markdown-headings:** rewire command to transformheadingsinscope and remove abort ([ee069aa](https://github.com/alessandroraffa/tangyr-vscode/commit/ee069aa9ed9add4a0f175d6eb194d7d41f1a4e33))
+* **markdown-headings:** trailing-newline editor path doubles terminator ([c57dcdf](https://github.com/alessandroraffa/tangyr-vscode/commit/c57dcdf9969a60c38ad6b6a22e90f2bd4246be0f))
+
 ## [2.8.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.8.0...v2.8.1) (2026-06-23)
 
 ### Bug Fixes
