@@ -1,12 +1,12 @@
 ---
 id: WS-0024
 title: 'Markdown Headings Correctness'
-status: idle
+status: in-progress
 plan: PLAN-007
 spec: SPEC-005
 branch: fix/markdown-headings-correctness
 created: 2025-07-04
-updated: 2025-07-04
+updated: 2026-06-24
 ---
 
 This workstream implements [SPEC-005](../specifications/SPEC-005-markdown-headings-correctness.md) by following the seven sequential increments defined in [PLAN-007](../plans/PLAN-007-markdown-headings-correctness.md): recognition core (Activity 1), full-document context and confined transform — the SR-1/SR-2 core (Activity 2), partial transform with a three-state outcome (Activity 3), command layer rewire (Activity 4), net-new test coverage and coverage sweep (Activity 5), setext non-corruption verification (Activity 6), and user-facing documentation (Activity 7). All seven activities touch the same two source files and their tests on one shared branch; each activity consumes the prior activity's output and must leave the full quality gate green before proceeding. Obsolete test assertions are rewritten in the same commit as the behavior change that makes them obsolete: Activity 3 co-locates the `headingTransform.test.ts` abort-test rewrites with the partial-transform implementation; Activity 4 co-locates the `command.test.ts` abort/fragment-test rewrites and the full `headingTransform.test.ts` API migration with the command rewire.
@@ -486,6 +486,12 @@ Files: `README.md`, `CHANGELOG.md`.
 ## Divergences
 
 **PLAN-007 / Increment 5 — SR-1 test placement.** PLAN-007 Increment 5 names the SR-1 guard an integration test. `transformHeadingsInScope` is not bundle-reachable (`index.ts` exports only `registerMarkdownHeadingsFeature`), so the transform-level SR-1 test is placed in the unit suite (`headingTransform.test.ts`). A command-path SR-1 test through `handleEditor` with a mocked editor whose selection is inside a fenced code block provides the command-level regression coverage: the code bytes inside the block are left unchanged, confirming SR-1 correctness through the full command dispatch path. This command-path test is part of Activity 5 net-new coverage (Task 5.2).
+
+**Task 1.2 — `HEADING_RE` and `applyTransform` modified in Task 1.2 scope.** Task 1.2 said "Do not modify... `HEADING_RE`... or `applyTransform`." However, Task 1.3 required updating `HEADING_RE` for column-based recognition, which also required updating `applyTransform` to correctly extract and preserve leading spaces from indented headings. Both changes were required by Task 1.3 and were made as part of Activity 1's natural sequence (1.2 then 1.3 in one pass). The resulting code is correct and all tests pass. This is a minor sequencing note: the StepLedger authored 1.2 and 1.3 as separate steps but the HEADING_RE change naturally touches both. No behavioral divergence.
+
+**Task 1.3 — `Line` interface required instead of `type`.** The project ESLint config enforces `@typescript-eslint/consistent-type-definitions` (interface over type). The `Line` type added in Task 1.2 was initially declared as `export type Line = {...}` which triggered a lint error. Converted to `export interface Line { ... }` to comply.
+
+**Activity 1 — Progress:** Tasks 1.1, 1.2, 1.3 completed. Task 1.4 (commit) pending.
 
 ## Reflection
 

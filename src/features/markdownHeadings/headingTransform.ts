@@ -4,7 +4,40 @@ export type TransformResult =
   | { success: true; text: string }
   | { success: false; error: string };
 
-const HEADING_RE = /^(#{1,6})\s/;
+export interface Line {
+  content: string;
+  terminator: string;
+}
+
+export function splitLines(text: string): Line[] {
+  if (text === '') return [];
+  const result: Line[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const crlfIdx = text.indexOf('\r\n', i);
+    const lfIdx = text.indexOf('\n', i);
+    if (crlfIdx !== -1 && (lfIdx === -1 || crlfIdx <= lfIdx)) {
+      result.push({ content: text.slice(i, crlfIdx), terminator: '\r\n' });
+      i = crlfIdx + 2;
+    } else if (lfIdx !== -1) {
+      result.push({ content: text.slice(i, lfIdx), terminator: '\n' });
+      i = lfIdx + 1;
+    } else {
+      result.push({ content: text.slice(i), terminator: '' });
+      i = text.length;
+    }
+  }
+  return result;
+}
+
+export function joinLines(lines: Line[]): string {
+  return lines.map((l) => l.content + l.terminator).join('');
+}
+
+// ATX headings may be preceded by 0–3 spaces (column 0–3 after tab expansion at 4-column stops).
+// A tab counts as 4 columns, so a tab before # places it at column 4 (not a heading).
+// This regex matches 0–3 literal spaces before the # sequence.
+const HEADING_RE = /^ {0,3}(#{1,6})\s/;
 const FENCE_RE = /^(\s*)(```+|~~~+)/;
 
 function isInsideCodeBlock(lines: readonly string[]): boolean[] {
@@ -40,7 +73,7 @@ function isClosingFence(line: string, char: string, minLen: number): boolean {
   return trimmed.replace(new RegExp(`^\\${char}+`), '').trim() === '';
 }
 
-function isAtLimit(level: number, direction: Direction): boolean {
+export function isAtLimit(level: number, direction: Direction): boolean {
   return (
     (direction === 'increment' && level >= 6) || (direction === 'decrement' && level <= 1)
   );
@@ -84,10 +117,13 @@ function applyTransform(
     if (!match?.[1]) {
       return line;
     }
-    const hashes = match[1];
-    const rest = line.slice(hashes.length);
+    const fullMatch = match[0]; // e.g. '   ## '
+    const hashes = match[1]; // e.g. '##'
+    // leading spaces = fullMatch minus the hashes and the trailing space
+    const leadingSpaces = fullMatch.slice(0, fullMatch.indexOf(hashes));
+    const rest = line.slice(fullMatch.length - 1); // keep the space after hashes
     const newHashes = direction === 'increment' ? '#' + hashes : hashes.slice(1);
-    return newHashes + rest;
+    return leadingSpaces + newHashes + rest;
   });
 }
 

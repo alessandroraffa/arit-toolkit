@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { transformHeadings } from '../../../../src/features/markdownHeadings/headingTransform';
+import {
+  transformHeadings,
+  splitLines,
+  isAtLimit,
+} from '../../../../src/features/markdownHeadings/headingTransform';
 
 describe('transformHeadings', () => {
   describe('increment', () => {
@@ -180,5 +184,63 @@ describe('transformHeadings', () => {
         text: '#hashtag\n### Real heading',
       });
     });
+  });
+});
+
+describe('column-based recognition', () => {
+  it('does not treat a line with four spaces then # as a heading', () => {
+    const input = '    # Heading\n## Real';
+    const result = transformHeadings(input, 'increment');
+    expect(result).toEqual({ success: true, text: '    # Heading\n### Real' });
+  });
+
+  it('treats a line with three spaces then # as a heading', () => {
+    const input = '   # Heading';
+    const result = transformHeadings(input, 'increment');
+    expect(result).toEqual({ success: true, text: '   ## Heading' });
+  });
+
+  it('does not treat a tab then # as a heading (tab expands to column 4)', () => {
+    const input = '\t# Heading\n## Real';
+    const result = transformHeadings(input, 'increment');
+    expect(result).toEqual({ success: true, text: '\t# Heading\n### Real' });
+  });
+});
+
+describe('splitLines', () => {
+  it('returns [] for empty string', () => {
+    expect(splitLines('')).toEqual([]);
+  });
+
+  it('returns two entries with LF terminators', () => {
+    expect(splitLines('# H\n## S\n')).toEqual([
+      { content: '# H', terminator: '\n' },
+      { content: '## S', terminator: '\n' },
+    ]);
+  });
+
+  it('returns two entries with CRLF terminators', () => {
+    expect(splitLines('# H\r\n## S\r\n')).toEqual([
+      { content: '# H', terminator: '\r\n' },
+      { content: '## S', terminator: '\r\n' },
+    ]);
+  });
+
+  it('returns one entry with empty terminator for unterminated line', () => {
+    expect(splitLines('# H')).toEqual([{ content: '# H', terminator: '' }]);
+  });
+});
+
+describe('isAtLimit', () => {
+  it('returns true for level 6 increment', () => {
+    expect(isAtLimit(6, 'increment')).toBe(true);
+  });
+
+  it('returns true for level 1 decrement', () => {
+    expect(isAtLimit(1, 'decrement')).toBe(true);
+  });
+
+  it('returns false for level 3 increment', () => {
+    expect(isAtLimit(3, 'increment')).toBe(false);
   });
 });
