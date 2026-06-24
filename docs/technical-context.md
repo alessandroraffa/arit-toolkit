@@ -906,17 +906,58 @@ A staleness-probe job (independent, same schedule) reads the artifact's `refresh
 field and opens a GitHub issue when more than two cadence periods (two months) have
 elapsed since the last refresh.
 
-### Credentials
+### Credentials and CI triggering
 
-| Credential                | Scope                 | Presence  | Purpose                                      |
-| ------------------------- | --------------------- | --------- | -------------------------------------------- |
-| `GITHUB_POPULARITY_TOKEN` | Public-repo read only | Optional  | Raises GitHub star-query rate limit (5 k/hr) |
-| `GITHUB_TOKEN`            | Contents + PR write   | Automatic | Action job token; opens the refresh PR       |
+| Credential             | Scope                                 | Presence          | Purpose                                                          |
+| ---------------------- | ------------------------------------- | ----------------- | ---------------------------------------------------------------- |
+| `GITHUB_TOKEN`         | Auto job token (contents/PR/issues)   | Automatic         | Authenticates star reads as fallback; powers the issue steps     |
+| `POPULARITY_BOT_TOKEN` | Fine-grained PAT: Contents + PR write | Repository secret | Opens the refresh PR so it triggers CI; authenticates star reads |
 
-`GITHUB_POPULARITY_TOKEN` must be provisioned as a repository secret before the first
-scheduled run. Its absence causes GitHub star queries to run under the anonymous ceiling
-(60 req/hr per IP) — throttled responses are recorded as absent signals, not errors.
-The workflow still completes and opens a PR with the signals that did succeed.
+The refresh tool reads `GITHUB_POPULARITY_TOKEN ?? GITHUB_TOKEN` for GitHub star queries
+(authenticated → ~5000 req/hr; the anonymous fallback is 60 req/hr per IP, and throttled
+responses are recorded as absent signals, not errors).
+
+A repository secret name **cannot start with the reserved `GITHUB_` prefix**, so the
+originally-planned `GITHUB_POPULARITY_TOKEN` secret can never be created — that env-var
+name is only an optional local override.
+
+**Why a PAT (`POPULARITY_BOT_TOKEN`):** a pull request opened with the default
+`GITHUB_TOKEN` does **not** trigger `on: pull_request` workflows (GitHub's anti-recursion
+rule), so the monthly refresh PR would otherwise run no CI. The workflow checks out and
+opens the PR with the bot PAT (a non-default identity), so the PR runs the full suite.
+
+### Future hardening: replace the PAT with a GitHub App
+
+A fine-grained PAT is a personal, expiring credential that must be rotated and acts as the
+token owner. A **GitHub App installation token** is the more durable, auditable
+alternative: its own bot identity (`app-name[bot]`), short-lived auto-rotated tokens,
+per-repo scoped permissions, and — like a PAT — its events trigger workflows. To migrate:
+
+1. **Create the App** — GitHub → Settings → Developer settings → **GitHub Apps** → _New
+   GitHub App_. Repository permissions: **Contents: Read & write**, **Pull requests: Read &
+   write** (and **Issues: Read & write** if the App also files the failure/staleness
+   issues). Uncheck _Active_ under Webhook (none needed).
+2. **Generate a private key** (download the `.pem`) and note the **App ID**.
+3. **Install** the App on the `tangyr-vscode` repository (App settings → _Install App_).
+4. **Store two secrets**: `POPULARITY_APP_ID` (the numeric App ID) and
+   `POPULARITY_APP_PRIVATE_KEY` (the full `.pem` contents).
+5. **Mint a token in the workflow** at the start of the `refresh` job and use it wherever
+   `POPULARITY_BOT_TOKEN` is used today (the `checkout` `token:` and the `GH_TOKEN` /
+   `GITHUB_TOKEN` env):
+
+   ```yaml
+   - id: app-token
+     uses: actions/create-github-app-token@v1
+     with:
+       app-id: ${{ secrets.POPULARITY_APP_ID }}
+       private-key: ${{ secrets.POPULARITY_APP_PRIVATE_KEY }}
+   # then: token: ${{ steps.app-token.outputs.token }}
+   ```
+
+6. **Remove** the `POPULARITY_BOT_TOKEN` secret once the App is verified.
+
+Trade-off: more initial setup (key management) in exchange for removing PAT
+expiry/rotation toil and decoupling the automation from any individual's account.
 
 ### Maintenance ownership and acceptable staleness
 
