@@ -354,3 +354,30 @@ describe('SR-1 representative', () => {
     expect(result.text).toBe('## Title\n```\n## Inside\n```');
   });
 });
+
+describe('setext headings (non-corruption)', () => {
+  // Setext headings do not match HEADING_RE — no code change required.
+  // These tests confirm that setext-style headings are simply ignored (not corrupted).
+
+  it('setext H1 followed by ATX heading: ATX shifts, setext not touched (increment)', () => {
+    const input = 'Title\n=====\n\n## Section';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('changed');
+    // Setext heading ('Title\n=====') is unchanged; ATX '## Section' becomes '### Section'
+    expect(result.text).toBe('Title\n=====\n\n### Section');
+  });
+
+  it('setext H1 followed by ATX heading: ATX shifts, setext not touched (decrement)', () => {
+    const input = 'Title\n=====\n\n## Section';
+    const result = transformHeadingsInScope(input, 'decrement', allLines(input));
+    expect(result.outcome).toBe('changed');
+    expect(result.text).toBe('Title\n=====\n\n# Section');
+  });
+
+  it('document with only a setext heading: outcome is no-op: no transformable heading in scope', () => {
+    const input = 'Title\n=====';
+    const result = transformHeadingsInScope(input, 'increment', allLines(input));
+    expect(result.outcome).toBe('no-op: no transformable heading in scope');
+    expect(result.text).toBe(input);
+  });
+});

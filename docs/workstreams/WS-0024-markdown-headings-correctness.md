@@ -509,6 +509,10 @@ Files: `README.md`, `CHANGELOG.md`.
 
 **Activity 5 — Completed.**
 
+**Task 6.1 — Setext tests passed immediately (no failing phase).** `HEADING_RE = /^ {0,3}(#{1,6})\s/` does not match setext underlines or setext title lines, so all three setext tests passed without code changes. Comment added to the test block per Task 6.2 conditional.
+
+**Activity 6 — Completed.**
+
 ## Reflection
 
 No reflection entries yet.
