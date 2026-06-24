@@ -61,11 +61,13 @@ describe('markdownHeadings commands', () => {
 
       it('should transform only selection when selection exists', async () => {
         const fullText = '# Title\n\n## Section\n\n### Subsection';
-        const editor = createMockEditor(fullText, 'markdown', {
-          start: { line: 2, character: 0 },
-          end: { line: 4, character: 14 },
-          isEmpty: false,
-        });
+        const editor = createMockEditor(fullText, 'markdown', [
+          {
+            start: { line: 2, character: 0 },
+            end: { line: 4, character: 14 },
+            isEmpty: false,
+          },
+        ]);
         window.activeTextEditor = editor;
 
         const command = createIncrementCommand(mockLogger);
@@ -76,9 +78,10 @@ describe('markdownHeadings commands', () => {
         const mockBuilder = { replace: vi.fn() };
         editCallback?.(mockBuilder as never);
 
+        // After rewire: whole-document range; text is full transformed doc
         expect(mockBuilder.replace).toHaveBeenCalledWith(
           expect.anything(),
-          '### Section\n\n#### Subsection'
+          '# Title\n\n### Section\n\n#### Subsection'
         );
       });
 
@@ -89,8 +92,8 @@ describe('markdownHeadings commands', () => {
         const command = createIncrementCommand(mockLogger);
         await command();
 
-        expect(window.showWarningMessage).toHaveBeenCalledWith(
-          'Tangyr: Cannot increment: one or more headings are already at level 6 (maximum).'
+        expect(window.showInformationMessage).toHaveBeenCalledWith(
+          'Tangyr: All headings are already at the maximum level (H6).'
         );
         expect(editor.edit).not.toHaveBeenCalled();
       });
@@ -124,8 +127,8 @@ describe('markdownHeadings commands', () => {
         const command = createIncrementCommand(mockLogger);
         await command(uri as never);
 
-        expect(window.showWarningMessage).toHaveBeenCalledWith(
-          'Tangyr: Cannot increment: one or more headings are already at level 6 (maximum).'
+        expect(window.showInformationMessage).toHaveBeenCalledWith(
+          'Tangyr: All headings are already at the maximum level (H6).'
         );
         expect(workspace.fs.writeFile).not.toHaveBeenCalled();
       });
@@ -168,8 +171,8 @@ describe('markdownHeadings commands', () => {
       const command = createDecrementCommand(mockLogger);
       await command();
 
-      expect(window.showWarningMessage).toHaveBeenCalledWith(
-        'Tangyr: Cannot decrement: one or more headings are already at level 1 (minimum).'
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'Tangyr: All headings are already at the minimum level (H1).'
       );
     });
 
@@ -189,39 +192,353 @@ describe('markdownHeadings commands', () => {
       expect(writtenText).toBe('# Title\n\n## Section');
     });
   });
+
+  describe('rewired command', () => {
+    it('whole-document replacement when selections isEmpty: replace uses whole-doc range', async () => {
+      const editor = createMockEditor('# Title\n\n## Section', 'markdown');
+      window.activeTextEditor = editor;
+
+      const command = createIncrementCommand(mockLogger);
+      await command();
+
+      expect(editor.edit).toHaveBeenCalled();
+      const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+      const mockBuilder = { replace: vi.fn() };
+      editCallback?.(mockBuilder as never);
+
+      // Whole-document range: start line 0 char 0 → end line (lineCount-1)
+      expect(mockBuilder.replace).toHaveBeenCalledWith(
+        expect.objectContaining({
+          start: { line: 0, character: 0 },
+        }),
+        '## Title\n\n### Section'
+      );
+    });
+
+    it('fragment selection: replace uses whole-doc range and full transformed text', async () => {
+      // '# Title\n## Section\n### Sub' — lines 0,1,2; selection covers lines 1-2
+      const fullText = '# Title\n## Section\n### Sub';
+      const editor = createMockEditor(fullText, 'markdown', [
+        {
+          start: { line: 1, character: 0 },
+          end: { line: 2, character: 7 },
+          isEmpty: false,
+        },
+      ]);
+      window.activeTextEditor = editor;
+
+      const command = createIncrementCommand(mockLogger);
+      await command();
+
+      expect(editor.edit).toHaveBeenCalled();
+      const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+      const mockBuilder = { replace: vi.fn() };
+      editCallback?.(mockBuilder as never);
+
+      // Whole-document range end: line 2, char 7 ('### Sub' has 7 chars)
+      expect(mockBuilder.replace).toHaveBeenCalledWith(
+        expect.objectContaining({
+          start: { line: 0, character: 0 },
+          end: { line: 2, character: 7 },
+        }),
+        '# Title\n### Section\n#### Sub'
+      );
+    });
+
+    it('no heading in scope: showInformationMessage, edit not called', async () => {
+      const editor = createMockEditor('Just plain text here', 'markdown');
+      window.activeTextEditor = editor;
+
+      const command = createIncrementCommand(mockLogger);
+      await command();
+
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'Tangyr: No Markdown heading to change.'
+      );
+      expect(editor.edit).not.toHaveBeenCalled();
+    });
+
+    it('all at limit increment: showInformationMessage with H6 message, edit not called', async () => {
+      const editor = createMockEditor('###### Deep', 'markdown');
+      window.activeTextEditor = editor;
+
+      const command = createIncrementCommand(mockLogger);
+      await command();
+
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'Tangyr: All headings are already at the maximum level (H6).'
+      );
+      expect(editor.edit).not.toHaveBeenCalled();
+    });
+
+    it('all at limit decrement: showInformationMessage with H1 message, edit not called', async () => {
+      const editor = createMockEditor('# Title', 'markdown');
+      window.activeTextEditor = editor;
+
+      const command = createDecrementCommand(mockLogger);
+      await command();
+
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'Tangyr: All headings are already at the minimum level (H1).'
+      );
+      expect(editor.edit).not.toHaveBeenCalled();
+    });
+
+    describe('trailing-newline editor path (BK-001)', () => {
+      it('increment on "# Title\\n" replaces with "## Title\\n" — not "## Title\\n\\n"', async () => {
+        // BK-001: for a trailing-newline document, the whole-doc Range end must cover
+        // the trailing '\n' so that editBuilder.replace does not leave a residual '\n'
+        // behind, which would double the terminator.
+        const editor = createMockEditor('# Title\n', 'markdown');
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        expect(editor.edit).toHaveBeenCalled();
+        const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+        const mockBuilder = { replace: vi.fn() };
+        editCallback?.(mockBuilder as never);
+
+        // The replacement text must be exactly '## Title\n' — no extra newline.
+        expect(mockBuilder.replace).toHaveBeenCalledWith(expect.anything(), '## Title\n');
+        const [[, replacementText]] = vi.mocked(mockBuilder.replace).mock.calls;
+        expect(replacementText).toBe('## Title\n');
+        expect(replacementText).not.toBe('## Title\n\n');
+      });
+
+      it('the Range end covers offset text.length so the trailing "\\n" is within the replaced range', async () => {
+        // Verify that the Range end position is positionAt(text.length) = { line: 1, character: 0 }
+        // for '# Title\n' (length 9), not { line: 0, character: 7 } (the buggy value).
+        const docText = '# Title\n';
+        const editor = createMockEditor(docText, 'markdown');
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        expect(editor.edit).toHaveBeenCalled();
+        const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+        const mockBuilder = { replace: vi.fn() };
+        editCallback?.(mockBuilder as never);
+
+        const [[range]] = vi.mocked(mockBuilder.replace).mock.calls;
+        // positionAt(docText.length) = positionAt(9) = { line: 1, character: 0 }
+        expect((range as { end: { line: number; character: number } }).end).toEqual({
+          line: 1,
+          character: 0,
+        });
+      });
+    });
+
+    describe('explorer path', () => {
+      it('trailing-newline: lineCount via splitLines is 2 (not 3)', async () => {
+        const fileContent = '# Title\n## Section\n';
+        const encoded = new TextEncoder().encode(fileContent);
+        workspace.fs.readFile = vi.fn().mockResolvedValue(encoded);
+        workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+        const uri = { fsPath: '/workspace/doc.md' };
+
+        const command = createIncrementCommand(mockLogger);
+        await command(uri as never);
+
+        expect(workspace.fs.writeFile).toHaveBeenCalled();
+        const writtenBytes = vi.mocked(workspace.fs.writeFile).mock
+          .calls[0]?.[1] as Uint8Array;
+        const writtenText = new TextDecoder().decode(writtenBytes);
+        expect(writtenText).toBe('## Title\n### Section\n');
+      });
+
+      it('CRLF: lineCount via splitLines is 2 and CRLF terminators preserved', async () => {
+        const fileContent = '# Title\r\n## Section\r\n';
+        const encoded = new TextEncoder().encode(fileContent);
+        workspace.fs.readFile = vi.fn().mockResolvedValue(encoded);
+        workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+        const uri = { fsPath: '/workspace/doc.md' };
+
+        const command = createIncrementCommand(mockLogger);
+        await command(uri as never);
+
+        expect(workspace.fs.writeFile).toHaveBeenCalled();
+        const writtenBytes = vi.mocked(workspace.fs.writeFile).mock
+          .calls[0]?.[1] as Uint8Array;
+        const writtenText = new TextDecoder().decode(writtenBytes);
+        expect(writtenText).toBe('## Title\r\n### Section\r\n');
+      });
+
+      it('CRLF all-at-H6-limit: showInformationMessage, writeFile not called', async () => {
+        const fileContent = '###### Deep\r\n';
+        const encoded = new TextEncoder().encode(fileContent);
+        workspace.fs.readFile = vi.fn().mockResolvedValue(encoded);
+        workspace.fs.writeFile = vi.fn().mockResolvedValue(undefined);
+        const uri = { fsPath: '/workspace/doc.md' };
+
+        const command = createIncrementCommand(mockLogger);
+        await command(uri as never);
+
+        expect(window.showInformationMessage).toHaveBeenCalledWith(
+          'Tangyr: All headings are already at the maximum level (H6).'
+        );
+        expect(workspace.fs.writeFile).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('multi-selection (AC24 / AC25 — F6)', () => {
+      it('AC24: two disjoint selections each transform their own heading', async () => {
+        // Lines: 0='# H1', 1='', 2='## H2', 3='', 4='### H3'
+        // sel1 covers line 0, sel2 covers line 4; line 2 is outside both selections.
+        const fullText = '# H1\n\n## H2\n\n### H3';
+        const editor = createMockEditor(fullText, 'markdown', [
+          {
+            start: { line: 0, character: 0 },
+            end: { line: 0, character: 4 },
+            isEmpty: false,
+          },
+          {
+            start: { line: 4, character: 0 },
+            end: { line: 4, character: 7 },
+            isEmpty: false,
+          },
+        ]);
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        expect(editor.edit).toHaveBeenCalled();
+        const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+        const mockBuilder = { replace: vi.fn() };
+        editCallback?.(mockBuilder as never);
+
+        // Only lines 0 and 4 are in scope; line 2 (## H2) is untouched.
+        expect(mockBuilder.replace).toHaveBeenCalledWith(
+          expect.anything(),
+          '## H1\n\n## H2\n\n#### H3'
+        );
+      });
+
+      it('AC25: overlapping selections shift a shared heading exactly once', async () => {
+        // Lines: 0='# H1', 1='## H2', 2='### H3'
+        // sel1 covers lines 0-1, sel2 covers lines 1-2.
+        // Line 1 (## H2) is in both — must shift only once.
+        const fullText = '# H1\n## H2\n### H3';
+        const editor = createMockEditor(fullText, 'markdown', [
+          {
+            start: { line: 0, character: 0 },
+            end: { line: 1, character: 5 },
+            isEmpty: false,
+          },
+          {
+            start: { line: 1, character: 0 },
+            end: { line: 2, character: 7 },
+            isEmpty: false,
+          },
+        ]);
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        expect(editor.edit).toHaveBeenCalled();
+        const editCallback = vi.mocked(editor.edit).mock.calls[0]?.[0];
+        const mockBuilder = { replace: vi.fn() };
+        editCallback?.(mockBuilder as never);
+
+        // All three headings are in union scope; each shifts by exactly one level.
+        expect(mockBuilder.replace).toHaveBeenCalledWith(
+          expect.anything(),
+          '## H1\n### H2\n#### H3'
+        );
+      });
+    });
+
+    describe('SR-1 command-path (handleEditor)', () => {
+      it('fence-state tracking: heading inside code block not transformed through command dispatch', async () => {
+        // Document: fenced code block containing a line that looks like an ATX heading.
+        // The command must NOT transform '## Inside' because it is inside the fence.
+        const docText = '```\n## Inside\n```';
+        const editor = createMockEditor(docText, 'markdown', [
+          {
+            start: { line: 0, character: 0 },
+            end: { line: 2, character: 3 },
+            isEmpty: false,
+          },
+        ]);
+        window.activeTextEditor = editor;
+
+        const command = createIncrementCommand(mockLogger);
+        await command();
+
+        // No replacement — no real heading found
+        expect(editor.edit).not.toHaveBeenCalled();
+        expect(window.showInformationMessage).toHaveBeenCalledWith(
+          'Tangyr: No Markdown heading to change.'
+        );
+      });
+    });
+  });
 });
+
+type MockSelection = {
+  start: { line: number; character: number };
+  end: { line: number; character: number };
+  isEmpty: boolean;
+};
+
+/**
+ * Converts an absolute character offset into a { line, character } position,
+ * matching VS Code's document.positionAt semantics (handles LF and CRLF).
+ */
+function offsetToPosition(
+  text: string,
+  offset: number
+): { line: number; character: number } {
+  const clamped = Math.max(0, Math.min(offset, text.length));
+  let line = 0;
+  let lineStart = 0;
+  let i = 0;
+  while (i < clamped) {
+    if (text[i] === '\r' && text[i + 1] === '\n') {
+      line++;
+      i += 2;
+      lineStart = i;
+    } else if (text[i] === '\n') {
+      line++;
+      i++;
+      lineStart = i;
+    } else {
+      i++;
+    }
+  }
+  return { line, character: clamped - lineStart };
+}
 
 function createMockEditor(
   text: string,
   languageId: string,
-  selection?: {
-    start: { line: number; character: number };
-    end: { line: number; character: number };
-    isEmpty: boolean;
-  }
+  selections?: MockSelection[]
 ): {
   document: {
     getText: ReturnType<typeof vi.fn>;
     languageId: string;
     lineAt: ReturnType<typeof vi.fn>;
     lineCount: number;
+    positionAt: (offset: number) => { line: number; character: number };
   };
-  selection: {
-    start: { line: number; character: number };
-    end: { line: number; character: number };
-    isEmpty: boolean;
-  };
+  selection: MockSelection;
+  selections: MockSelection[];
   edit: ReturnType<typeof vi.fn>;
 } {
   const lines = text.split('\n');
 
-  const defaultSelection = {
+  const defaultSelection: MockSelection = {
     start: { line: 0, character: 0 },
     end: { line: 0, character: 0 },
     isEmpty: true,
   };
 
-  const sel = selection ?? defaultSelection;
+  const sels = selections && selections.length > 0 ? selections : [defaultSelection];
+  const sel = sels[0] ?? defaultSelection;
 
   return {
     document: {
@@ -257,8 +574,10 @@ function createMockEditor(
         },
       })),
       lineCount: lines.length,
+      positionAt: (offset: number) => offsetToPosition(text, offset),
     },
     selection: sel,
+    selections: sels,
     edit: vi.fn().mockResolvedValue(true),
   };
 }

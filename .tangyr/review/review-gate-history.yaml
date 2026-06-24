@@ -130,3 +130,23 @@
   finding_count: 21
   blocking_count: 6
   produced_at: 2026-06-23
+
+- gate: pre-release
+  artifact_type: stepledger
+  artifact_version: WS-0024 implementation (Markdown Headings correctness; branch fix/markdown-headings-correctness; status completed; git range e46ee0a..HEAD = f10ce19,2187cb3,344cf8c,ee069aa,8d2cd56,3f25466,1700050; governed by approved SPEC-005 and PLAN-007; final gate before merge auto-publishes to the VS Code Marketplace)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 16
+  blocking_count: 4
+  produced_at: 2026-06-24
+
+- gate: pre-release
+  artifact_type: stepledger
+  artifact_version: WS-0024 implementation — fix-forward verification (Markdown Headings correctness; branch fix/markdown-headings-correctness; fix-forward commit 0786579 over the 1700050-tip 4-blocking PASS_WITH_CONDITIONS gate above; focused white+black confirming pass that F1 fence column bound, F2 over-indented-fence fixtures, F3 bare-ATX EOL, F9 README mixed-desync, and F10 manual CHANGELOG block are closed with no F4/F5/F13 regression; final gate before merge auto-publishes to the VS Code Marketplace)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black]
+  finding_count: 2
+  blocking_count: 1
+  produced_at: 2026-06-24

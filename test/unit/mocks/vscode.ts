@@ -159,6 +159,16 @@ export class MarkdownString {
   }
 }
 
+export class Position {
+  public readonly line: number;
+  public readonly character: number;
+
+  constructor(line: number, character: number) {
+    this.line = line;
+    this.character = character;
+  }
+}
+
 export class Range {
   public readonly start: { line: number; character: number };
   public readonly end: { line: number; character: number };

@@ -9,7 +9,7 @@ This log captures process-level improvements proposed during multi-perspective r
 
 ## Entries
 
-```yaml
+````yaml
 - id: KZ-2026-06-21-001
   created: 2026-06-21
   gate: pre-release
@@ -831,4 +831,158 @@ This log captures process-level improvements proposed during multi-perspective r
     drift surface even when each copy is individually unit-tested.
   target: skills/review-gate (checklist) and skills/stepledger-authoring
   owner: Human
-```
+
+- id: KZ-2026-06-24-001
+  created: 2026-06-24
+  gate: pre-release
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0024 implements a CommonMark column-based indentation rule (0–3 columns
+    after tab expansion) but the production predicates do not enforce it for
+    fenced-code-block boundaries. FENCE_RE = /^(\s*)(```+|~~~+)/ uses an
+    UNBOUNDED \s* leading group, so a 4-or-more-column-indented fence opener is
+    accepted as a fence; isClosingFence uses line.trimStart() with no column
+    limit, so an over-indented line closes an open block. Both reproduce exactly
+    the "over-indented fence lines accepted" defect SPEC-005 Error handling §3
+    was written to eliminate, silently corrupting in-code # lines (the closer
+    prematurely ends the block; following in-code headings get transformed) or
+    falsely protecting a real heading (the over-indented opener starts a phantom
+    block). Critically, NO test can surface either bug: SPEC-005 Behavioral
+    delta §2 explicitly mandates a NEW 4-or-more-column fixture for both opener
+    and closer, and that fixture is absent — the only fence-indentation test
+    uses a 3-space (valid under both rules) fence whose assertion does not change.
+    The WS Activity 1 "ACs closed" list claims AC17/AC18/AC19 closed while the
+    code violates all three and no test exercises them. The structural tell:
+    a spec rule stated in COLUMNS (tab-expanded) implemented by a regex/trim that
+    measures CHARACTERS or strips unboundedly, with the over-limit fixture the
+    spec named as required left unwritten — the correctness gap and the test gap
+    coincide so a green quality gate certifies a defect.
+  proposed_change: >
+    Add a review-gate and coding-standards checklist item for any CommonMark/
+    column-based indentation rule: every predicate that admits or rejects a line
+    by leading indentation (heading recognition, fence opener, fence closer,
+    indented-code classification) must measure indentation in COLUMNS after tab
+    expansion via one shared, unit-tested helper — never an unbounded \s* group,
+    a character-count bound, or an unbounded trimStart(). When a governing spec
+    names a specific over-limit fixture as required (here SPEC-005 Behavioral
+    delta §2's 4-or-more-column opener AND closer cases), the review must confirm
+    that exact fixture exists and fails against the unfixed code before accepting
+    the AC as closed. A 0–3-column rule with no committed 4-column negative test
+    is an unverified rule.
+  target: skills/review-gate (checklist) and skills/coding-standards
+  owner: Human
+
+- id: KZ-2026-06-24-002
+  created: 2026-06-24
+  gate: pre-release
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0024's ATX recognition predicate HEADING_RE = /^ {0,3}(#{1,6})\s/ requires
+    a mandatory whitespace character after the # run, but SPEC-005 Terminology and
+    Bare ATX recognition §1 define an ATX heading as a # run "followed by a space,
+    a tab, OR THE END OF THE LINE." A bare heading at end-of-line (input '##' with
+    no trailing character) does not match \s and is silently left untransformed,
+    violating CommonMark §4.2 and the spec's bare-ATX clause. The defect survived
+    because the AC14 test fixture happens to use '##' + two trailing SPACES (which
+    DO satisfy \s), so the literal acceptance criterion passes while the normative
+    end-of-line terminator clause it is meant to exercise is never tested. This is
+    the terminator/boundary-clause variant of test-attribution drift: a recognition
+    rule with an inclusive terminator set (space | tab | EOL) is verified by a
+    fixture covering only the easy terminator, leaving the EOL boundary — the one a
+    naive \s-only regex gets wrong — unguarded.
+  proposed_change: >
+    Add a review-gate and tdd-workflow checklist item for any tokenizer/recognition
+    predicate whose governing definition lists an inclusive terminator set
+    (e.g. "followed by space, tab, OR end of line"): require one committed test per
+    distinct terminator in the set, including the zero-width end-of-line terminator,
+    constructed so it FAILS against a predicate that omits that terminator. A regex
+    ending in a mandatory \s (or a single required delimiter class) is a tell that
+    the end-of-input / end-of-line terminator was dropped; cross-check it against the
+    spec's terminator enumeration before accepting the recognition AC as closed.
+  target: skills/review-gate (checklist) and skills/tdd-workflow
+  owner: Human
+
+- id: KZ-2026-06-24-003
+  created: 2026-06-24
+  gate: pre-release
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    SPEC-005 Known limitations §1 names the mixed-ATX+setext DESYNC as the harm to
+    communicate ("a document mixing ATX and setext has its ATX levels shifted while
+    its setext levels stay fixed, leaving the heading hierarchy internally
+    inconsistent") and requires it on a user-facing surface. The shipped README note
+    documents only the BENIGN exclusively-setext case (which produces a visible
+    "No Markdown heading to change." no-op) and omits the dangerous mixed case (a
+    silent, noticeless desync). WS-0024 Task 7.2 prescribed note text that itself
+    carried only the exclusive-setext framing, so the implementer faithfully shipped
+    a documentation surface that inverts the spec's emphasis: the harmless case is
+    documented, the harmful one the spec exists to warn about is not. Separately, the
+    CHANGELOG carries a manual [Unreleased] block (Keep-a-Changelog "### Fixed"
+    style) while PLAN-007 Decision 8 routes the release note through the semantic-
+    release commit body (conventionalcommits, @semantic-release/changelog prepends a
+    generated section) — two conflicting governance signals (WS Task 7.1 manual edit
+    vs plan commit-body route) that will leave an orphaned, format-divergent
+    [Unreleased] block above the generated release section after merge. Both are the
+    same meta-pattern: a "communicate the limitation on a user surface" task whose
+    StepLedger paraphrase silently weakens or duplicates the spec's normative content.
+  proposed_change: >
+    Add a stepledger-authoring and review-gate checklist item: when a spec requires a
+    known-limitation/risk to be "communicated on a user-facing surface," (a) the
+    StepLedger's prescribed note text must quote the spec's normative HARM statement
+    verbatim (here the mixed-document desync), not summarize it into the benign case;
+    the reviewer diffs the shipped surface against the spec clause it satisfies and
+    flags any omission of the dangerous case. (b) When the project uses semantic-
+    release commit-body changelog generation, the changelog task must explicitly
+    forbid a parallel manual [Unreleased] block (single canonical route), and the
+    review must confirm exactly one user-facing changelog surface carries the note in
+    the project's release-notes format.
+  target: skills/review-gate (checklist) and skills/stepledger-authoring
+  owner: Human
+
+- id: KZ-2026-06-24-004
+  created: 2026-06-24
+  gate: pre-release
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    On the WS-0024 fix-forward verification, the F5 refactor replaced a
+    lineCount-derived whole-document replace range with one derived from the
+    feature's OWN line model (splitLines), but splitLines and the host VS Code
+    text model disagree on the trailing terminator: splitLines('# h\n') yields ONE
+    Line whose terminator is '\n', so lastLineIdx/lastLineContentLen point to the
+    end of the last CONTENT line — before the trailing '\n'. The replace text from
+    joinLines INCLUDES that '\n'. editBuilder.replace(range, text) therefore inserts
+    a '\n' while leaving the document's original trailing '\n' in place, doubling the
+    trailing newline on every editor-path increment/decrement of a well-formed
+    (trailing-newline) Markdown file — a silent SPEC-005 line-ending-integrity
+    violation (AC15 / Constraint 2). The defect was invisible because the ONLY
+    trailing-newline test (command.test.ts:288) routes through the explorer path
+    (writeFile of the full result.text — no Range), while every editor-path test
+    used inputs with no trailing newline, so the Range/text terminator mismatch was
+    never exercised. The structural tell: a host-editor Range computed from a
+    secondary, independently-defined line model whose end-of-document semantics
+    differ from the host's, combined with replacement text that carries a terminator
+    the Range end excludes — and a trailing-terminator fixture exercised only on the
+    path that does not use the Range.
+  proposed_change: >
+    Add a review-gate and coding-standards checklist item: when a host-editor
+    whole-document (or any positional) replace Range is computed from a secondary
+    line model rather than the host's own document API, the reviewer must verify the
+    two models agree on the trailing-terminator / final-empty-line boundary, and that
+    the replacement string's terminator handling matches what the Range end includes
+    or excludes — prefer the host's canonical whole-document idiom
+    (document.positionAt(text.length), or a documented full-range helper) over an
+    ad-hoc end position. Require a host-path (not just file-IO-path) test for a
+    trailing-terminator document asserting the produced buffer gains no extra
+    terminator. A trailing-newline fixture exercised only on a non-Range code path
+    does not cover a Range-based path.
+  target: skills/review-gate (checklist) and skills/coding-standards
+  owner: Human
+````
