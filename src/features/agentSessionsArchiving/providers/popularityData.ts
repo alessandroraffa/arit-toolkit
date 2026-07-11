@@ -73,17 +73,17 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
     },
     signals: {
       cli: {
-        value: 41390483,
+        value: 42766154,
         source: 'npm',
-        period: '2026-06',
+        period: '2026-07',
       },
       ext: {
-        value: 18374426,
+        value: 19198698,
         source: 'marketplace',
         period: 'cumulative',
       },
       stars: {
-        value: 133943,
+        value: 135213,
         source: 'github',
         period: 'cumulative',
       },
@@ -100,17 +100,17 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
     },
     signals: {
       cli: {
-        value: 47546213,
+        value: 45794237,
         source: 'npm',
-        period: '2026-06',
+        period: '2026-07',
       },
       ext: {
-        value: 10768985,
+        value: 11096497,
         source: 'marketplace',
         period: 'cumulative',
       },
       stars: {
-        value: 93030,
+        value: 94757,
         source: 'github',
         period: 'cumulative',
       },
@@ -126,12 +126,12 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
     },
     signals: {
       ext: {
-        value: 4409104,
+        value: 4506733,
         source: 'marketplace',
         period: 'cumulative',
       },
       stars: {
-        value: 63741,
+        value: 64152,
         source: 'github',
         period: 'cumulative',
       },
@@ -147,12 +147,12 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
     },
     signals: {
       ext: {
-        value: 75811403,
+        value: 76092217,
         source: 'marketplace',
         period: 'cumulative',
       },
       stars: {
-        value: 9977,
+        value: 9978,
         source: 'github',
         period: 'cumulative',
       },
@@ -169,17 +169,17 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
     },
     signals: {
       cli: {
-        value: 8963423,
+        value: 9089093,
         source: 'npm',
-        period: '2026-06',
+        period: '2026-07',
       },
       ext: {
-        value: 743627,
+        value: 782308,
         source: 'marketplace',
         period: 'cumulative',
       },
       stars: {
-        value: 177694,
+        value: 181041,
         source: 'github',
         period: 'cumulative',
       },
@@ -195,12 +195,12 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
     },
     signals: {
       cli: {
-        value: 857966,
+        value: 865900,
         source: 'pypi',
-        period: '2026-06',
+        period: '2026-07',
       },
       stars: {
-        value: 46608,
+        value: 46890,
         source: 'github',
         period: 'cumulative',
       },
@@ -217,17 +217,17 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
     },
     signals: {
       cli: {
-        value: 24232,
+        value: 21660,
         source: 'npm',
-        period: '2026-06',
+        period: '2026-07',
       },
       ext: {
-        value: 3433958,
+        value: 3514231,
         source: 'marketplace',
         period: 'cumulative',
       },
       stars: {
-        value: 34311,
+        value: 34611,
         source: 'github',
         period: 'cumulative',
       },
@@ -243,12 +243,12 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
     },
     signals: {
       ext: {
-        value: 1766252,
+        value: 1790114,
         source: 'marketplace',
         period: 'cumulative',
       },
       stars: {
-        value: 24266,
+        value: 24305,
         source: 'github',
         period: 'cumulative',
       },
@@ -260,8 +260,8 @@ const TARGETS_DATA: readonly TargetRecord[] = Object.freeze([
 export const POPULARITY_DATA: PopularityData = Object.freeze({
   resolvedOrder: RESOLVED_ORDER,
   targets: TARGETS_DATA,
-  refreshedAt: '2026-06-23T15:45:21.543Z',
-  refreshPeriod: '2026-06',
+  refreshedAt: '2026-07-01T07:21:06.330Z',
+  refreshPeriod: '2026-07',
   poolSizeAcknowledgment: POOL_SIZE_ACKNOWLEDGMENT,
   disclaimer: DISCLAIMER,
   methodPointer: METHOD_POINTER,
