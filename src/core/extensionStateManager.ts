@@ -41,6 +41,7 @@ export class ExtensionStateManager {
   private _autoCommitService: ConfigAutoCommitService | undefined;
   private _loadedLegacyConfigFile = false;
   private _lastWrittenConfigContent: string | undefined;
+  private _invalidConfigMessageShown = false;
   private _migrationInFlight: Promise<boolean> | undefined;
   /**
    * BK-006: set to true after runMigration() is called for the first time during
@@ -236,12 +237,59 @@ export class ExtensionStateManager {
     }
   }
 
+  /**
+   * Reads and parses .tangyr.jsonc inline (rather than delegating to the shared
+   * readConfigFile() helper used for legacy-file reads) so a read failure and a
+   * parse failure can be classified separately: a read failure propagates
+   * unchanged to readStateFromFile()'s outer catch, which still routes through
+   * handleConfigReadFailure() (missing config or any other read error). A parse
+   * failure is caught locally and routed to handleInvalidConfig() instead —
+   * applyConfig(), handleConfigReadFailure(), and the legacy-config read are
+   * never invoked for a parse failure.
+   */
   private async readCurrentConfigFile(): Promise<void> {
-    const config = await this.readConfigFile(CONFIG_FILENAME);
+    const configUri = this.getConfigUri();
+    if (!configUri) {
+      return;
+    }
+    const raw = await vscode.workspace.fs.readFile(configUri);
+    let config: Record<string, unknown>;
+    try {
+      config = parseJsonc(new TextDecoder().decode(raw)) as Record<string, unknown>;
+    } catch (err) {
+      this.handleInvalidConfig(err);
+      return;
+    }
     this.applyConfig(config);
     this._loadedLegacyConfigFile = false;
     this.logger.debug(
       `Read workspace config: enabled=${String(this._isEnabled)}, versionCode=${String(this._configVersionCode)}`
+    );
+  }
+
+  /**
+   * Handles a parseJsonc() failure on .tangyr.jsonc — the file exists but is
+   * invalid, which is distinct from a missing file. When a prior successful
+   * parse already populated _fullConfig (the watcher-reload case), state is
+   * left unchanged so the last-known-good config keeps driving the extension.
+   * On the first read this activation (no prior in-memory config), the
+   * workspace is marked initialized-but-disabled instead of reopening the
+   * onboarding prompt. Surfaces at most one error message per continuous
+   * invalid streak; applyConfig() resets the streak on the next successful
+   * parse (primary read, watcher reload, or legacy/migration read).
+   */
+  private handleInvalidConfig(err: unknown): void {
+    if (this._fullConfig === undefined) {
+      this._isInitialized = true;
+      this._isEnabled = false;
+    }
+    this.logger.warn(`Invalid ${CONFIG_FILENAME}, ignoring until fixed: ${String(err)}`);
+    if (this._invalidConfigMessageShown) {
+      return;
+    }
+    this._invalidConfigMessageShown = true;
+    void vscode.window.showErrorMessage(
+      'Tangyr Workbench: .tangyr.jsonc is invalid. Fix the file and save it to re-enable advanced features.'
     );
   }
 
@@ -285,6 +333,7 @@ export class ExtensionStateManager {
   }
 
   private applyConfig(config: Record<string, unknown>): void {
+    this._invalidConfigMessageShown = false;
     const oldConfig = this._fullConfig;
     this._fullConfig = config;
     this._isInitialized = true;

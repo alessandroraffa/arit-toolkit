@@ -318,6 +318,20 @@ stateManager.checkup()  [async, triggered by "Checkup" button]
   +-- return CheckupResult { configUpdated, commitResult }
 ```
 
+**Missing vs. invalid config:** `Tangyr Workbench: Initialize this
+workspace for advanced features?` is shown only when `.tangyr.jsonc`
+is absent (a read failure) and no legacy `.arit-toolkit.jsonc` can be
+read either — `readStateFromFile()`'s `initialised` check reflects
+this. An existing but invalid `.tangyr.jsonc` (a `parseJsonc` failure)
+never triggers this prompt: `handleInvalidConfig()` marks the
+workspace initialised-but-disabled on the first read this activation
+(or leaves a prior successful in-memory config untouched on a
+watcher-triggered reload) and shows `Tangyr Workbench: .tangyr.jsonc
+is invalid. Fix the file and save it to re-enable advanced features.`
+at most once per continuous invalid streak. Saving a corrected file
+re-enables advanced features entirely through the existing watcher
+`reload()` callback — no workspace reload or reactivation is required.
+
 ---
 
 ## 8 Cross-cutting Concepts
@@ -363,7 +377,21 @@ workspace-level state:
 
 **Read path:** `readStateFromFile()` parses JSONC, stores the full
 config object, extracts top-level `enabled`/`versionCode`, and
-notifies per-section listeners for any changed sections.
+notifies per-section listeners for any changed sections. Parsing is
+scanner-based (`src/utils/jsonc.ts`, `parseJsonc`) rather than
+regex-based, so Prettier-formatted `.tangyr.jsonc` files with `//`
+and `/* … */` comments and trailing commas before `}`/`]` parse
+correctly, including when a string value contains an escaped `"` or
+Windows-style backslashes; comment and trailing-comma removal never
+mutate characters inside a string literal. An existing but invalid
+`.tangyr.jsonc` (a parse failure) is reported as **invalid**, not
+treated as absent: `readCurrentConfigFile()` reads and parses the
+file inline, catching a read failure and a parse failure separately.
+A read failure (missing file, or any other read error) still routes
+to the existing missing-config → onboarding path. A parse failure
+routes to `handleInvalidConfig()` instead, which never triggers the
+onboarding prompt and never fabricates a legacy-config fallback — see
+§4.4 for the exact behavior and the invalid-config message.
 
 **Write path:** `writeStateToFile(enabled)` merges the new `enabled`
 state into the existing `_fullConfig`, preserving all custom sections.

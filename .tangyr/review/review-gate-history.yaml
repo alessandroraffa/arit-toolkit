@@ -150,3 +150,23 @@
   finding_count: 2
   blocking_count: 1
   produced_at: 2026-06-24
+
+- gate: pre-implementation
+  artifact_type: stepledger
+  artifact_version: WS-0025 draft (docs/workstreams/WS-0025-workbench-config-and-archive-reconciliation-hardening.md; status draft; updated 2026-06-25; standalone config/archive hardening StepLedger)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: medium
+  perspectives_activated: [white, black, green]
+  finding_count: 12
+  blocking_count: 3
+  produced_at: 2026-06-25T08:00:33Z
+
+- gate: pre-implementation
+  artifact_type: stepledger
+  artifact_version: WS-0025 second gate (docs/workstreams/WS-0025-workbench-config-and-archive-reconciliation-hardening.md; status draft; updated 2026-07-12; re-review of the revised draft that adds Activity 4 multi-directory Claude Code discovery; autopilot-triggered)
+  verdict: PASS_WITH_CONDITIONS
+  risk_classification: high
+  perspectives_activated: [white, black, green, orange]
+  finding_count: 19
+  blocking_count: 5
+  produced_at: 2026-07-12

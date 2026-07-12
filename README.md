@@ -184,6 +184,8 @@ Command Palette → "Tangyr: Toggle Extension (Enable/Disable)" or "Tangyr: Chec
 
 **Workspace initialization:** When you open a single-root workspace for the first time, Tangyr Workbench offers to create a `.tangyr.jsonc` configuration file at the workspace root. When the extension updates and introduces new configuration sections, you will be prompted to add them.
 
+**Invalid config recovery:** If `.tangyr.jsonc` already exists but is not valid JSONC, Tangyr Workbench does not treat it as missing and does not reopen the initialization prompt. Instead it shows `Tangyr Workbench: .tangyr.jsonc is invalid. Fix the file and save it to re-enable advanced features.` (at most once per continuous streak of invalid saves) and keeps your last-known-good in-memory configuration active until you fix the file. Saving a corrected file re-enables advanced features automatically — no reload or reactivation needed.
+
 **Config auto-commit:** In a Git repository, when the extension writes changes to `.tangyr.jsonc` and the file is not gitignored, you are prompted to commit the change automatically. If the file has no actual Git changes, the prompt is skipped. Git hooks (pre-commit, commit-msg) are bypassed for these automated commits because VS Code's extension host process has a restricted environment where tools like `pnpm` may not be available.
 
 **Workspace modes:**
