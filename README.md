@@ -38,16 +38,16 @@ AI coding assistants store their session files in different locations and format
 
 <!-- POPULARITY-TABLE:START -->
 
-| Assistant           | Session location                            | Workspace matching                           |
-| ------------------- | ------------------------------------------- | -------------------------------------------- |
-| Claude Code         | `~/.claude/projects/<workspace-path>/`      | Project path derived from workspace          |
-| OpenAI Codex        | `~/.codex/sessions/<YYYY>/<MM>/<DD>/`       | `cwd` field in session metadata              |
-| Cline               | VS Code global storage                      | Session content references workspace path    |
-| GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`) | Per-workspace storage (`.json` and `.jsonl`) |
-| OpenCode            | `~/.local/share/opencode/opencode.db`       | `directory` field in session row             |
-| Aider               | Workspace root (`.aider.*` files)           | Files present in the workspace root          |
-| Continue            | `~/.continue/sessions/`                     | Session content references workspace path    |
-| RooCode             | VS Code global storage                      | Session content references workspace path    |
+| Assistant           | Session location                                                                                            | Workspace matching                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Claude Code         | `~/.claude/projects/<workspace-path>/` and every `~/.claude-*/projects/<workspace-path>/` profile directory | Project path derived from workspace          |
+| OpenAI Codex        | `~/.codex/sessions/<YYYY>/<MM>/<DD>/`                                                                       | `cwd` field in session metadata              |
+| Cline               | VS Code global storage                                                                                      | Session content references workspace path    |
+| GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`)                                                                 | Per-workspace storage (`.json` and `.jsonl`) |
+| OpenCode            | `~/.local/share/opencode/opencode.db`                                                                       | `directory` field in session row             |
+| Aider               | Workspace root (`.aider.*` files)                                                                           | Files present in the workspace root          |
+| Continue            | `~/.continue/sessions/`                                                                                     | Session content references workspace path    |
+| RooCode             | VS Code global storage                                                                                      | Session content references workspace path    |
 
 > **Note:** This popularity order is derived from public signals (downloads, installs, stars) and is not an endorsement, recommendation, or quality judgment of any assistant.
 > Method: [PLAN-006](docs/plans/PLAN-006-assistant-popularity-ranking.md)

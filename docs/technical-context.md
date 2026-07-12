@@ -130,14 +130,14 @@ merge.
   Feature     Feature     Feature                    Feature        System
 ```
 
-| External actor         | Interaction                                                                                                                                                                                              |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| VS Code user           | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.tangyr.jsonc` manually.                                                                           |
-| `.tangyr.jsonc`        | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits.                                                                                    |
-| VS Code settings       | `tangyr.timestampFormat`, `tangyr.timestampSeparator`, `tangyr.logLevel` -- read via `ConfigManager`.                                                                                                    |
-| Active text editor     | Source for real-time text statistics. Text Stats listens to editor change, document change, and selection change events.                                                                                 |
-| AI agent session files | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/`, VS Code globalStorage/workspaceStorage directories. Only sessions belonging to the current workspace are copied to the archive path. |
-| VS Code Marketplace    | Publish target for `.vsix` packages via semantic-release pipeline.                                                                                                                                       |
+| External actor         | Interaction                                                                                                                                                                                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| VS Code user           | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.tangyr.jsonc` manually.                                                                                                                               |
+| `.tangyr.jsonc`        | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits.                                                                                                                                        |
+| VS Code settings       | `tangyr.timestampFormat`, `tangyr.timestampSeparator`, `tangyr.logLevel` -- read via `ConfigManager`.                                                                                                                                                        |
+| Active text editor     | Source for real-time text statistics. Text Stats listens to editor change, document change, and selection change events.                                                                                                                                     |
+| AI agent session files | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/` and every `~/.claude-*/projects/` profile directory, VS Code globalStorage/workspaceStorage directories. Only sessions belonging to the current workspace are copied to the archive path. |
+| VS Code Marketplace    | Publish target for `.vsix` packages via semantic-release pipeline.                                                                                                                                                                                           |
 
 ### 3.2 Technical Context
 
@@ -199,14 +199,14 @@ merge.
 
 **External I/O channels:**
 
-| Channel                | Protocol / API                                                                                                  | Direction |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | --------- |
-| Workspace filesystem   | `vscode.workspace.fs` (read/write/stat/copy/delete/readDirectory)                                               | R/W       |
-| VS Code settings       | `vscode.workspace.getConfiguration()`                                                                           | Read      |
-| VS Code commands       | `vscode.commands.registerCommand()`                                                                             | Register  |
-| VS Code UI             | `vscode.window.*` (status bar, input box, messages)                                                             | Write     |
-| Global filesystem      | `vscode.workspace.fs` via `vscode.Uri.file()` for `~/.claude/`, `~/.continue/`, globalStorage, workspaceStorage | Read      |
-| VS Code Output Channel | `vscode.window.createOutputChannel()`                                                                           | Write     |
+| Channel                | Protocol / API                                                                                                                  | Direction |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Workspace filesystem   | `vscode.workspace.fs` (read/write/stat/copy/delete/readDirectory)                                                               | R/W       |
+| VS Code settings       | `vscode.workspace.getConfiguration()`                                                                                           | Read      |
+| VS Code commands       | `vscode.commands.registerCommand()`                                                                                             | Register  |
+| VS Code UI             | `vscode.window.*` (status bar, input box, messages)                                                                             | Write     |
+| Global filesystem      | `vscode.workspace.fs` via `vscode.Uri.file()` for `~/.claude/`, `~/.claude-*/`, `~/.continue/`, globalStorage, workspaceStorage | Read      |
+| VS Code Output Channel | `vscode.window.createOutputChannel()`                                                                                           | Write     |
 
 ---
 
@@ -504,6 +504,24 @@ include only those belonging to the current workspace. Workspace-scoped
 providers (Aider, Claude Code, Copilot Chat) use path-based discovery;
 global-scoped providers (Cline, Roo Code, Continue) read session file
 content and check if it references the workspace root path.
+
+**Claude Code multi-directory discovery:** `ClaudeCodeProvider` does not
+hardcode a single `~/.claude` directory. `listClaudeConfigDirNames()`
+enumerates `$HOME` for `.claude` plus every sibling matching `.claude-*`
+(as produced by pointing `CLAUDE_CONFIG_DIR` at a per-profile
+directory), returning the matched names sorted lexicographically; when
+`$HOME` cannot be listed, it falls back to `['.claude']` alone. `.claude`
+is accepted when it is a real directory OR a symlink (preserving
+support for a stow/chezmoi/dotbot-managed `~/.claude`); a `.claude-*`
+sibling requires a real directory — a symlinked `.claude-*` is
+deliberately excluded. Both `getWatchPatterns()` and `findSessions()`
+iterate every discovered config directory name and build a
+`<home>/<configDirName>/projects/<encoded>` path for each; `findSessions()`
+aggregates `SessionFile` results across all directories without
+cross-directory deduplication (session identifiers are UUIDs, so a
+collision is realistic only when one profile directory was bootstrapped
+from another before the copies diverged — see the archive-session
+verification runbook for the resulting benign re-churn behavior).
 
 **Format-aware parsing (`ParseResult`):** Each session parser returns a
 `ParseResult` discriminated union: `{ status: 'parsed', session: NormalizedSession }`

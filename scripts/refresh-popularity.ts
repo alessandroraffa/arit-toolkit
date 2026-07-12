@@ -64,7 +64,8 @@ export const TARGETS: TargetDescriptor[] = [
     marketplaceItem: 'anthropic.claude-code',
     githubRepo: 'anthropics/claude-code',
     readmeRow: {
-      sessionLocation: '`~/.claude/projects/<workspace-path>/`',
+      sessionLocation:
+        '`~/.claude/projects/<workspace-path>/` and every `~/.claude-*/projects/<workspace-path>/` profile directory',
       workspaceMatching: 'Project path derived from workspace',
     },
   },

@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as os from 'os';
 import * as path from 'path';
+import { readdirSync } from 'node:fs';
+import type { Dirent } from 'node:fs';
 import type { SessionFile, SessionProvider, WatchPattern } from '../types';
 import { getFileTimes } from './providerUtils';
 
@@ -17,15 +19,54 @@ function encodeProjectDirName(workspaceRootPath: string): string {
   return workspaceRootPath.replace(/[^a-zA-Z0-9]/g, '-');
 }
 
+/**
+ * Enumerates $HOME for every global Claude Code config directory: `.claude`
+ * itself, plus every sibling matching `.claude-*` (as produced by pointing
+ * `CLAUDE_CONFIG_DIR` at a per-profile directory). `.claude` is accepted when
+ * it is a real directory OR a symlink (so a stow/chezmoi/dotbot-managed
+ * `~/.claude` keeps working); `.claude-*` siblings require a real directory
+ * — a symlinked `.claude-*` is deliberately excluded, matching this
+ * workstream's out-of-scope carve-out ("does not follow symlinked
+ * `$HOME/.claude-*` entries"). Returns names sorted lexicographically. When
+ * `$HOME` cannot be listed, falls back to `['.claude']` alone.
+ */
+function listClaudeConfigDirNames(): string[] {
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(os.homedir(), { withFileTypes: true });
+  } catch {
+    return ['.claude'];
+  }
+  const names = entries
+    .filter((entry) => {
+      if (entry.name === '.claude') {
+        return entry.isDirectory() || entry.isSymbolicLink();
+      }
+      return entry.name.startsWith('.claude-') && entry.isDirectory();
+    })
+    .map((entry) => entry.name);
+  return names.sort();
+}
+
+/**
+ * F13 (optional DRY refinement): builds the `<home>/<configDir>/projects/<encoded>`
+ * URI shared by getWatchPatterns() and findSessions().
+ */
+function buildProjectUri(
+  home: string,
+  configDirName: string,
+  projectDirName: string
+): vscode.Uri {
+  return vscode.Uri.file(path.join(home, configDirName, 'projects', projectDirName));
+}
+
 export class ClaudeCodeProvider implements SessionProvider {
   public readonly name = 'claude-code';
   public readonly displayName = 'Claude Code';
 
   public getWatchPatterns(workspaceRootPath: string): WatchPattern[] {
     const projectDirName = encodeProjectDirName(workspaceRootPath);
-    const baseUri = vscode.Uri.file(
-      path.join(os.homedir(), '.claude', 'projects', projectDirName)
-    );
+    const home = os.homedir();
     // H-08: collapse the three per-pattern watchers into one recursive glob so
     // OS watch handles per provider are minimised.  A single '**/*' under the
     // project dir matches:
@@ -34,15 +75,29 @@ export class ClaudeCodeProvider implements SessionProvider {
     //   */tool-results/*     (tool-result files, incl. non-.jsonl)
     // The shared debounced callback in SessionFileWatcher already coalesces
     // rapid change events, so change-detection semantics are unchanged.
-    return [{ baseUri, glob: '**/*' }];
+    // One WatchPattern per discovered $HOME/.claude* config directory.
+    return listClaudeConfigDirNames().map((configDirName) => ({
+      baseUri: buildProjectUri(home, configDirName, projectDirName),
+      glob: '**/*',
+    }));
   }
 
   public async findSessions(workspaceRootPath: string): Promise<SessionFile[]> {
     const projectDirName = encodeProjectDirName(workspaceRootPath);
-    const projectUri = vscode.Uri.file(
-      path.join(os.homedir(), '.claude', 'projects', projectDirName)
-    );
+    const home = os.homedir();
+    const results: SessionFile[] = [];
+    // Aggregates sessions across every discovered $HOME/.claude* config
+    // directory without cross-directory deduplication (session identifiers
+    // are UUIDs; see this workstream's out-of-scope carve-out).
+    for (const configDirName of listClaudeConfigDirNames()) {
+      const projectUri = buildProjectUri(home, configDirName, projectDirName);
+      const sessions = await this.findSessionsInDir(projectUri);
+      results.push(...sessions);
+    }
+    return results;
+  }
 
+  private async findSessionsInDir(projectUri: vscode.Uri): Promise<SessionFile[]> {
     let entries: [string, vscode.FileType][];
     try {
       entries = await vscode.workspace.fs.readDirectory(projectUri);
