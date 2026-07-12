@@ -1,3 +1,15 @@
+## [2.10.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.9.0...v2.10.0) (2026-07-12)
+
+### Features
+
+* **archiving:** discover claude code sessions across config dirs ([eab2c69](https://github.com/alessandroraffa/tangyr-vscode/commit/eab2c695f0d43d79c0087ebe065b19a48889b295))
+
+### Bug Fixes
+
+* **archiving:** reconcile identical archive destinations ([59e7315](https://github.com/alessandroraffa/tangyr-vscode/commit/59e73154157f58eaf1c60d31916ee80a5a64ecdd))
+* **core:** bypass git hooks for config auto-commit ([2f82d8b](https://github.com/alessandroraffa/tangyr-vscode/commit/2f82d8b2857044123e5ef1ad95f457ce3e5d993f))
+* **core:** parse jsonc config and classify invalid files ([bd18a4e](https://github.com/alessandroraffa/tangyr-vscode/commit/bd18a4e9089448a13ab212e27aaa6597b1e98a7f))
+
 ## [2.9.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.8.1...v2.9.0) (2026-06-24)
 
 ### Features
