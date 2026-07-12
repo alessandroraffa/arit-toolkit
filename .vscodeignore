@@ -1,3 +1,8 @@
+# Directories excluded from the published .vsix.
+# vsce uses ONLY this file when present (.gitignore is not consulted),
+# so transient and machinery artifacts must be listed here explicitly.
+
+# Development directories
 .devcontainer/**
 .claude/**
 .github/**
@@ -9,6 +14,21 @@ scripts/**
 test/**
 src/**
 node_modules/**
+
+# Operating-kit machinery output (run journals, review logs, session logs)
+.tangyr/**
+
+# Transient build/test artifacts
+.tmp/**
+.vscode-test/**
+out/**
+coverage/**
+*.vsix
+*.map
+dist/**/*.map
+*.log
+
+# Tooling and repo configuration
 .markdownlint*
 .node-version
 .nvmrc
@@ -25,15 +45,25 @@ commitlint.config.mjs
 esbuild.mjs
 eslint.config.mjs
 pnpm-lock.yaml
+package-lock.json
+yarn.lock
 tsconfig.json
 vitest*.config.ts
-vitest.config.ts
-*.vsix
-*.map
-dist/**/*.map
+
+# Environment and secrets (defensive — must never ship)
+.env
+.env.*
+
+# IDE and OS metadata
+.idea/**
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Oversized source assets and repo-only docs
 media/icon-2048.png
 media/icon.backup-2048.png
 CONTRIBUTING.md
 CODE_OF_CONDUCT.md
 SECURITY.md
-coverage/**
