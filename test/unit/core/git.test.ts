@@ -191,15 +191,12 @@ describe('gitStageAndCommit', () => {
     expect(calls[2]).toEqual(['reset', 'HEAD', '--', '.tangyr.jsonc']);
   });
 
-  it('should pass HUSKY=0 env to git commit when skipHooks is true', async () => {
+  it('should pass HUSKY=0 env and --no-verify args to git commit when skipHooks is true', async () => {
     const capturedOpts: unknown[] = [];
+    const capturedArgs: string[][] = [];
     mockExecFile.mockImplementation(
-      (
-        _cmd: string,
-        _args: string[],
-        opts: unknown,
-        cb: (...args: unknown[]) => void
-      ) => {
+      (_cmd: string, args: string[], opts: unknown, cb: (...args: unknown[]) => void) => {
+        capturedArgs.push(args);
         capturedOpts.push(opts);
         cb(null, '', '');
       }
@@ -210,13 +207,51 @@ describe('gitStageAndCommit', () => {
       skipHooks: true,
     });
 
+    // git commit args (index 1) — --no-verify bypasses all repository-local hooks
+    expect(capturedArgs[1]).toEqual([
+      'commit',
+      '--no-verify',
+      '-m',
+      'chore: update config',
+      '--',
+      '.tangyr.jsonc',
+    ]);
     // git add opts (index 0) — no env override needed
     expect(capturedOpts[0]).toEqual({ cwd: '/workspace' });
-    // git commit opts (index 1) — HUSKY=0 to bypass hooks
+    // git commit opts (index 1) — HUSKY=0 to bypass hooks, kept for compatibility
+    // with Husky-managed repositories that inspect that variable
     const commitOpts = capturedOpts[1] as { cwd: string; env: Record<string, string> };
     expect(commitOpts.cwd).toBe('/workspace');
     expect(commitOpts.env).toBeDefined();
     expect(commitOpts.env.HUSKY).toBe('0');
+  });
+
+  it('should not pass --no-verify args when skipHooks is false', async () => {
+    const capturedArgs: string[][] = [];
+    mockExecFile.mockImplementation(
+      (
+        _cmd: string,
+        args: string[],
+        _opts: unknown,
+        cb: (...args: unknown[]) => void
+      ) => {
+        capturedArgs.push(args);
+        cb(null, '', '');
+      }
+    );
+
+    await gitStageAndCommit('.tangyr.jsonc', 'chore: update config', {
+      cwd: '/workspace',
+      skipHooks: false,
+    });
+
+    expect(capturedArgs[1]).toEqual([
+      'commit',
+      '-m',
+      'chore: update config',
+      '--',
+      '.tangyr.jsonc',
+    ]);
   });
 
   it('should not set HUSKY env when skipHooks is omitted', async () => {
@@ -240,6 +275,30 @@ describe('gitStageAndCommit', () => {
     // Both git add and git commit should only have { cwd }
     expect(capturedOpts[0]).toEqual({ cwd: '/workspace' });
     expect(capturedOpts[1]).toEqual({ cwd: '/workspace' });
+  });
+
+  it('skipHooks uses git-level bypass for hooks that ignore HUSKY', async () => {
+    const capturedOpts: unknown[] = [];
+    const capturedArgs: string[][] = [];
+    mockExecFile.mockImplementation(
+      (_cmd: string, args: string[], opts: unknown, cb: (...args: unknown[]) => void) => {
+        capturedArgs.push(args);
+        capturedOpts.push(opts);
+        cb(null, '', '');
+      }
+    );
+
+    await gitStageAndCommit('.tangyr.jsonc', 'chore: update config', {
+      cwd: '/workspace',
+      skipHooks: true,
+    });
+
+    // A .husky/pre-commit script that does not check HUSKY still cannot run,
+    // because --no-verify is a git-level bypass independent of any
+    // environment variable a hook script may or may not inspect.
+    expect(capturedArgs[1]).toContain('--no-verify');
+    const commitOpts = capturedOpts[1] as { env: Record<string, string> };
+    expect(commitOpts.env.HUSKY).toBe('0');
   });
 });
 

@@ -16,6 +16,23 @@ import {
   HISTORICAL_DEFAULT_ARCHIVE_PATH,
 } from './constants';
 
+/**
+ * Compares two byte arrays for exact equality (length, then every byte).
+ * Used by relocateFile() to decide whether a pre-existing destination file
+ * is byte-identical to its source before treating a copy as a no-op success.
+ */
+function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 interface ArchivedEntry {
   /**
    * The compound fingerprint string (or stringified numeric mtime) recorded
@@ -521,6 +538,65 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     }
   }
 
+  /**
+   * Returns true only for Finder metadata entries (a File named exactly
+   * .DS_Store) that must never gate relocation success or be copied to the
+   * new archive root. Applied at both the top-level traversal (moveEntry)
+   * and the per-month traversal (moveMonthDirectory).
+   */
+  private shouldIgnoreArchiveEntry(name: string, type: vscode.FileType): boolean {
+    return type === vscode.FileType.File && name === '.DS_Store';
+  }
+
+  /**
+   * Relocates a single file from srcUri to destUri, loss-safely:
+   * - Destination absent: copy with { overwrite: false }.
+   * - Destination present: compare bytes. Identical → success without
+   *   copying. Divergent → failure, destination is never overwritten.
+   *   A read/stat failure during comparison is treated identically to a
+   *   confirmed mismatch (never success) — see SPEC-002 Constraint 4 and
+   *   KZ-2026-06-21-001 (catch-returns-success anti-pattern) — so the source
+   *   is always preserved when the destination's true content is unknown.
+   */
+  private async relocateFile(
+    srcUri: vscode.Uri,
+    destUri: vscode.Uri,
+    label: string,
+    logPrefix: string
+  ): Promise<boolean> {
+    let destExists = true;
+    try {
+      await vscode.workspace.fs.stat(destUri);
+    } catch {
+      destExists = false;
+    }
+    if (!destExists) {
+      try {
+        await vscode.workspace.fs.copy(srcUri, destUri, { overwrite: false });
+        return true;
+      } catch (err) {
+        this.logger.warn(`${logPrefix}: failed to move "${label}" — ${String(err)}`);
+        return false;
+      }
+    }
+    let srcBytes: Uint8Array;
+    let destBytes: Uint8Array;
+    try {
+      srcBytes = await vscode.workspace.fs.readFile(srcUri);
+      destBytes = await vscode.workspace.fs.readFile(destUri);
+    } catch (err) {
+      this.logger.warn(`${logPrefix}: failed to compare "${label}" — ${String(err)}`);
+      return false;
+    }
+    if (bytesEqual(srcBytes, destBytes)) {
+      return true;
+    }
+    this.logger.warn(
+      `${logPrefix}: destination differs for "${label}" — leaving source for manual reconciliation`
+    );
+    return false;
+  }
+
   private async moveTopLevelFile(
     oldUri: vscode.Uri,
     newUri: vscode.Uri,
@@ -528,25 +604,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
   ): Promise<boolean> {
     const srcUri = vscode.Uri.joinPath(oldUri, name);
     const destUri = vscode.Uri.joinPath(newUri, name);
-    // BK-004: do not clobber a pre-existing destination with different content.
-    // Check whether the destination already exists before copying.
-    try {
-      await vscode.workspace.fs.stat(destUri);
-      // Destination exists: treat as a copy failure so the source is preserved.
-      this.logger.warn(
-        `moveTopLevelFile: destination already exists for "${name}" — skipping to preserve existing content`
-      );
-      return false;
-    } catch {
-      // Destination absent — safe to copy.
-    }
-    try {
-      await vscode.workspace.fs.copy(srcUri, destUri, { overwrite: false });
-      return true;
-    } catch (err) {
-      this.logger.warn(`Failed to move file ${name}: ${String(err)}`);
-      return false;
-    }
+    return this.relocateFile(srcUri, destUri, name, 'moveTopLevelFile');
   }
 
   private async moveMonthDirectory(
@@ -564,29 +622,22 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     await this.ensureDirectory(monthNewUri);
     let allOK = true;
     for (const [fileName, fileType] of fileEntries) {
+      if (this.shouldIgnoreArchiveEntry(fileName, fileType)) {
+        continue;
+      }
       if (fileType !== vscode.FileType.File) {
         continue;
       }
       const srcUri = vscode.Uri.joinPath(monthOldUri, fileName);
       const destUri = vscode.Uri.joinPath(monthNewUri, fileName);
-      // BK-004: do not clobber a pre-existing destination with different content.
-      // Check whether the destination already exists before copying.
-      try {
-        await vscode.workspace.fs.stat(destUri);
-        // Destination exists: treat as a copy failure so the source is preserved.
-        this.logger.warn(
-          `moveMonthDirectory: destination already exists for "${label}/${fileName}" — skipping to preserve existing content`
-        );
+      const ok = await this.relocateFile(
+        srcUri,
+        destUri,
+        `${label}/${fileName}`,
+        'moveMonthDirectory'
+      );
+      if (!ok) {
         allOK = false;
-        continue;
-      } catch {
-        // Destination absent — safe to copy.
-      }
-      try {
-        await vscode.workspace.fs.copy(srcUri, destUri, { overwrite: false });
-      } catch (err) {
-        allOK = false;
-        this.logger.warn(`Failed to move file ${label}/${fileName}: ${String(err)}`);
       }
     }
     return allOK;
@@ -670,6 +721,9 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     entry: [string, vscode.FileType]
   ): Promise<boolean> {
     const [name, type] = entry;
+    if (this.shouldIgnoreArchiveEntry(name, type)) {
+      return true;
+    }
     if (type === vscode.FileType.File) {
       return this.moveTopLevelFile(oldUri, newUri, name);
     }
@@ -743,9 +797,13 @@ export class AgentSessionArchiveService implements vscode.Disposable {
           `Tangyr: relocated session archives to ${DEFAULT_ARCHIVE_PATH}.`
         );
       } else {
-        void vscode.window.showWarningMessage(
-          `Tangyr: some archives remain at ${HISTORICAL_DEFAULT_ARCHIVE_PATH} — reconcile manually.`
+        const action = await vscode.window.showWarningMessage(
+          `Tangyr: some archives remain at ${HISTORICAL_DEFAULT_ARCHIVE_PATH} — see docs/operations/runbooks/agent-session-archiving-verification.md for reconciliation steps.`,
+          'View Log'
         );
+        if (action === 'View Log') {
+          this.logger.show();
+        }
       }
     } catch (err) {
       this.logger.warn(`reconcileArchiveLocation: unexpected error — ${String(err)}`);

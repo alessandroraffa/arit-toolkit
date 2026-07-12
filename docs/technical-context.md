@@ -130,14 +130,14 @@ merge.
   Feature     Feature     Feature                    Feature        System
 ```
 
-| External actor         | Interaction                                                                                                                                                                                              |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| VS Code user           | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.tangyr.jsonc` manually.                                                                           |
-| `.tangyr.jsonc`        | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits.                                                                                    |
-| VS Code settings       | `tangyr.timestampFormat`, `tangyr.timestampSeparator`, `tangyr.logLevel` -- read via `ConfigManager`.                                                                                                    |
-| Active text editor     | Source for real-time text statistics. Text Stats listens to editor change, document change, and selection change events.                                                                                 |
-| AI agent session files | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/`, VS Code globalStorage/workspaceStorage directories. Only sessions belonging to the current workspace are copied to the archive path. |
-| VS Code Marketplace    | Publish target for `.vsix` packages via semantic-release pipeline.                                                                                                                                       |
+| External actor         | Interaction                                                                                                                                                                                                                                                  |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| VS Code user           | Invokes commands (palette, context menu, keyboard shortcut), toggles extension via status bar, edits `.tangyr.jsonc` manually.                                                                                                                               |
+| `.tangyr.jsonc`        | Persists workspace state (enabled flag, version, feature configs). Watched by `FileSystemWatcher` for external edits.                                                                                                                                        |
+| VS Code settings       | `tangyr.timestampFormat`, `tangyr.timestampSeparator`, `tangyr.logLevel` -- read via `ConfigManager`.                                                                                                                                                        |
+| Active text editor     | Source for real-time text statistics. Text Stats listens to editor change, document change, and selection change events.                                                                                                                                     |
+| AI agent session files | Read-only sources: `.aider.chat.history.md`, `~/.claude/projects/` and every `~/.claude-*/projects/` profile directory, VS Code globalStorage/workspaceStorage directories. Only sessions belonging to the current workspace are copied to the archive path. |
+| VS Code Marketplace    | Publish target for `.vsix` packages via semantic-release pipeline.                                                                                                                                                                                           |
 
 ### 3.2 Technical Context
 
@@ -199,14 +199,14 @@ merge.
 
 **External I/O channels:**
 
-| Channel                | Protocol / API                                                                                                  | Direction |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | --------- |
-| Workspace filesystem   | `vscode.workspace.fs` (read/write/stat/copy/delete/readDirectory)                                               | R/W       |
-| VS Code settings       | `vscode.workspace.getConfiguration()`                                                                           | Read      |
-| VS Code commands       | `vscode.commands.registerCommand()`                                                                             | Register  |
-| VS Code UI             | `vscode.window.*` (status bar, input box, messages)                                                             | Write     |
-| Global filesystem      | `vscode.workspace.fs` via `vscode.Uri.file()` for `~/.claude/`, `~/.continue/`, globalStorage, workspaceStorage | Read      |
-| VS Code Output Channel | `vscode.window.createOutputChannel()`                                                                           | Write     |
+| Channel                | Protocol / API                                                                                                                  | Direction |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Workspace filesystem   | `vscode.workspace.fs` (read/write/stat/copy/delete/readDirectory)                                                               | R/W       |
+| VS Code settings       | `vscode.workspace.getConfiguration()`                                                                                           | Read      |
+| VS Code commands       | `vscode.commands.registerCommand()`                                                                                             | Register  |
+| VS Code UI             | `vscode.window.*` (status bar, input box, messages)                                                                             | Write     |
+| Global filesystem      | `vscode.workspace.fs` via `vscode.Uri.file()` for `~/.claude/`, `~/.claude-*/`, `~/.continue/`, globalStorage, workspaceStorage | Read      |
+| VS Code Output Channel | `vscode.window.createOutputChannel()`                                                                                           | Write     |
 
 ---
 
@@ -318,6 +318,32 @@ stateManager.checkup()  [async, triggered by "Checkup" button]
   +-- return CheckupResult { configUpdated, commitResult }
 ```
 
+**Missing vs. invalid config:** `Tangyr Workbench: Initialize this
+workspace for advanced features?` is shown only when `.tangyr.jsonc`
+is absent (a read failure) and no legacy `.arit-toolkit.jsonc` can be
+read either — `readStateFromFile()`'s `initialised` check reflects
+this. An existing but invalid `.tangyr.jsonc` (a `parseJsonc` failure)
+never triggers this prompt: `handleInvalidConfig()` marks the
+workspace initialised-but-disabled on the first read this activation
+(or leaves a prior successful in-memory config untouched on a
+watcher-triggered reload) and shows `Tangyr Workbench: .tangyr.jsonc
+is invalid. Fix the file and save it to re-enable advanced features.`
+at most once per continuous invalid streak. Saving a corrected file
+re-enables advanced features entirely through the existing watcher
+`reload()` callback — no workspace reload or reactivation is required.
+
+**Checkup hook bypass:** `autoCommitService.commitIfNeeded()` calls
+`gitStageAndCommit(..., { skipHooks: true })`, which runs `git commit
+--no-verify`. `--no-verify` bypasses ALL repository-local Git hooks
+for that commit (pre-commit, commit-msg, and any other hook
+configured via `core.hooksPath`) — not only Husky-aware hooks that
+check the `HUSKY=0` environment variable, which is also still set for
+compatibility with Husky-managed repositories. This is deliberate:
+the extension host cannot reliably satisfy arbitrary repository-local
+hook scripts, and `.tangyr.jsonc` is machine-managed and
+credential-free, so bypassing hooks for this specific commit carries
+no credential-handling risk.
+
 ---
 
 ## 8 Cross-cutting Concepts
@@ -363,11 +389,33 @@ workspace-level state:
 
 **Read path:** `readStateFromFile()` parses JSONC, stores the full
 config object, extracts top-level `enabled`/`versionCode`, and
-notifies per-section listeners for any changed sections.
+notifies per-section listeners for any changed sections. Parsing is
+scanner-based (`src/utils/jsonc.ts`, `parseJsonc`) rather than
+regex-based, so Prettier-formatted `.tangyr.jsonc` files with `//`
+and `/* … */` comments and trailing commas before `}`/`]` parse
+correctly, including when a string value contains an escaped `"` or
+Windows-style backslashes; comment and trailing-comma removal never
+mutate characters inside a string literal. An existing but invalid
+`.tangyr.jsonc` (a parse failure) is reported as **invalid**, not
+treated as absent: `readCurrentConfigFile()` reads and parses the
+file inline, catching a read failure and a parse failure separately.
+A read failure (missing file, or any other read error) still routes
+to the existing missing-config → onboarding path. A parse failure
+routes to `handleInvalidConfig()` instead, which never triggers the
+onboarding prompt and never fabricates a legacy-config fallback — see
+§4.4 for the exact behavior and the invalid-config message.
 
 **Write path:** `writeStateToFile(enabled)` merges the new `enabled`
 state into the existing `_fullConfig`, preserving all custom sections.
 `writeFullConfig()` serialises back to JSONC with the standard header.
+When the write is followed by an automated commit (Checkup flow, see
+§4.4), `gitStageAndCommit(..., { skipHooks: true })` runs `git commit
+--no-verify`, bypassing all repository-local Git hooks for that
+commit — not only Husky-aware ones — plus the `HUSKY=0` environment
+variable kept for Husky compatibility. This is safe because
+`.tangyr.jsonc` is machine-managed and credential-free, and necessary
+because the extension host cannot reliably satisfy arbitrary
+repository-local hook scripts.
 
 **External edit detection:** A `FileSystemWatcher` on the config file
 re-reads on change/create and fires `onDidChangeState`.
@@ -456,6 +504,24 @@ include only those belonging to the current workspace. Workspace-scoped
 providers (Aider, Claude Code, Copilot Chat) use path-based discovery;
 global-scoped providers (Cline, Roo Code, Continue) read session file
 content and check if it references the workspace root path.
+
+**Claude Code multi-directory discovery:** `ClaudeCodeProvider` does not
+hardcode a single `~/.claude` directory. `listClaudeConfigDirNames()`
+enumerates `$HOME` for `.claude` plus every sibling matching `.claude-*`
+(as produced by pointing `CLAUDE_CONFIG_DIR` at a per-profile
+directory), returning the matched names sorted lexicographically; when
+`$HOME` cannot be listed, it falls back to `['.claude']` alone. `.claude`
+is accepted when it is a real directory OR a symlink (preserving
+support for a stow/chezmoi/dotbot-managed `~/.claude`); a `.claude-*`
+sibling requires a real directory — a symlinked `.claude-*` is
+deliberately excluded. Both `getWatchPatterns()` and `findSessions()`
+iterate every discovered config directory name and build a
+`<home>/<configDirName>/projects/<encoded>` path for each; `findSessions()`
+aggregates `SessionFile` results across all directories without
+cross-directory deduplication (session identifiers are UUIDs, so a
+collision is realistic only when one profile directory was bootstrapped
+from another before the copies diverged — see the archive-session
+verification runbook for the resulting benign re-churn behavior).
 
 **Format-aware parsing (`ParseResult`):** Each session parser returns a
 `ParseResult` discriminated union: `{ status: 'parsed', session: NormalizedSession }`
@@ -693,7 +759,9 @@ is created with updated content.
 
 1. **Value migration (`migrateValue`):** `ConfigSectionDefinition` supports an optional `migrateValue(existing) => unknown` transform. `ConfigMigrationService.mergeIntoConfig` applies it to every registered section that is present in the config being merged, before stamping the version. The archiving section's `migrateValue` rewrites `archivePath` from `docs/archive/agent-sessions` (or absent/empty) to `.tangyr/agent-sessions`; any other value (a custom path) is left unchanged. The transform is idempotent.
 
-2. **Archive relocation (`reconcileArchiveLocation`):** `AgentSessionArchiveService` runs a one-shot, silent `reconcileArchiveLocation()` at the start of the first archive cycle after each `start()`. The method returns early unless `currentConfig.archivePath === DEFAULT_ARCHIVE_PATH`; when that gate passes and a non-empty tree exists at `HISTORICAL_DEFAULT_ARCHIVE_PATH`, it calls the existing loss-safe `moveArchive` to relocate the tree to the new default. The move is silent (no confirmation prompt). The `_locationReconciled` flag prevents the method from running on subsequent cycles. Custom-path installs are never touched.
+2. **Archive relocation (`reconcileArchiveLocation`):** `AgentSessionArchiveService` runs a one-shot, silent `reconcileArchiveLocation()` at the start of the first archive cycle after each `start()`. The method returns early unless `currentConfig.archivePath === DEFAULT_ARCHIVE_PATH`; when that gate passes and a non-empty tree exists at `HISTORICAL_DEFAULT_ARCHIVE_PATH`, it calls the existing loss-safe `moveArchive` to relocate the tree to the new default. The move is silent (no confirmation prompt). The `_locationReconciled` flag prevents the method from running on subsequent cycles. Custom-path installs are never touched. On partial failure, the `showWarningMessage` notification includes a `View Log` action button that calls `logger.show()` to open the Tangyr Workbench output channel, and its text points to `docs/operations/runbooks/agent-session-archiving-verification.md` for the manual reconciliation checklist.
+
+3. **Shared relocation helper (`relocateFile`):** `moveTopLevelFile` and the per-file loop in `moveMonthDirectory` both delegate to a single private helper, `relocateFile(srcUri, destUri, label, logPrefix)`. When the destination is absent, it copies with `{ overwrite: false }`. When the destination already exists, it reads both files and compares them byte-for-byte: identical bytes are treated as success without copying (no overwrite, no warning); divergent bytes are treated as failure, and the destination is never overwritten. A read or stat failure during the byte comparison is treated identically to a confirmed byte mismatch — **never** as success — so the source is always preserved when the destination's true content cannot be confirmed (SPEC-002 Constraint 4: no deletion before the copy is confirmed; this also prevents the KZ-2026-06-21-001 catch-returns-success anti-pattern from reappearing in this irreversible copy-then-delete path). A shared predicate, `shouldIgnoreArchiveEntry(name, type)`, returns `true` only for a `File` named exactly `.DS_Store`; it is applied at both the top-level traversal (`moveEntry`) and the per-month traversal (`moveMonthDirectory`), so Finder metadata never gates relocation success and is never copied to the new archive root. Divergent archives (any file whose bytes differ, or whose comparison could not be completed) are never overwritten — the historical root is preserved until a Human reconciles the conflict manually.
 
 **Date cutoff filtering:** The optional `ignoreSessionsBefore` field
 (format `YYYYMMDD`) sets a UTC date cutoff. Sessions whose creation time

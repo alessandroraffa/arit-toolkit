@@ -38,16 +38,16 @@ AI coding assistants store their session files in different locations and format
 
 <!-- POPULARITY-TABLE:START -->
 
-| Assistant           | Session location                            | Workspace matching                           |
-| ------------------- | ------------------------------------------- | -------------------------------------------- |
-| Claude Code         | `~/.claude/projects/<workspace-path>/`      | Project path derived from workspace          |
-| OpenAI Codex        | `~/.codex/sessions/<YYYY>/<MM>/<DD>/`       | `cwd` field in session metadata              |
-| Cline               | VS Code global storage                      | Session content references workspace path    |
-| GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`) | Per-workspace storage (`.json` and `.jsonl`) |
-| OpenCode            | `~/.local/share/opencode/opencode.db`       | `directory` field in session row             |
-| Aider               | Workspace root (`.aider.*` files)           | Files present in the workspace root          |
-| Continue            | `~/.continue/sessions/`                     | Session content references workspace path    |
-| RooCode             | VS Code global storage                      | Session content references workspace path    |
+| Assistant           | Session location                                                                                            | Workspace matching                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Claude Code         | `~/.claude/projects/<workspace-path>/` and every `~/.claude-*/projects/<workspace-path>/` profile directory | Project path derived from workspace          |
+| OpenAI Codex        | `~/.codex/sessions/<YYYY>/<MM>/<DD>/`                                                                       | `cwd` field in session metadata              |
+| Cline               | VS Code global storage                                                                                      | Session content references workspace path    |
+| GitHub Copilot Chat | VS Code workspace storage (`chatSessions/`)                                                                 | Per-workspace storage (`.json` and `.jsonl`) |
+| OpenCode            | `~/.local/share/opencode/opencode.db`                                                                       | `directory` field in session row             |
+| Aider               | Workspace root (`.aider.*` files)                                                                           | Files present in the workspace root          |
+| Continue            | `~/.continue/sessions/`                                                                                     | Session content references workspace path    |
+| RooCode             | VS Code global storage                                                                                      | Session content references workspace path    |
 
 > **Note:** This popularity order is derived from public signals (downloads, installs, stars) and is not an endorsement, recommendation, or quality judgment of any assistant.
 > Method: [PLAN-006](docs/plans/PLAN-006-assistant-popularity-ranking.md)
@@ -184,7 +184,9 @@ Command Palette → "Tangyr: Toggle Extension (Enable/Disable)" or "Tangyr: Chec
 
 **Workspace initialization:** When you open a single-root workspace for the first time, Tangyr Workbench offers to create a `.tangyr.jsonc` configuration file at the workspace root. When the extension updates and introduces new configuration sections, you will be prompted to add them.
 
-**Config auto-commit:** In a Git repository, when the extension writes changes to `.tangyr.jsonc` and the file is not gitignored, you are prompted to commit the change automatically. If the file has no actual Git changes, the prompt is skipped. Git hooks (pre-commit, commit-msg) are bypassed for these automated commits because VS Code's extension host process has a restricted environment where tools like `pnpm` may not be available.
+**Invalid config recovery:** If `.tangyr.jsonc` already exists but is not valid JSONC, Tangyr Workbench does not treat it as missing and does not reopen the initialization prompt. Instead it shows `Tangyr Workbench: .tangyr.jsonc is invalid. Fix the file and save it to re-enable advanced features.` (at most once per continuous streak of invalid saves) and keeps your last-known-good in-memory configuration active until you fix the file. Saving a corrected file re-enables advanced features automatically — no reload or reactivation needed.
+
+**Config auto-commit:** In a Git repository, when the extension writes changes to `.tangyr.jsonc` and the file is not gitignored, you are prompted to commit the change automatically. If the file has no actual Git changes, the prompt is skipped. The automated commit runs `git commit --no-verify`, which bypasses ALL repository-local Git hooks (pre-commit, commit-msg, and any other hook configured via `core.hooksPath`) for that commit — not only Husky-aware hooks that check the `HUSKY=0` environment variable, which is also still set for compatibility with Husky-managed repositories. This is intentional: VS Code's extension host process cannot reliably satisfy arbitrary repository-local hook scripts (tools like `pnpm` may not be available in its restricted environment). It is safe specifically for this automated commit because `.tangyr.jsonc` is a machine-managed, credential-free configuration file — the extension handles no credentials.
 
 **Workspace modes:**
 

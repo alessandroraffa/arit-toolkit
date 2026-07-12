@@ -39,6 +39,57 @@ describe('parseJsonc', () => {
     expect(result).toEqual({ enabled: true, name: 'test' });
   });
 
+  it('should parse a Prettier-formatted .tangyr.jsonc fixture with line comments and trailing commas', () => {
+    const input = `// Tangyr Workbench workspace configuration
+// Managed by the Tangyr Workbench extension
+{
+  "enabled": true,
+  "agentSessionsArchiving": {
+    "enabled": true,
+    "archivePath": ".tangyr/agent-sessions",
+  },
+  "visibleMetrics": [
+    "chars",
+    "tokens",
+  ],
+}`;
+    const result = parseJsonc(input);
+    expect(result).toEqual({
+      enabled: true,
+      agentSessionsArchiving: {
+        enabled: true,
+        archivePath: '.tangyr/agent-sessions',
+      },
+      visibleMetrics: ['chars', 'tokens'],
+    });
+  });
+
+  it('should preserve https:// and block-comment-like text inside string values', () => {
+    const input = `{
+  "url": "https://example.test",
+  "note": "value /* literal */"
+}`;
+    const result = parseJsonc(input);
+    expect(result).toEqual({
+      url: 'https://example.test',
+      note: 'value /* literal */',
+    });
+  });
+
+  it('should preserve escaped quotes and windows-style backslash paths while still stripping trailing comments and commas that follow them', () => {
+    const input = `{
+  "escaped": "before \\" after",
+  "windowsPath": "C:\\\\Users\\\\me\\\\.tangyr", // trailing comment after escaped-quote and backslash strings
+  "list": [1, 2,],
+}`;
+    const result = parseJsonc(input);
+    expect(result).toEqual({
+      escaped: 'before " after',
+      windowsPath: 'C:\\Users\\me\\.tangyr',
+      list: [1, 2],
+    });
+  });
+
   it('should throw on empty input', () => {
     expect(() => parseJsonc('')).toThrow();
   });
@@ -49,6 +100,10 @@ describe('parseJsonc', () => {
 
   it('should throw on invalid JSON', () => {
     expect(() => parseJsonc('{ invalid }')).toThrow();
+  });
+
+  it('should throw on syntactically invalid JSONC unrelated to comments or trailing commas', () => {
+    expect(() => parseJsonc('{ "a": }')).toThrow();
   });
 });
 

@@ -94,8 +94,11 @@ export async function gitStageAndCommit(
   const { cwd, skipHooks } = options;
   await execFileAsync('git', ['add', '--', filePath], { cwd });
   const commitOpts = skipHooks ? { cwd, env: { ...process.env, HUSKY: '0' } } : { cwd };
+  const commitArgs = skipHooks
+    ? ['commit', '--no-verify', '-m', message, '--', filePath]
+    : ['commit', '-m', message, '--', filePath];
   try {
-    await execFileAsync('git', ['commit', '-m', message, '--', filePath], commitOpts);
+    await execFileAsync('git', commitArgs, commitOpts);
   } catch (err) {
     await gitUnstage(filePath, cwd).catch(() => {
       /* best-effort unstage */

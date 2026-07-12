@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { workspace, window, mockFileSystemWatcher } from '../mocks/vscode';
+import { workspace, window, commands, mockFileSystemWatcher } from '../mocks/vscode';
 import { ExtensionStateManager } from '../../../src/core/extensionStateManager';
 
 describe('ExtensionStateManager', () => {
@@ -280,6 +280,161 @@ describe('ExtensionStateManager', () => {
       await manager.initialize('1.0.0');
 
       expect(workspace.createFileSystemWatcher).toHaveBeenCalled();
+    });
+  });
+
+  describe('invalid config handling', () => {
+    const INITIALIZE_PROMPT =
+      'Tangyr Workbench: Initialize this workspace for advanced features?';
+    const INVALID_CONFIG_MESSAGE =
+      'Tangyr Workbench: .tangyr.jsonc is invalid. Fix the file and save it to re-enable advanced features.';
+
+    function captureReloadCallback(): () => Promise<void> {
+      const onDidChangeCalls = vi.mocked(mockFileSystemWatcher.onDidChange).mock.calls;
+      const reloadFn = onDidChangeCalls[0]?.[0] as (() => Promise<void>) | undefined;
+      if (!reloadFn) {
+        throw new Error('reload callback not captured from onDidChange');
+      }
+      return reloadFn;
+    }
+
+    async function createEnabledManager(): Promise<ExtensionStateManager> {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
+      const manager = createManager();
+      await manager.initialize('1.0.0');
+      return manager;
+    }
+
+    it('should classify an existing but unparseable .tangyr.jsonc as invalid, not missing', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ invalid jsonc'));
+      window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
+
+      const manager = createManager();
+      await manager.initialize('1.0.0');
+
+      expect(manager.isInitialized).toBe(true);
+      expect(manager.isEnabled).toBe(false);
+      expect(
+        (manager as unknown as { _fullConfig: unknown })._fullConfig
+      ).toBeUndefined();
+      expect(window.showInformationMessage).not.toHaveBeenCalledWith(
+        INITIALIZE_PROMPT,
+        'Initialize'
+      );
+      expect(mockLogger.warn).toHaveBeenCalled();
+    });
+
+    it('should still show the onboarding prompt when .tangyr.jsonc is absent and no legacy config can be read', async () => {
+      workspace.workspaceFolders = [{ uri: { fsPath: '/workspace' } }];
+      workspace.fs.readFile = vi.fn().mockRejectedValue(new Error('File not found'));
+      window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
+
+      const manager = createManager();
+      await manager.initialize('1.0.0');
+
+      expect(manager.isInitialized).toBe(false);
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        INITIALIZE_PROMPT,
+        'Initialize'
+      );
+    });
+
+    it('should keep the prior enabled state and config, and show exactly one error message, when the watcher reloads invalid JSONC', async () => {
+      const manager = await createEnabledManager();
+      const priorFullConfig = (manager as unknown as { _fullConfig: unknown })
+        ._fullConfig;
+      window.showInformationMessage = vi.fn().mockResolvedValue(undefined);
+      window.showErrorMessage = vi.fn().mockResolvedValue(undefined);
+
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ invalid jsonc'));
+      const reload = captureReloadCallback();
+      await reload();
+
+      expect(manager.isEnabled).toBe(true);
+      expect((manager as unknown as { _fullConfig: unknown })._fullConfig).toBe(
+        priorFullConfig
+      );
+      expect(window.showInformationMessage).not.toHaveBeenCalledWith(
+        INITIALIZE_PROMPT,
+        'Initialize'
+      );
+      expect(window.showErrorMessage).toHaveBeenCalledExactlyOnceWith(
+        INVALID_CONFIG_MESSAGE
+      );
+    });
+
+    it('should recover through the existing watcher reload() callback when the file is saved with valid JSONC', async () => {
+      const manager = await createEnabledManager();
+      window.showErrorMessage = vi.fn().mockResolvedValue(undefined);
+      const reload = captureReloadCallback();
+
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ invalid jsonc'));
+      await reload();
+      expect(manager.isEnabled).toBe(true);
+
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
+      await reload();
+
+      expect(manager.isEnabled).toBe(true);
+      expect(manager.isInitialized).toBe(true);
+      expect(commands.executeCommand).not.toHaveBeenCalled();
+    });
+
+    it('should show the invalid-config error message only once across two consecutive invalid reloads', async () => {
+      await createEnabledManager();
+      window.showErrorMessage = vi.fn().mockResolvedValue(undefined);
+      const reload = captureReloadCallback();
+
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ invalid jsonc'));
+      await reload();
+      await reload();
+
+      expect(window.showErrorMessage).toHaveBeenCalledOnce();
+    });
+
+    it('should show the invalid-config error message again after a valid save resets the streak', async () => {
+      await createEnabledManager();
+      window.showErrorMessage = vi.fn().mockResolvedValue(undefined);
+      const reload = captureReloadCallback();
+
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ invalid jsonc'));
+      await reload();
+      await reload();
+      expect(window.showErrorMessage).toHaveBeenCalledOnce();
+
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(
+          new TextEncoder().encode('{ "enabled": true, "versionCode": 1001000000 }')
+        );
+      await reload();
+
+      workspace.fs.readFile = vi
+        .fn()
+        .mockResolvedValue(new TextEncoder().encode('{ invalid jsonc'));
+      await reload();
+
+      expect(window.showErrorMessage).toHaveBeenCalledTimes(2);
     });
   });
 

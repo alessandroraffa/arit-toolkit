@@ -1,12 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { workspace, FileType } from '../../../mocks/vscode';
+
+const { mockReaddirSync } = vi.hoisted(() => ({
+  mockReaddirSync: vi.fn(),
+}));
+vi.mock('node:fs', () => ({
+  readdirSync: mockReaddirSync,
+}));
+
 import { ClaudeCodeProvider } from '../../../../../src/features/agentSessionsArchiving/providers/claudeCodeProvider';
+
+/** Builds a Dirent-like fixture entry for the mocked readdirSync. */
+function claudeDirent(
+  name: string,
+  opts?: { isDirectory?: boolean; isSymlink?: boolean }
+): { name: string; isDirectory: () => boolean; isSymbolicLink: () => boolean } {
+  const isDirectory = opts?.isDirectory ?? true;
+  const isSymlink = opts?.isSymlink ?? false;
+  return {
+    name,
+    isDirectory: () => isDirectory && !isSymlink,
+    isSymbolicLink: () => isSymlink,
+  };
+}
 
 describe('ClaudeCodeProvider', () => {
   let provider: ClaudeCodeProvider;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: a single ~/.claude directory entry, so pre-existing
+    // single-directory tests keep passing unchanged.
+    mockReaddirSync.mockReturnValue([claudeDirent('.claude')]);
     provider = new ClaudeCodeProvider();
   });
 
@@ -430,6 +455,141 @@ describe('ClaudeCodeProvider', () => {
       expect(encoded).not.toContain('.');
       expect(encoded).not.toContain('\\');
       expect(encoded).not.toContain(':');
+    });
+  });
+
+  // Activity 4: session discovery across every $HOME/.claude* config directory
+
+  describe('multi-directory Claude Code config discovery (Activity 4)', () => {
+    it('findSessions reads projects/<encoded> under .claude, .claude-personal, and .claude-work only, in lexicographic order', async () => {
+      mockReaddirSync.mockReturnValue([
+        claudeDirent('.claude'),
+        claudeDirent('.claude-work'),
+        claudeDirent('.claude-personal'),
+        claudeDirent('.claude.json', { isDirectory: false }),
+        claudeDirent('.claude-backup.tar', { isDirectory: false }),
+        claudeDirent('.clauderc'),
+      ]);
+      const readDirCalls: string[] = [];
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          readDirCalls.push(uri.fsPath);
+          return Promise.resolve([]);
+        });
+
+      await provider.findSessions('/my/project');
+
+      expect(readDirCalls).toHaveLength(3);
+      const configDirsInOrder = readDirCalls.map(
+        (p) => /\/(\.claude[^/]*)\/projects\//.exec(p)?.[1] ?? p
+      );
+      expect(configDirsInOrder).toEqual(['.claude', '.claude-personal', '.claude-work']);
+    });
+
+    it('returns the union of sessions found under ~/.claude and ~/.claude-work project directories', async () => {
+      mockReaddirSync.mockReturnValue([
+        claudeDirent('.claude'),
+        claudeDirent('.claude-work'),
+      ]);
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          if (uri.fsPath.includes('/.claude-work/projects/')) {
+            return Promise.resolve([['session-b.jsonl', FileType.File]]);
+          }
+          if (uri.fsPath.includes('/.claude/projects/')) {
+            return Promise.resolve([['session-a.jsonl', FileType.File]]);
+          }
+          return Promise.resolve([]);
+        });
+      workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
+
+      const sessions = await provider.findSessions('/my/project');
+
+      expect(sessions).toHaveLength(2);
+      const names = sessions.map((s) => s.archiveName).sort();
+      expect(names).toEqual(['claude-code-session-a', 'claude-code-session-b']);
+    });
+
+    it('falls back to ~/.claude alone when readdirSync throws', async () => {
+      mockReaddirSync.mockImplementation(() => {
+        throw new Error('EPERM: operation not permitted');
+      });
+      const readDirCalls: string[] = [];
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          readDirCalls.push(uri.fsPath);
+          return Promise.resolve([]);
+        });
+
+      await provider.findSessions('/my/project');
+
+      expect(readDirCalls).toHaveLength(1);
+      expect(readDirCalls[0]).toContain('/.claude/projects/');
+
+      const patterns = provider.getWatchPatterns('/my/project');
+      expect(patterns).toHaveLength(1);
+      expect(patterns[0]!.baseUri.fsPath).toContain('/.claude/projects/');
+    });
+
+    it('getWatchPatterns returns one WatchPattern per config directory, each ending in <configDir>/projects/<encoded>', () => {
+      mockReaddirSync.mockReturnValue([
+        claudeDirent('.claude'),
+        claudeDirent('.claude-work'),
+      ]);
+
+      const patterns = provider.getWatchPatterns('/Users/dev/my-project');
+
+      expect(patterns).toHaveLength(2);
+      expect(patterns.every((p) => p.glob === '**/*')).toBe(true);
+      const baseUriPaths = patterns.map((p) => p.baseUri.fsPath).sort();
+      expect(
+        baseUriPaths[0]!.endsWith('.claude-work/projects/-Users-dev-my-project')
+      ).toBe(true);
+      expect(baseUriPaths[1]!.endsWith('.claude/projects/-Users-dev-my-project')).toBe(
+        true
+      );
+    });
+
+    it('a symlinked ~/.claude is still discovered; a symlinked .claude-* sibling is excluded', async () => {
+      mockReaddirSync.mockReturnValue([
+        claudeDirent('.claude', { isDirectory: false, isSymlink: true }),
+        claudeDirent('.claude-work', { isDirectory: false, isSymlink: true }),
+      ]);
+      // Only the top-level project-dir listing calls are counted here; the
+      // companion-dir lookup that toSessionFile()/computeCompositeMtime()
+      // performs for the discovered session is a deeper, different path and
+      // must not be mistaken for a second config directory being probed.
+      const topLevelProjectDirCalls: string[] = [];
+      workspace.fs.readDirectory = vi
+        .fn()
+        .mockImplementation((uri: { fsPath: string }) => {
+          if (uri.fsPath.endsWith('/.claude/projects/-my-project')) {
+            topLevelProjectDirCalls.push(uri.fsPath);
+            return Promise.resolve([['session.jsonl', FileType.File]]);
+          }
+          if (uri.fsPath.endsWith('/.claude-work/projects/-my-project')) {
+            topLevelProjectDirCalls.push(uri.fsPath);
+            return Promise.resolve([]);
+          }
+          // Companion-dir lookup (subagents/tool-results) for the discovered
+          // session: report absent, and do not count it as a config-dir probe.
+          return Promise.reject(new Error('not found'));
+        });
+      workspace.fs.stat = vi.fn().mockResolvedValue({ mtime: 1000, ctime: 900 });
+
+      const sessions = await provider.findSessions('/my/project');
+
+      expect(topLevelProjectDirCalls).toHaveLength(1);
+      expect(topLevelProjectDirCalls[0]).toContain('/.claude/projects/');
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0]!.archiveName).toBe('claude-code-session');
+
+      const patterns = provider.getWatchPatterns('/my/project');
+      expect(patterns).toHaveLength(1);
+      expect(patterns[0]!.baseUri.fsPath).toContain('/.claude/projects/');
     });
   });
 });

@@ -985,4 +985,102 @@ This log captures process-level improvements proposed during multi-perspective r
     does not cover a Range-based path.
   target: skills/review-gate (checklist) and skills/coding-standards
   owner: Human
+
+- id: KZ-2026-07-12-001
+  created: 2026-07-12
+  gate: pre-implementation
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0025 Task 3.2 specifies a new boolean byte-comparison helper ("returning
+    true only when lengths and every byte match") inside an irreversible
+    copy-then-delete archive relocation, but the task text never states the
+    helper's return value when reading either file THROWS (permission, transient
+    lock, race). White, Black, and Green independently flagged the same gap: a
+    natural try/catch-returns-true implementation would report an unverified
+    destination as byte-identical, let the aggregate success flag stay true, and
+    delete the historical archive root — the exact catch-returns-the-success-
+    sentinel anti-pattern recorded as KZ-2026-06-21-001 in this same
+    archiveService/extensionStateManager file family, now recurring at
+    StepLedger-authoring altitude (the task omits the failure branch rather than a
+    catch block masking it). Success and mismatch branches were specified; the
+    IO-failure branch was not.
+  occurrences: 1
+  proposed_change: >
+    Add a stepledger-authoring and review-gate checklist item: any task that
+    introduces a boolean-returning file helper (comparison, move, removal) used to
+    gate an irreversible delete must specify the helper's return value on the
+    read/stat/IO-failure branch explicitly (fail-safe toward preserving the
+    source: return false, never the success sentinel), not only its success and
+    mismatch branches, and must pair it with a failing test that mocks the read
+    throw. Treat an unspecified IO-failure branch on a delete-gating helper as a
+    blocking pre-implementation finding — it is the authoring-time form of
+    KZ-2026-06-21-001.
+  target: skills/review-gate (checklist) and skills/stepledger-authoring
+  owner: Human
+
+- id: KZ-2026-07-12-002
+  created: 2026-07-12
+  gate: pre-implementation
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0025 Activity 3 introduces a ".DS_Store is ignorable metadata" exception
+    but scopes it to moveEntry's TOP-LEVEL readdir only (Task 3.4), while the new
+    byte-for-byte comparison it adds (Task 3.3) also runs inside moveMonthDirectory
+    one traversal level down, where no ignore rule is planned. macOS Finder writes
+    a .DS_Store into every browsed directory including YYYY/MM month dirs, and
+    those files differ byte-for-byte between the old and new archive roots — so a
+    nested .DS_Store either blocks relocation (reproducing the persistent "some
+    archives remain" warning the activity exists to eliminate) or is copied into
+    the new archive root (polluting it). White, Black, and Green independently
+    flagged the same depth-scope gap: an ignore/exception rule applied at one
+    level of a multi-level traversal silently re-introduces the very symptom it
+    was added to fix.
+  occurrences: 1
+  proposed_change: >
+    Add a stepledger-authoring and review-gate checklist item: when a task adds an
+    entry-type ignore/exception rule (skip-a-metadata-file, allow-list) to a
+    file-tree operation that traverses more than one directory level, require the
+    rule to be expressed as one shared predicate applied at EVERY level the
+    operation visits, and require a test fixture that places the ignored entry at
+    the deepest traversed level (not only the root). A level-scoped ignore rule on
+    a multi-level traversal is an incomplete-coverage defect.
+  target: skills/review-gate (checklist) and skills/stepledger-authoring
+  owner: Human
+
+- id: KZ-2026-07-12-003
+  created: 2026-07-12
+  gate: pre-implementation
+  artifact_type: stepledger
+  status: open
+  classification: checklist-update
+  pattern: >
+    WS-0025 Task 4.2 changes Claude Code config-directory resolution from the
+    current symlink-transparent form (path.join(home, '.claude', ...) fed to
+    vscode.workspace.fs.readDirectory, which the OS resolves through a symlinked
+    ~/.claude) to an enumeration that filters os.homedir() entries on
+    Dirent.isDirectory() === true. Because readdirSync(..., {withFileTypes:true})
+    reports a symlinked directory as isSymbolicLink() (isDirectory() false), the
+    new filter silently EXCLUDES a symlinked ~/.claude — a common dotfiles/stow/
+    chezmoi setup that works today — and the ['.claude'] fallback fires only on a
+    readdirSync throw, not on a legitimately-filtered-out entry, so discovery,
+    watching, and archiving go to zero with no error. The default single-entry
+    test mock (name ".claude") passes regardless, hiding the regression. A change
+    from symlink-transparent path resolution to an entry-type filter is a
+    silent-regression tell.
+  occurrences: 1
+  proposed_change: >
+    Add a review-gate and coding-standards checklist item: when a task replaces a
+    symlink-transparent path resolution (path.join + fs.readDirectory / stat that
+    the OS resolves) with an entry-type filter (Dirent.isDirectory(), lstat), the
+    task must include an explicit symlink-transparency subtask and a test for the
+    primary/non-wildcard entry (isDirectory() false + isSymbolicLink() true must
+    still be accepted), so a previously-working symlinked path is not silently
+    excluded. Enumerate the symlink disposition for each matched name class, not
+    only for the newly-added wildcard siblings.
+  target: skills/review-gate (checklist) and skills/coding-standards
+  owner: Human
 ````
