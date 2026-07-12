@@ -97,38 +97,38 @@ Fix `.tangyr.jsonc` parsing so Prettier-formatted JSONC remains readable, then s
 - [x] Run the quality gate from the execution instructions.
 - [x] Commit with message `fix(core): parse jsonc config and classify invalid files`.
 
-### [ ] Activity 2: Make automated config commits bypass hooks deterministically
+### [x] Activity 2: Make automated config commits bypass hooks deterministically
 
 Replace the environment-only hook bypass with Git's hook-bypass flag, and verify that the automated commit command cannot run repository-local pre-commit hooks.
 
-#### [ ] Task 2.1: Write failing git helper tests for `--no-verify`
+#### [x] Task 2.1: Write failing git helper tests for `--no-verify`
 
-- [ ] Extend `test/unit/core/git.test.ts` so `gitStageAndCommit` with `skipHooks: true` is expected to call `git commit --no-verify -m <message> -- <file>`.
-- [ ] Keep the existing assertion that the commit environment includes `HUSKY=0` when `skipHooks: true`, preserving compatibility with Husky-managed repositories that inspect that variable.
-- [ ] Add a sibling test proving `skipHooks: false` does not pass `--no-verify`.
-- [ ] Run `pnpm exec vitest run test/unit/core/git.test.ts --coverage.enabled=false` and confirm the `--no-verify` assertion fails before implementation.
+- [x] Extend `test/unit/core/git.test.ts` so `gitStageAndCommit` with `skipHooks: true` is expected to call `git commit --no-verify -m <message> -- <file>`.
+- [x] Keep the existing assertion that the commit environment includes `HUSKY=0` when `skipHooks: true`, preserving compatibility with Husky-managed repositories that inspect that variable.
+- [x] Add a sibling test proving `skipHooks: false` does not pass `--no-verify`.
+- [x] Run `pnpm exec vitest run test/unit/core/git.test.ts --coverage.enabled=false` and confirm the `--no-verify` assertion fails before implementation.
 
-#### [ ] Task 2.2: Implement deterministic hook bypass
+#### [x] Task 2.2: Implement deterministic hook bypass
 
-- [ ] Update `src/core/git.ts` so `gitStageAndCommit` builds the commit argument list with `--no-verify` immediately after `commit` when `skipHooks` is true.
-- [ ] Preserve the existing `HUSKY=0` environment for the same branch.
-- [ ] Preserve the existing best-effort unstage behavior when the commit command fails.
-- [ ] Run `pnpm exec vitest run test/unit/core/git.test.ts test/unit/core/configAutoCommit.test.ts --coverage.enabled=false` and confirm all targeted tests pass.
+- [x] Update `src/core/git.ts` so `gitStageAndCommit` builds the commit argument list with `--no-verify` immediately after `commit` when `skipHooks` is true.
+- [x] Preserve the existing `HUSKY=0` environment for the same branch.
+- [x] Preserve the existing best-effort unstage behavior when the commit command fails.
+- [x] Run `pnpm exec vitest run test/unit/core/git.test.ts test/unit/core/configAutoCommit.test.ts --coverage.enabled=false` and confirm all targeted tests pass.
 
-#### [ ] Task 2.3: Add a regression fixture for hook-insensitive repositories
+#### [x] Task 2.3: Add a regression fixture for hook-insensitive repositories
 
-- [ ] Add a unit test in `test/unit/core/git.test.ts` named `skipHooks uses git-level bypass for hooks that ignore HUSKY` that asserts the command arguments contain `--no-verify` and the environment contains `HUSKY=0`.
-- [ ] Do not create a real Git repository fixture; keep the test at the `execFile` call boundary used by the existing git helper tests.
+- [x] Add a unit test in `test/unit/core/git.test.ts` named `skipHooks uses git-level bypass for hooks that ignore HUSKY` that asserts the command arguments contain `--no-verify` and the environment contains `HUSKY=0`.
+- [x] Do not create a real Git repository fixture; keep the test at the `execFile` call boundary used by the existing git helper tests.
 
-#### [ ] Task 2.4: Update impacted documentation
+#### [x] Task 2.4: Update impacted documentation
 
-- [ ] Update `README.md` "Config auto-commit" text to state precisely that the automated `.tangyr.jsonc` commit runs `git commit --no-verify`, which bypasses ALL repository-local Git hooks (pre-commit, commit-msg, and any other hook configured via `core.hooksPath`) for that commit — not only Husky-aware hooks that check `HUSKY=0` — plus the `HUSKY=0` environment variable kept for compatibility with Husky-managed repositories; that this is intentional because the VS Code extension host cannot reliably satisfy arbitrary repository-local hook scripts; and that it is safe specifically for this automated commit because `.tangyr.jsonc` is a machine-managed, credential-free configuration file — the extension handles no credentials.
-- [ ] Update `docs/technical-context.md` §4.4 "Activation and Initialisation Sequence" Checkup flow and §8.1 "Workspace State Persistence" write path with the same hook-bypass contract — `--no-verify` bypasses all repository-local Git hooks for the automated commit, not only Husky-aware ones, plus `HUSKY=0` — and the same two reasons: the extension host cannot reliably satisfy arbitrary repository hooks, and `.tangyr.jsonc` is machine-managed and credential-free.
+- [x] Update `README.md` "Config auto-commit" text to state precisely that the automated `.tangyr.jsonc` commit runs `git commit --no-verify`, which bypasses ALL repository-local Git hooks (pre-commit, commit-msg, and any other hook configured via `core.hooksPath`) for that commit — not only Husky-aware hooks that check `HUSKY=0` — plus the `HUSKY=0` environment variable kept for compatibility with Husky-managed repositories; that this is intentional because the VS Code extension host cannot reliably satisfy arbitrary repository-local hook scripts; and that it is safe specifically for this automated commit because `.tangyr.jsonc` is a machine-managed, credential-free configuration file — the extension handles no credentials.
+- [x] Update `docs/technical-context.md` §4.4 "Activation and Initialisation Sequence" Checkup flow and §8.1 "Workspace State Persistence" write path with the same hook-bypass contract — `--no-verify` bypasses all repository-local Git hooks for the automated commit, not only Husky-aware ones, plus `HUSKY=0` — and the same two reasons: the extension host cannot reliably satisfy arbitrary repository hooks, and `.tangyr.jsonc` is machine-managed and credential-free.
 
-#### [ ] Task 2.5: Commit changes
+#### [x] Task 2.5: Commit changes
 
-- [ ] Run the quality gate from the execution instructions.
-- [ ] Commit with message `fix(core): bypass git hooks for config auto-commit`.
+- [x] Run the quality gate from the execution instructions.
+- [x] Commit with message `fix(core): bypass git hooks for config auto-commit`.
 
 ### [ ] Activity 3: Make archive relocation content-aware and actionable
 
@@ -236,6 +236,7 @@ Extend `ClaudeCodeProvider` so session watching and discovery cover `$HOME/.clau
 - Note (F13, non-mandatory): Activity 4 may optionally introduce a `buildProjectUri(home, configDir, projectDir)` DRY helper for `getWatchPatterns`/`findSessions` to remove the duplicated `path.join(os.homedir(), configDirName, 'projects', projectDirName)` construction. This is not required for Task 4.2 completion and does not gate any checkbox; apply it only if doing so does not expand Task 4.2's specified behavior.
 - **Session resume (2026-07-12), checkbox reconciliation**: the prior session was interrupted by an infrastructure error (API stream watchdog) after substantially writing the `src/utils/jsonc.ts` scanner and its tests but before marking Task 1.2. On resume, `pnpm exec vitest run test/unit/utils/jsonc.test.ts` was run and all 15 tests passed (including the F12 backslash-escape/Windows-path fixture). Cross-checked every Task 1.2 subtask against `src/utils/jsonc.ts`: scanner-based comment stripping (`stripJsoncArtifacts`), string-literal-aware backslash-escape handling (`consumeStringLiteral`), outside-string trailing-comma removal (`isTrailingComma`), and unchanged `formatJsonc` (still `JSON.stringify`, no trailing commas) are all present and correct. Task 1.2 and its five subtasks were marked `[x]` to match verified reality; no implementation changes were needed.
 - **Task 1.3**: the StepLedger asks to "wrap the `vscode.workspace.fs.readFile(configUri)` call in a try/catch that rethrows unchanged". A literal `try { ... } catch (err) { throw err; }` triggers this project's `no-useless-catch` ESLint rule (part of `eslint:recommended`, enforced on `src/**/*.ts`). The `readFile` call is left unwrapped in `readCurrentConfigFile()` instead, so a read failure propagates directly to `readStateFromFile()`'s existing outer `try/catch → handleConfigReadFailure()`, which is behaviorally identical to a wrap-and-rethrow (confirmed by the passing "missing config" and "existing missing-file path" tests) and keeps the lint gate green. Only the `parseJsonc(...)` call is wrapped in a local `try/catch` that routes to the new `handleInvalidConfig(err)`, per the rest of the task.
+- **Task 2.1/2.3 sequencing**: the Task 2.3 regression test (`skipHooks uses git-level bypass for hooks that ignore HUSKY`) was authored together with the Task 2.1 failing tests, before the Task 2.2 implementation, instead of as a separate step after 2.2 as the task ordering implies. Both tests failed for the expected reason pre-implementation and pass identically post-implementation; the final test suite content matches the StepLedger's specification exactly. No behavioral difference — noted for traceability only.
 - **StepLedger accuracy divergence (Task 1.4)**: the run journal (`.tangyr/autopilot/20260712-ws-0025-run.md`, finding F16) records that a README update for the new invalid-config error/recovery path was disposed as an approved correction to Task 1.4, but the on-disk Task 1.4 in this draft carried only the two `docs/technical-context.md` bullets — the README bullet was never mechanically applied (it is present, correctly, under Task 2.4 for the unrelated hook-bypass README update, which appears to be where the correction landed instead). This is an authoring-time cross-verification gap in the draft, not a new decision: F16's content was already fully authored and approved. Added the missing README bullet to Task 1.4 and implemented it (`README.md` "Extension Toggle" section, new "Invalid config recovery" paragraph) within this activity, since the correction was already within the review gate's delegated authority and does not expand scope.
 
 ### Reflection

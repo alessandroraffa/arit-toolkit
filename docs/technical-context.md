@@ -332,6 +332,18 @@ at most once per continuous invalid streak. Saving a corrected file
 re-enables advanced features entirely through the existing watcher
 `reload()` callback — no workspace reload or reactivation is required.
 
+**Checkup hook bypass:** `autoCommitService.commitIfNeeded()` calls
+`gitStageAndCommit(..., { skipHooks: true })`, which runs `git commit
+--no-verify`. `--no-verify` bypasses ALL repository-local Git hooks
+for that commit (pre-commit, commit-msg, and any other hook
+configured via `core.hooksPath`) — not only Husky-aware hooks that
+check the `HUSKY=0` environment variable, which is also still set for
+compatibility with Husky-managed repositories. This is deliberate:
+the extension host cannot reliably satisfy arbitrary repository-local
+hook scripts, and `.tangyr.jsonc` is machine-managed and
+credential-free, so bypassing hooks for this specific commit carries
+no credential-handling risk.
+
 ---
 
 ## 8 Cross-cutting Concepts
@@ -396,6 +408,14 @@ onboarding prompt and never fabricates a legacy-config fallback — see
 **Write path:** `writeStateToFile(enabled)` merges the new `enabled`
 state into the existing `_fullConfig`, preserving all custom sections.
 `writeFullConfig()` serialises back to JSONC with the standard header.
+When the write is followed by an automated commit (Checkup flow, see
+§4.4), `gitStageAndCommit(..., { skipHooks: true })` runs `git commit
+--no-verify`, bypassing all repository-local Git hooks for that
+commit — not only Husky-aware ones — plus the `HUSKY=0` environment
+variable kept for Husky compatibility. This is safe because
+`.tangyr.jsonc` is machine-managed and credential-free, and necessary
+because the extension host cannot reliably satisfy arbitrary
+repository-local hook scripts.
 
 **External edit detection:** A `FileSystemWatcher` on the config file
 re-reads on change/create and fires `onDidChangeState`.
