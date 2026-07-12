@@ -1,3 +1,9 @@
+## [2.10.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.10.0...v2.10.1) (2026-07-12)
+
+### Bug Fixes
+
+* **packaging:** exclude machinery and transient artifacts from vsix ([671e5db](https://github.com/alessandroraffa/tangyr-vscode/commit/671e5db749f9075d4080d41b97578fc3afe2fb83))
+
 ## [2.10.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.9.0...v2.10.0) (2026-07-12)
 
 ### Features
