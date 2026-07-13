@@ -39,3 +39,6 @@ private/
 
 docs/archive/agent-sessions/
 .tangyr/logs/
+
+# Workspace config is local-only (per-workspace, machine-managed by the extension)
+.tangyr.jsonc
