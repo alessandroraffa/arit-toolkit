@@ -152,7 +152,31 @@ function computeFenceLength(text: string): number {
   return Math.max(3, maxRun + 1);
 }
 
-function renderCodeBlock(text: string, indent: string): string[] {
+/**
+ * Coerce a code-block payload to text.
+ *
+ * `ToolCall.input`/`output` are declared as strings, but provider payloads are
+ * not always strings in practice: Copilot Chat surfaces structured MCP results
+ * as objects and Codex emits arrays of text blocks. A contract violation must
+ * degrade to readable JSON rather than abort the whole session conversion —
+ * otherwise the archive service falls back to copying the raw source file.
+ */
+function toCodeBlockText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  // JSON.stringify is typed as returning string but yields undefined for these.
+  if (value === undefined || typeof value === 'function' || typeof value === 'symbol') {
+    return String(value);
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    // Circular structures and BigInt values make JSON.stringify throw.
+    return '[unserializable tool payload]';
+  }
+}
+
+function renderCodeBlock(value: unknown, indent: string): string[] {
+  const text = toCodeBlockText(value);
   // L-05: use a fence one backtick longer than any embedded run (min 3)
   // so content containing ``` does not break out of the code fence.
   const fence = '`'.repeat(computeFenceLength(text));
@@ -163,7 +187,7 @@ function renderCodeBlock(text: string, indent: string): string[] {
   ];
 }
 
-function renderOutputDetails(output: string): string[] {
+function renderOutputDetails(output: unknown): string[] {
   return [
     '',
     '  <details>',
