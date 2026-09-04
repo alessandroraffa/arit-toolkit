@@ -2,8 +2,8 @@
   "name": "tangyr",
   "displayName": "Tangyr Workbench",
   "description": "Archive AI coding sessions (Claude Code, Cline, GitHub Copilot Chat, OpenAI Codex) into your workspace. Real-time token counting, text stats, and timestamped file management for agentic and vibe coding.",
-  "version": "2.10.1",
-  "versionCode": 1002010001,
+  "version": "2.11.0",
+  "versionCode": 1002011000,
   "publisher": "alessandroraffa",
   "license": "MIT",
   "repository": {

@@ -1,3 +1,9 @@
+## [2.11.0](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.10.1...v2.11.0) (2026-09-04)
+
+### Features
+
+* **archiving:** import explicit session sources ([e4f0b90](https://github.com/alessandroraffa/tangyr-vscode/commit/e4f0b909123d0ec851709f28b25d0925424328b0))
+
 ## [2.10.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.10.0...v2.10.1) (2026-07-12)
 
 ### Bug Fixes
