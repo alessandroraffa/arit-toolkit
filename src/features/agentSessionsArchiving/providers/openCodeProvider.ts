@@ -176,6 +176,25 @@ export class OpenCodeProvider implements SessionProvider {
       return [];
     }
 
+    const results: SessionFile[] = [];
+
+    for (const storePath of storePaths) {
+      results.push(...this.findSessionsInStore(storePath, workspaceRootPath));
+    }
+
+    return results;
+  }
+
+  /** Read one explicitly selected OpenCode database using the same read-only seam. */
+  public findSessionsInStore(
+    storePath: string,
+    workspaceRootPath: string
+  ): SessionFile[] {
+    if (!sqliteAvailable) {
+      this.emitTier1Signal();
+      return [];
+    }
+
     let workspaceNorm: string;
     try {
       workspaceNorm = normalizeDirPath(fs.realpathSync(workspaceRootPath));
@@ -184,33 +203,28 @@ export class OpenCodeProvider implements SessionProvider {
     }
 
     const results: SessionFile[] = [];
+    let db: DatabaseSync | undefined;
+    try {
+      db = openDb(storePath);
+      const allRows = getAllSessionRows(db);
 
-    for (const storePath of storePaths) {
-      let db: DatabaseSync | undefined;
-      try {
-        db = openDb(storePath);
-        const allRows = getAllSessionRows(db);
-
-        for (const row of allRows) {
-          const session = this.tryBuildSessionFile(db, row, workspaceNorm);
-          if (session) {
-            results.push(session);
-          }
+      for (const row of allRows) {
+        const session = this.tryBuildSessionFile(db, row, workspaceNorm);
+        if (session) {
+          results.push(session);
         }
-      } catch (err) {
-        if (isAbsentStoreError(err)) {
-          // Store file does not exist — silent no-op (AC-8/SPEC-003 §session-discovery §2)
-          this.logger.debug(
-            `OpenCode: store at ${storePath} not found — skipping silently`
-          );
-        } else {
-          // Store exists but cannot be opened — Tier-2 throttled user-visible diagnostic
-          this.emitTier2Signal(storePath, err);
-        }
-      } finally {
-        if (db) {
-          closeDb(db);
-        }
+      }
+    } catch (err) {
+      if (isAbsentStoreError(err)) {
+        this.logger.debug(
+          `OpenCode: store at ${storePath} not found — skipping silently`
+        );
+      } else {
+        this.emitTier2Signal(storePath, err);
+      }
+    } finally {
+      if (db) {
+        closeDb(db);
       }
     }
 

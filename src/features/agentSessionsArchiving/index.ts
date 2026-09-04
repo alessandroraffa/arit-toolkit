@@ -14,6 +14,7 @@ import {
   DEFAULT_INTERVAL_MINUTES,
   COMMAND_ID_TOGGLE,
   COMMAND_ID_ARCHIVE_NOW,
+  COMMAND_ID_ARCHIVE_SOURCE,
   INTRODUCED_AT_VERSION_CODE,
 } from './constants';
 
@@ -76,6 +77,11 @@ function registerWithCore(
     toggleCommandId: COMMAND_ID_TOGGLE,
     actions: [
       { commandId: COMMAND_ID_ARCHIVE_NOW, label: 'Archive Now', icon: '$(sync)' },
+      {
+        commandId: COMMAND_ID_ARCHIVE_SOURCE,
+        label: 'Archive Source…',
+        icon: '$(file-add)',
+      },
     ],
   });
 }
@@ -110,7 +116,101 @@ function registerCommands(
     void vscode.window.showInformationMessage('Agent sessions archive completed.');
   });
 
-  logger.debug(`Registered commands: ${COMMAND_ID_TOGGLE}, ${COMMAND_ID_ARCHIVE_NOW}`);
+  registry.register(
+    COMMAND_ID_ARCHIVE_SOURCE,
+    async (source?: vscode.Uri | string, providerName?: string) => {
+      const config = stateManager.getConfigSection(CONFIG_KEY) as
+        | AgentSessionsArchivingConfig
+        | undefined;
+      if (!config) {
+        void vscode.window.showWarningMessage(
+          'Agent sessions archiving is not configured for this workspace.'
+        );
+        return;
+      }
+
+      let sourceUri = typeof source === 'string' ? vscode.Uri.file(source) : source;
+      if (!sourceUri) {
+        const selected = await vscode.window.showOpenDialog({
+          canSelectFiles: true,
+          canSelectFolders: false,
+          canSelectMany: false,
+          title: 'Select an agent session source',
+          filters: {
+            'Supported session sources': ['jsonl', 'json', 'md', 'txt', 'db'],
+          },
+        });
+        sourceUri = selected?.[0];
+      }
+      if (!sourceUri) return;
+
+      const providers = [
+        { label: 'Claude Code', value: 'claude-code' },
+        { label: 'OpenAI Codex', value: 'codex' },
+        { label: 'GitHub Copilot Chat', value: 'copilot-chat' },
+        { label: 'Cline', value: 'cline' },
+        { label: 'Roo Code', value: 'roo-code' },
+        { label: 'Continue', value: 'continue' },
+        { label: 'Aider', value: 'aider' },
+        {
+          label: 'OpenCode database',
+          description: 'Archives all sessions for this workspace',
+          value: 'open-code',
+        },
+      ] as const;
+      if (!providerName) {
+        const selectedProvider = await vscode.window.showQuickPick(providers, {
+          title: 'Select the source format',
+          placeHolder: 'Which agent created this session?',
+        });
+        providerName = selectedProvider?.value;
+      }
+      if (
+        !providerName ||
+        !providers.some((provider) => provider.value === providerName)
+      ) {
+        return;
+      }
+
+      try {
+        if (providerName === 'open-code') {
+          const archived = await service.archiveOpenCodeStore(
+            sourceUri,
+            config.archivePath
+          );
+          void vscode.window.showInformationMessage(
+            archived.length > 0
+              ? `Archived ${String(archived.length)} OpenCode session(s) to ${config.archivePath}`
+              : 'No OpenCode sessions for this workspace were found in the selected database.'
+          );
+          return;
+        }
+        const archived = await service.archiveSource(
+          sourceUri,
+          providerName,
+          config.archivePath
+        );
+        if (archived) {
+          void vscode.window.showInformationMessage(
+            `Agent session archived to ${config.archivePath}/${archived}`
+          );
+        } else {
+          void vscode.window.showWarningMessage(
+            'The selected source was empty or could not be converted.'
+          );
+        }
+      } catch (err) {
+        logger.error(`Manual agent session archive failed: ${String(err)}`);
+        void vscode.window.showErrorMessage(
+          `Failed to archive agent session source: ${String(err)}`
+        );
+      }
+    }
+  );
+
+  logger.debug(
+    `Registered commands: ${COMMAND_ID_TOGGLE}, ${COMMAND_ID_ARCHIVE_NOW}, ${COMMAND_ID_ARCHIVE_SOURCE}`
+  );
 }
 
 export function registerAgentSessionsArchivingFeature(

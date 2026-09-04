@@ -18,6 +18,8 @@ const {
     stop: vi.fn().mockResolvedValue(undefined),
     reconfigure: vi.fn(),
     runArchiveCycle: vi.fn().mockResolvedValue(undefined),
+    archiveSource: vi.fn().mockResolvedValue('2026/08/archive.md'),
+    archiveOpenCodeStore: vi.fn().mockResolvedValue([]),
     currentConfig: undefined as unknown,
     dispose: vi.fn(),
   };
@@ -91,6 +93,8 @@ describe('registerAgentSessionsArchivingFeature', () => {
     vi.clearAllMocks();
     mockService.currentConfig = undefined;
     mockService.runArchiveCycle.mockResolvedValue(undefined);
+    mockService.archiveSource.mockResolvedValue('2026/08/archive.md');
+    mockService.archiveOpenCodeStore.mockResolvedValue([]);
     mockWatcher.start.mockClear();
     mockWatcher.stop.mockClear();
     ctx = createMockContext();
@@ -127,6 +131,14 @@ describe('registerAgentSessionsArchivingFeature', () => {
     registerAgentSessionsArchivingFeature(ctx);
     expect(ctx.registry.register).toHaveBeenCalledWith(
       'tangyr.archiveAgentSessionsNow',
+      expect.any(Function)
+    );
+  });
+
+  it('should register archive source command', () => {
+    registerAgentSessionsArchivingFeature(ctx);
+    expect(ctx.registry.register).toHaveBeenCalledWith(
+      'tangyr.archiveAgentSessionSource',
       expect.any(Function)
     );
   });
@@ -191,6 +203,67 @@ describe('registerAgentSessionsArchivingFeature', () => {
     });
   });
 
+  describe('archive source command', () => {
+    it('passes an explicit path and provider to the shared archive pipeline', async () => {
+      vi.mocked(ctx.stateManager.getConfigSection).mockReturnValue({
+        enabled: true,
+        archivePath: '.tangyr/agent-sessions',
+        intervalMinutes: 5,
+      });
+      registerAgentSessionsArchivingFeature(ctx);
+
+      const registerCalls = vi.mocked(ctx.registry.register).mock.calls;
+      const archiveSourceCall = registerCalls.find(
+        (call) => call[0] === 'tangyr.archiveAgentSessionSource'
+      );
+      const handler = archiveSourceCall![1] as (
+        source: string,
+        provider: string
+      ) => Promise<void>;
+      await handler('/sessions/example.jsonl', 'claude-code');
+
+      expect(mockService.archiveSource).toHaveBeenCalledWith(
+        expect.objectContaining({ fsPath: '/sessions/example.jsonl' }),
+        'claude-code',
+        '.tangyr/agent-sessions'
+      );
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'Agent session archived to .tangyr/agent-sessions/2026/08/archive.md'
+      );
+    });
+
+    it('imports all workspace sessions from an explicit OpenCode database', async () => {
+      vi.mocked(ctx.stateManager.getConfigSection).mockReturnValue({
+        enabled: true,
+        archivePath: '.tangyr/agent-sessions',
+        intervalMinutes: 5,
+      });
+      mockService.archiveOpenCodeStore.mockResolvedValue([
+        '2026/08/open-code-one.md',
+        '2026/08/open-code-two.md',
+      ]);
+      registerAgentSessionsArchivingFeature(ctx);
+
+      const archiveSourceCall = vi
+        .mocked(ctx.registry.register)
+        .mock.calls.find((call) => call[0] === 'tangyr.archiveAgentSessionSource');
+      const handler = archiveSourceCall![1] as (
+        source: string,
+        provider: string
+      ) => Promise<void>;
+      await handler('/stores/opencode.db', 'open-code');
+
+      expect(mockService.archiveOpenCodeStore).toHaveBeenCalledWith(
+        expect.objectContaining({ fsPath: '/stores/opencode.db' }),
+        '.tangyr/agent-sessions'
+      );
+      expect(mockService.archiveSource).not.toHaveBeenCalled();
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        'Archived 2 OpenCode session(s) to .tangyr/agent-sessions'
+      );
+    });
+  });
+
   it('should add watcher to subscriptions', () => {
     registerAgentSessionsArchivingFeature(ctx);
     expect(ctx.context.subscriptions).toContain(mockWatcher);
@@ -200,12 +273,16 @@ describe('registerAgentSessionsArchivingFeature', () => {
     registerAgentSessionsArchivingFeature(ctx);
     expect(ctx.stateManager.registerService).toHaveBeenCalledWith(
       expect.objectContaining({
-        actions: [
+        actions: expect.arrayContaining([
           expect.objectContaining({
             commandId: 'tangyr.archiveAgentSessionsNow',
             label: 'Archive Now',
           }),
-        ],
+          expect.objectContaining({
+            commandId: 'tangyr.archiveAgentSessionSource',
+            label: 'Archive Source…',
+          }),
+        ]),
       })
     );
   });

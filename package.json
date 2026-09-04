@@ -83,6 +83,11 @@
         "icon": "$(sync)"
       },
       {
+        "command": "tangyr.archiveAgentSessionSource",
+        "title": "Tangyr: Archive Agent Session Source…",
+        "icon": "$(file-add)"
+      },
+      {
         "command": "tangyr.textStats.toggle",
         "title": "Tangyr: Toggle Text Stats",
         "icon": "$(symbol-number)"

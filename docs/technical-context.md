@@ -29,12 +29,12 @@ Tangyr Workbench is a VS Code extension that bundles productivity utilities
 for developers working inside a single-root workspace. Its capabilities
 fall into four categories:
 
-| Category            | Capability                                                                                                                                                            |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| File utilities      | Create or rename files/directories with UTC timestamp prefixes in configurable formats.                                                                               |
-| Background services | Periodically archive chat session files produced by AI coding assistants (Aider, Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue, OpenCode).              |
-| Status bar services | Display real-time text statistics (characters, tokens, words, lines, paragraphs, reading time, file size) with selection awareness and configurable tokenizer models. |
-| Editing utilities   | Increment or decrement markdown heading levels across selected text via command palette and keybindings.                                                              |
+| Category            | Capability                                                                                                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File utilities      | Create or rename files/directories with UTC timestamp prefixes in configurable formats.                                                                                                                             |
+| Background services | Periodically archive chat session sources produced by AI coding assistants (Aider, Claude Code, Cline, Roo Code, GitHub Copilot Chat, Continue, OpenCode), with an explicit-source command using the same pipeline. |
+| Status bar services | Display real-time text statistics (characters, tokens, words, lines, paragraphs, reading time, file size) with selection awareness and configurable tokenizer models.                                               |
+| Editing utilities   | Increment or decrement markdown heading levels across selected text via command palette and keybindings.                                                                                                            |
 
 The extension is workspace-aware: a JSONC configuration file
 (`.tangyr.jsonc`) at the workspace root stores the enabled state,
@@ -584,6 +584,23 @@ Schema-discovery findings (increment-1, v1.17.9): no per-event compaction
 messages or parts exist — `time_compacting` is session-level metadata only;
 `compactionSummaries` is always `[]` for OpenCode sessions. The `OpenCodeParser`
 is registered as `providerName: 'open-code'`.
+
+**Explicit-source archiving:** The `tangyr.archiveAgentSessionSource` command accepts a
+file selected through the standard VS Code open dialog, or a `vscode.Uri`/filesystem
+path plus provider name when invoked programmatically. File-backed providers construct
+the same `SessionFile` identity used by automatic discovery and enter
+`archiveSession(..., force = true)`, preserving parser fallback, Claude companion-data
+resolution, empty-session filtering, safe markdown truncation, replacement semantics,
+and the configured year/month archive layout. The supported file formats are Claude
+Code and Codex JSONL, Copilot Chat JSON/JSONL, Cline and Roo Code task JSON, Continue
+JSON, and Aider markdown/text histories.
+
+OpenCode uses the database-specific branch: `OpenCodeProvider.findSessionsInStore()`
+opens the explicitly selected `opencode.db` through the existing read-only adapter,
+applies the same exact real-path workspace filter as automatic discovery, materializes
+every matching row as a content-backed `SessionFile`, and sends each one through the
+shared archive pipeline. A selected database can therefore yield zero or multiple
+archives; rows belonging to other workspaces are ignored.
 
 **Codex parser multi-turn handling:** The Codex parser detects each
 `user_message` event as a turn boundary. When a new user message arrives,

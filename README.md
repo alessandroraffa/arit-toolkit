@@ -88,6 +88,20 @@ Set `ignoreSessionsBefore` to a `YYYYMMDD` date to skip sessions created before 
 
 **Archive Now:** Command Palette → "Tangyr: Archive Agent Sessions Now" (also available in the status bar tooltip). Triggers an immediate archive cycle without waiting for the next interval.
 
+**Archive a source file:** Command Palette → "Tangyr: Archive Agent Session Source…"
+(also available in the status bar tooltip). Select any supported session source and
+then identify the assistant that created it. Tangyr sends the selected source through
+the same parser, companion-data resolution, markdown rendering, size limiting, and
+`YYYY/MM` archive layout used by automatic discovery. Supported file sources are Claude
+Code `.jsonl` files (including Cowork sessions and their adjacent companion directory),
+Codex `.jsonl`, Copilot Chat `.json`/`.jsonl`, Cline and Roo Code task `.json`, Continue
+`.json`, and Aider `.md`/`.txt` histories.
+
+For OpenCode, select its `opencode.db` SQLite store and choose "OpenCode database".
+Tangyr opens the database read-only, filters sessions by the current workspace's exact
+resolved path, and archives every matching session; sessions for other workspaces are
+left untouched and are not archived.
+
 ## Timestamped Files and Folders
 
 Create new files or directories with an automatic UTC timestamp prefix. Useful for meeting notes, decision logs, daily journals, or any artifact that benefits from chronological ordering.

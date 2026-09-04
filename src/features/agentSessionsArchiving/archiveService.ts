@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import * as path from 'path';
 import * as vscode from 'vscode';
 import type { AgentSessionsArchivingConfig } from '../../types';
 import type { SessionProvider, SessionFile } from './types';
@@ -10,6 +11,7 @@ import { checkAndPromptGitignore } from './gitignorePrompt';
 import { validateArchivePath } from './archivePathValidation';
 import { ArchiveCycleGuard } from './archiveCycleGuard';
 import { resolveCompanionData } from './companionDataResolver';
+import { OpenCodeProvider } from './providers/openCodeProvider';
 import {
   MAX_ARCHIVE_BYTES,
   DEFAULT_ARCHIVE_PATH,
@@ -173,6 +175,82 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     return this._cycleGuard.run((f) => this._runCycleInternal(f), force);
   }
 
+  /**
+   * Archives one explicitly selected source through the same parser, companion-data,
+   * rendering, truncation and destination pipeline used by automatic discovery.
+   */
+  public async archiveSource(
+    sourceUri: vscode.Uri,
+    providerName: string,
+    archivePath: string
+  ): Promise<string | undefined> {
+    const validation = validateArchivePath(archivePath);
+    if (!validation.valid) {
+      throw new Error(
+        `Invalid archivePath "${archivePath}" — ${validation.reason ?? 'unknown'}`
+      );
+    }
+    const stat = await vscode.workspace.fs.stat(sourceUri);
+    const sourceFileName = path.basename(sourceUri.fsPath);
+    const extension =
+      providerName === 'aider' && sourceFileName === '.aider.input.history'
+        ? '.txt'
+        : path.extname(sourceUri.fsPath);
+    const baseName = path.basename(sourceUri.fsPath, extension);
+    const rawId =
+      (providerName === 'cline' || providerName === 'roo-code') &&
+      baseName === 'api_conversation_history'
+        ? path.basename(path.dirname(sourceUri.fsPath))
+        : baseName;
+    const sessionId = rawId.replace(/[^A-Za-z0-9._-]/g, '-');
+    const prefix = providerName === 'copilot-chat' ? 'copilot-chat' : providerName;
+    const archiveName =
+      providerName === 'aider' && sourceFileName === '.aider.chat.history.md'
+        ? 'aider-chat-history'
+        : providerName === 'aider' && sourceFileName === '.aider.input.history'
+          ? 'aider-input-history'
+          : `${prefix}-${sessionId}`;
+    const archiveUri = vscode.Uri.joinPath(this.workspaceRootUri, archivePath);
+    return this.archiveSession(
+      {
+        uri: sourceUri,
+        providerName,
+        archiveName,
+        displayName: `${providerName} ${sourceFileName}`,
+        mtime: stat.mtime,
+        ctime: stat.ctime,
+        extension,
+      },
+      archiveUri,
+      true
+    );
+  }
+
+  /** Archives every workspace-matching session from an explicit OpenCode DB. */
+  public async archiveOpenCodeStore(
+    sourceUri: vscode.Uri,
+    archivePath: string
+  ): Promise<readonly string[]> {
+    const validation = validateArchivePath(archivePath);
+    if (!validation.valid) {
+      throw new Error(
+        `Invalid archivePath "${archivePath}" — ${validation.reason ?? 'unknown'}`
+      );
+    }
+    const provider = new OpenCodeProvider(this.logger);
+    const sessions = provider.findSessionsInStore(
+      sourceUri.fsPath,
+      this.workspaceRootUri.fsPath
+    );
+    const archiveUri = vscode.Uri.joinPath(this.workspaceRootUri, archivePath);
+    const archived: string[] = [];
+    for (const session of sessions) {
+      const fileName = await this.archiveSession(session, archiveUri, true);
+      if (fileName) archived.push(fileName);
+    }
+    return archived;
+  }
+
   private async _runCycleInternal(force = false): Promise<void> {
     if (!this._currentConfig) {
       return;
@@ -239,14 +317,14 @@ export class AgentSessionArchiveService implements vscode.Disposable {
     session: SessionFile,
     archiveUri: vscode.Uri,
     force = false
-  ): Promise<void> {
+  ): Promise<string | undefined> {
     const effectiveMtime: string = session.compositeMtime ?? String(session.mtime);
     const entry = this.lastArchivedMap.get(session.archiveName);
     if (!force && entry?.mtime === effectiveMtime) {
       this.logger.debug(
         `Skipped ${session.displayName} — fingerprint unchanged (${effectiveMtime})`
       );
-      return;
+      return entry.archiveFileName || undefined;
     }
 
     await this.ensureDirectory(archiveUri);
@@ -294,6 +372,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         archiveFileName: '',
       });
     }
+    return archiveFileName;
   }
 
   private async deleteOldArchive(uri: vscode.Uri): Promise<void> {
