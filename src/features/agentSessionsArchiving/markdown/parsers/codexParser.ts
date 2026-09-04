@@ -30,7 +30,9 @@ interface ResponseItemPayload {
   readonly arguments?: string;
   readonly call_id?: string;
   readonly input?: string;
-  readonly output?: string;
+  // Codex emits tool output either as a plain string or as an array of
+  // structured text blocks, so the shape is narrowed at read time.
+  readonly output?: unknown;
 }
 
 type ItemHandler = (payload: ResponseItemPayload, state: ParseState) => void;
@@ -48,6 +50,26 @@ function emptyState(): ParseState {
 
 function toStr(val: string | undefined, fallback: string): string {
   return val ?? fallback;
+}
+
+/**
+ * Normalise a tool-call output payload to text.
+ *
+ * Recent Codex versions emit `output` as an array of `{ type, text }` blocks
+ * instead of a plain string. Returning the raw array here would satisfy the
+ * declared type while breaking every downstream string operation, so the
+ * blocks are concatenated in order.
+ */
+function toOutputText(val: unknown): string {
+  if (typeof val === 'string') return val;
+  if (!Array.isArray(val)) return '';
+  return val
+    .map((block) =>
+      typeof (block as { text?: unknown } | null)?.text === 'string'
+        ? (block as { text: string }).text
+        : ''
+    )
+    .join('');
 }
 
 function extractUserRequest(message: string): string {
@@ -148,7 +170,7 @@ function handleFunctionCall(payload: ResponseItemPayload, state: ParseState): vo
 
 function handleFunctionCallOutput(payload: ResponseItemPayload, state: ParseState): void {
   const callId = toStr(payload.call_id, '');
-  const output = toStr(payload.output, '');
+  const output = toOutputText(payload.output);
   if (callId) state.outputs.set(callId, output);
 }
 
@@ -164,7 +186,7 @@ function handleCustomToolCallOutput(
   state: ParseState
 ): void {
   const callId = toStr(payload.call_id, '');
-  const output = toStr(payload.output, '');
+  const output = toOutputText(payload.output);
   if (callId) state.outputs.set(callId, output);
   state.filesModified.push(...parseModifiedFiles(output));
 }

@@ -491,3 +491,37 @@ describe('CodexParser', () => {
     expect(callB?.output).toBe('output-B');
   });
 });
+
+describe('CodexParser structured tool output', () => {
+  const parser = new CodexParser();
+
+  function structuredOutput(callId: string, blocks: { type: string; text: string }[]) {
+    return {
+      type: 'response_item',
+      payload: { type: 'custom_tool_call_output', call_id: callId, output: blocks },
+    };
+  }
+
+  it('should flatten input_text blocks into a string output', () => {
+    const content = jsonl(
+      SESSION_META,
+      TASK_STARTED,
+      userMessage('list the files'),
+      customToolCall('shell', '{"cmd":"ls"}', 'call-1'),
+      structuredOutput('call-1', [
+        {
+          type: 'input_text',
+          text: 'Script completed\nWall time 0.1 seconds\nOutput:\n',
+        },
+        { type: 'input_text', text: 'README.md\npackage.json' },
+      ]),
+      TASK_COMPLETE
+    );
+
+    const session = expectParsed(parser.parse(content, 'session-1'));
+    const tool = session.turns.flatMap((t) => t.toolCalls)[0];
+
+    expect(typeof tool.output).toBe('string');
+    expect(tool.output).toBe('README.md\npackage.json');
+  });
+});
