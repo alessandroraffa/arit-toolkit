@@ -19,7 +19,7 @@ export function renderSessionToMarkdown(session: NormalizedSession): string {
     if (isEmptyTurn(turn)) {
       continue;
     }
-    lines.push(...renderTurnLines(turn, hasSubagents));
+    appendLines(lines, renderTurnLines(turn, hasSubagents));
   }
 
   if (session.subagentSessions && session.subagentSessions.length > 0) {
@@ -28,13 +28,29 @@ export function renderSessionToMarkdown(session: NormalizedSession): string {
       const bTs = b.turns[0]?.timestamp ?? '';
       return aTs.localeCompare(bTs);
     });
-    lines.push(...renderSubagentSections(sorted));
+    appendLines(lines, renderSubagentSections(sorted));
   }
   if (session.compactionSummaries && session.compactionSummaries.length > 0) {
-    lines.push(...renderCompactionSummaries(session.compactionSummaries));
+    appendLines(lines, renderCompactionSummaries(session.compactionSummaries));
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Append every element of `source` to `target`.
+ *
+ * `target.push(...source)` passes each element as a separate argument, which
+ * overflows the call stack once `source` holds more than roughly 125k entries.
+ * Sessions with hundreds of subagents or tool calls reach that ceiling, and the
+ * resulting RangeError makes the archive service fall back to copying the raw
+ * source file. Use this helper wherever the array length scales with session
+ * size; fixed-length fragments can still be spread directly.
+ */
+export function appendLines(target: string[], source: readonly string[]): void {
+  for (const line of source) {
+    target.push(line);
+  }
 }
 
 function isEmptyTurn(turn: NormalizedTurn): boolean {
@@ -75,10 +91,10 @@ export function renderTurnLines(
     : turn.toolCalls;
 
   lines.push(...renderSkillAnnotation(turn.skillName));
-  lines.push(...renderToolsSection(toolCallsToRender));
+  appendLines(lines, renderToolsSection(toolCallsToRender));
   lines.push(...renderThinkingSection(turn.thinking));
-  lines.push(...renderFileList('Files Read', turn.filesRead));
-  lines.push(...renderFileList('Files Modified', turn.filesModified));
+  appendLines(lines, renderFileList('Files Read', turn.filesRead));
+  appendLines(lines, renderFileList('Files Modified', turn.filesModified));
   lines.push('---', '');
 
   return lines;
