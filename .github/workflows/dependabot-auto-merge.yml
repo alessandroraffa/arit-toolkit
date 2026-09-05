@@ -1,0 +1,83 @@
+name: Dependabot Auto-merge
+
+# Runs only after CI has finished for a pull request, so a bump can never be
+# merged before it has been tested. This deliberately does not use GitHub's
+# auto-merge feature: without required status checks on `main`, auto-merge would
+# merge a pull request the moment it is opened, before CI reports anything.
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge safe Dependabot updates
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]'
+    steps:
+      # SECURITY: check out the default branch, never the pull request head.
+      # This job holds a write token, so it must only ever execute code that has
+      # already been reviewed and merged — not the code proposed by the PR.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.payload.workflow_run.head_sha;
+
+            const { data: associated } =
+              await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                owner,
+                repo,
+                commit_sha: sha,
+              });
+            const pr = associated.find((candidate) => candidate.state === 'open');
+            if (!pr) {
+              core.info(`No open pull request found for ${sha}.`);
+              return;
+            }
+
+            // Belt and braces: the workflow_run actor is already checked above.
+            if (pr.user.login !== 'dependabot[bot]') {
+              core.info(`#${pr.number} was not opened by Dependabot.`);
+              return;
+            }
+
+            const { classifyDependabotUpdate } = await import(
+              `${process.env.GITHUB_WORKSPACE}/scripts/dependabot/classify.mjs`
+            );
+            const verdict = classifyDependabotUpdate({
+              title: pr.title,
+              body: pr.body ?? '',
+            });
+
+            core.summary.addHeading(`Dependabot #${pr.number}`, 3);
+            core.summary.addRaw(`\`${pr.title}\`\n\n`);
+            core.summary.addRaw(
+              `**${verdict.eligible ? 'Auto-merging' : 'Left for review'}** — ${verdict.reason}\n`
+            );
+            await core.summary.write();
+
+            if (!verdict.eligible) {
+              core.info(`Not auto-merging #${pr.number}: ${verdict.reason}`);
+              return;
+            }
+
+            await github.rest.pulls.merge({
+              owner,
+              repo,
+              pull_number: pr.number,
+              merge_method: 'squash',
+            });
+            core.info(`Merged #${pr.number}: ${verdict.reason}`);
