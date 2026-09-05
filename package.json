@@ -279,6 +279,7 @@
     "vsce:package": "vsce package",
     "vsce:publish": "vsce publish",
     "refresh:popularity": "npx tsx scripts/refresh-popularity.ts",
+    "check:marketplace": "npx tsx scripts/marketplace-availability/check.ts",
     "semantic-release": "semantic-release",
     "prepare": "husky"
   },
