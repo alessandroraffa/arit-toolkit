@@ -19,7 +19,7 @@ export function renderSessionToMarkdown(session: NormalizedSession): string {
     if (isEmptyTurn(turn)) {
       continue;
     }
-    lines.push(...renderTurnLines(turn, hasSubagents));
+    appendLines(lines, renderTurnLines(turn, hasSubagents));
   }
 
   if (session.subagentSessions && session.subagentSessions.length > 0) {
@@ -28,13 +28,29 @@ export function renderSessionToMarkdown(session: NormalizedSession): string {
       const bTs = b.turns[0]?.timestamp ?? '';
       return aTs.localeCompare(bTs);
     });
-    lines.push(...renderSubagentSections(sorted));
+    appendLines(lines, renderSubagentSections(sorted));
   }
   if (session.compactionSummaries && session.compactionSummaries.length > 0) {
-    lines.push(...renderCompactionSummaries(session.compactionSummaries));
+    appendLines(lines, renderCompactionSummaries(session.compactionSummaries));
   }
 
   return lines.join('\n');
+}
+
+/**
+ * Append every element of `source` to `target`.
+ *
+ * `target.push(...source)` passes each element as a separate argument, which
+ * overflows the call stack once `source` holds more than roughly 125k entries.
+ * Sessions with hundreds of subagents or tool calls reach that ceiling, and the
+ * resulting RangeError makes the archive service fall back to copying the raw
+ * source file. Use this helper wherever the array length scales with session
+ * size; fixed-length fragments can still be spread directly.
+ */
+export function appendLines(target: string[], source: readonly string[]): void {
+  for (const line of source) {
+    target.push(line);
+  }
 }
 
 function isEmptyTurn(turn: NormalizedTurn): boolean {
@@ -75,10 +91,10 @@ export function renderTurnLines(
     : turn.toolCalls;
 
   lines.push(...renderSkillAnnotation(turn.skillName));
-  lines.push(...renderToolsSection(toolCallsToRender));
+  appendLines(lines, renderToolsSection(toolCallsToRender));
   lines.push(...renderThinkingSection(turn.thinking));
-  lines.push(...renderFileList('Files Read', turn.filesRead));
-  lines.push(...renderFileList('Files Modified', turn.filesModified));
+  appendLines(lines, renderFileList('Files Read', turn.filesRead));
+  appendLines(lines, renderFileList('Files Modified', turn.filesModified));
   lines.push('---', '');
 
   return lines;
@@ -152,7 +168,31 @@ function computeFenceLength(text: string): number {
   return Math.max(3, maxRun + 1);
 }
 
-function renderCodeBlock(text: string, indent: string): string[] {
+/**
+ * Coerce a code-block payload to text.
+ *
+ * `ToolCall.input`/`output` are declared as strings, but provider payloads are
+ * not always strings in practice: Copilot Chat surfaces structured MCP results
+ * as objects and Codex emits arrays of text blocks. A contract violation must
+ * degrade to readable JSON rather than abort the whole session conversion —
+ * otherwise the archive service falls back to copying the raw source file.
+ */
+function toCodeBlockText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  // JSON.stringify is typed as returning string but yields undefined for these.
+  if (value === undefined || typeof value === 'function' || typeof value === 'symbol') {
+    return String(value);
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    // Circular structures and BigInt values make JSON.stringify throw.
+    return '[unserializable tool payload]';
+  }
+}
+
+function renderCodeBlock(value: unknown, indent: string): string[] {
+  const text = toCodeBlockText(value);
   // L-05: use a fence one backtick longer than any embedded run (min 3)
   // so content containing ``` does not break out of the code fence.
   const fence = '`'.repeat(computeFenceLength(text));
@@ -163,7 +203,7 @@ function renderCodeBlock(text: string, indent: string): string[] {
   ];
 }
 
-function renderOutputDetails(output: string): string[] {
+function renderOutputDetails(output: unknown): string[] {
   return [
     '',
     '  <details>',

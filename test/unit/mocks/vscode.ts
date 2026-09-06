@@ -37,6 +37,7 @@ export const window = {
   showInputBox: vi.fn(),
   showTextDocument: vi.fn(),
   showQuickPick: vi.fn(),
+  showOpenDialog: vi.fn(),
   showSaveDialog: vi.fn(),
   createStatusBarItem: vi.fn(() => ({ ...mockStatusBarItem })),
   onDidChangeActiveTextEditor: vi.fn(() => mockDisposable),

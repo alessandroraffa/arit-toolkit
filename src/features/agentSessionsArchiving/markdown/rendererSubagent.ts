@@ -1,5 +1,5 @@
 import type { CompactionSummary, SubagentSession } from './types';
-import { formatTimestamp, renderTurnLines } from './renderer';
+import { appendLines, formatTimestamp, renderTurnLines } from './renderer';
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -26,11 +26,11 @@ export function renderSubagentSections(
     }
 
     for (const turn of session.turns) {
-      lines.push(...renderTurnLines(turn));
+      appendLines(lines, renderTurnLines(turn));
     }
 
     if (session.compactionSummaries && session.compactionSummaries.length > 0) {
-      lines.push(...renderCompactionSummaries(session.compactionSummaries));
+      appendLines(lines, renderCompactionSummaries(session.compactionSummaries));
     }
   }
 

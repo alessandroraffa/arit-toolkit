@@ -422,3 +422,66 @@ describe('renderSessionToMarkdown', () => {
     expect(md).toMatch(/ {2}line2/);
   });
 });
+
+describe('renderSessionToMarkdown with malformed tool payloads', () => {
+  function sessionWithToolCall(tool: unknown): NormalizedSession {
+    return {
+      providerName: 'copilot-chat',
+      providerDisplayName: 'Copilot Chat',
+      sessionId: 'malformed',
+      turns: [
+        {
+          role: 'assistant',
+          content: 'opening the pull request',
+          toolCalls: [tool as NormalizedSession['turns'][number]['toolCalls'][number]],
+          filesRead: [],
+          filesModified: [],
+        },
+      ],
+    };
+  }
+
+  it('should render a structured object tool output as JSON instead of throwing', () => {
+    const md = renderSessionToMarkdown(
+      sessionWithToolCall({
+        name: 'create_pull_request',
+        input: 'Creating pull request',
+        output: { title: 'Add workstream', draft: false },
+      })
+    );
+
+    expect(md).toContain('"title": "Add workstream"');
+    expect(md).toContain('"draft": false');
+  });
+
+  it('should render an array tool output as JSON instead of throwing', () => {
+    const md = renderSessionToMarkdown(
+      sessionWithToolCall({
+        name: 'shell',
+        output: [{ type: 'input_text', text: 'hello' }],
+      })
+    );
+
+    expect(md).toContain('"text": "hello"');
+  });
+
+  it('should render an unserializable tool output as a placeholder', () => {
+    const circular: Record<string, unknown> = { name: 'loop' };
+    circular.self = circular;
+
+    const md = renderSessionToMarkdown(
+      sessionWithToolCall({ name: 'shell', output: circular })
+    );
+
+    expect(md).toContain('[unserializable tool payload]');
+    expect(md).not.toContain('[object Object]');
+  });
+
+  it('should render a non-string tool input as JSON instead of throwing', () => {
+    const md = renderSessionToMarkdown(
+      sessionWithToolCall({ name: 'shell', input: { cmd: 'ls -la' } })
+    );
+
+    expect(md).toContain('"cmd": "ls -la"');
+  });
+});
