@@ -45,10 +45,20 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 /** A widely-installed third-party extension used to detect gallery-wide outages. */
 const CONTROL_EXTENSION = { publisher: 'oderwat', name: 'indent-rainbow' };
 
-/** Marketplace rejects unfamiliar agents on some paths; present as a browser. */
-const USER_AGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 ' +
-  '(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
+/** Where a Marketplace operator can find out what this script is. */
+const REPO_URL = 'https://github.com/alessandroraffa/tangyr-vscode';
+
+/**
+ * Identify this script honestly.
+ *
+ * An earlier version sent a Chrome User-Agent, on the assumption that the
+ * Marketplace refuses unfamiliar agents. That assumption was tested and is
+ * wrong: the CDN gallery, the item page, the publisher page and the REST
+ * extensionquery endpoint all answer 200 to the string below. Impersonating a
+ * browser bought nothing, and the Terms of Use expect information to be
+ * obtained through publicly supported interfaces, which is what these are.
+ */
+const USER_AGENT = `tangyr-marketplace-check (+${REPO_URL})`;
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const POLL_INTERVAL_MS = 60_000;
