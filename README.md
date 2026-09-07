@@ -6,11 +6,21 @@
 
 # Tangyr `▏▎▍▌▍▎▏` Workbench
 
-[![VS Code Marketplace](https://vsmarketplacebadges.dev/version/alessandroraffa.tangyr.png)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
-[![Installs](https://vsmarketplacebadges.dev/installs/alessandroraffa.tangyr.png)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
-[![Downloads](https://vsmarketplacebadges.dev/downloads/alessandroraffa.tangyr.png)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr)
-[![Rating](https://vsmarketplacebadges.dev/rating/alessandroraffa.tangyr.png)](https://marketplace.visualstudio.com/items?itemName=alessandroraffa.tangyr&ssr=false#review-details)
+[![Latest release](https://img.shields.io/github/v/release/alessandroraffa/tangyr-vscode)](https://github.com/alessandroraffa/tangyr-vscode/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/alessandroraffa/tangyr-vscode/total)](https://github.com/alessandroraffa/tangyr-vscode/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> **Availability**
+>
+> Tangyr Workbench is currently not available on the Visual Studio Marketplace.
+>
+> If you already have it installed, it keeps working and needs nothing from you.
+>
+> In the meantime it installs from the `.vsix` attached to each release here,
+> using VS Code's built-in **Install from VSIX** command. See
+> [Installation](#installation) below, including how to check what you download.
+>
+> This notice will be removed when the listing is available again.
 
 Tangyr Workbench is the VS Code companion for agentic coding and vibe coding — turning AI coding sessions, decision logs, and prompt artifacts into versioned project material.
 
@@ -254,17 +264,53 @@ Command Palette → "Tangyr: Toggle Extension (Enable/Disable)" or "Tangyr: Chec
 
 ## Installation
 
-### From VS Code Marketplace
+### From a release
 
-1. Open VS Code
-2. Press `Ctrl+P` / `Cmd+P`
-3. Type `ext install alessandroraffa.tangyr`
+This is the current method. It uses VS Code's own installer — no third-party
+tool, and no change to any VS Code setting.
 
-### From VSIX File
+1. Download `tangyr-<version>.vsix` from the
+   [Releases page](https://github.com/alessandroraffa/tangyr-vscode/releases).
 
-1. Download the `.vsix` file from [Releases](https://github.com/alessandroraffa/tangyr-vscode/releases)
-2. In VS Code, press `Ctrl+Shift+P` / `Cmd+Shift+P`
-3. Type "Install from VSIX" and select the downloaded file
+2. Check what you downloaded, if you want to. Every release publishes a
+   `tangyr-<version>.vsix.sha256` file next to the package. Download it too,
+   then:
+
+   ```bash
+   shasum -a 256 -c tangyr-<version>.vsix.sha256   # macOS, Linux
+   ```
+
+   ```powershell
+   # Windows PowerShell: compare against the hash in the .sha256 file
+   Get-FileHash tangyr-<version>.vsix -Algorithm SHA256
+   ```
+
+3. Install it, either way:
+   - In VS Code: `Ctrl+Shift+P` / `Cmd+Shift+P` → **Extensions: Install from
+     VSIX…** → select the file.
+   - From a terminal: `code --install-extension tangyr-<version>.vsix`
+
+An extension installed this way does not update itself. Watch this repository
+for releases to hear about new versions.
+
+One difference worth knowing: extensions installed from the Marketplace carry a
+repository signature that VS Code verifies at install time. That signature is
+applied by the Marketplace, so a `.vsix` installed from a file does not have one
+and VS Code does not check for it. The `.sha256` above is what establishes that
+the file you have is the file that was published.
+
+The source in this repository is the source that is published: the bundle ships
+unminified and with a source map, so the code that runs can be read directly.
+[PRIVACY.md](PRIVACY.md) lists what the extension reads and writes, and gives
+commands that check those claims against the `.vsix` itself.
+
+### From the Visual Studio Marketplace
+
+Not available at the moment. When it is, the one-line install is:
+
+```text
+ext install alessandroraffa.tangyr
+```
 
 ## Requirements
 
