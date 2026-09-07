@@ -236,7 +236,7 @@ tangyr-vscode/
 ├── .markdownlint-cli2.jsonc      # markdownlint-cli2 configuration
 ├── .markdownlintignore           # Markdown lint ignore patterns
 ├── .prettierrc                   # Prettier configuration
-├── .releaserc.json               # semantic-release configuration
+├── release.config.mjs            # semantic-release configuration
 ├── commitlint.config.mjs         # Commit message validation
 ├── esbuild.mjs                   # esbuild bundler configuration
 ├── eslint.config.mjs             # ESLint flat config

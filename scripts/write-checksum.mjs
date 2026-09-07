@@ -4,7 +4,7 @@
  * Called by semantic-release via @semantic-release/exec during the publish step.
  * By then semantic-release-vsce has already packaged the .vsix in its prepare
  * step, and @semantic-release/github has not yet uploaded assets — the exec
- * plugin is listed before it in .releaserc.json, and plugins run in array order
+ * plugin is listed before it in release.config.mjs, and plugins run in array order
  * within each lifecycle step.
  *
  * The README tells users to verify a downloaded .vsix against this file, so a

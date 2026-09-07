@@ -47,4 +47,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
+          # Marketplace publishing is opt-in: set the repository variable
+          # VSCE_PUBLISH to "true" to enable it. While it is unset, releases
+          # still produce the tag, the GitHub release, the .vsix and its
+          # checksum - a Marketplace problem no longer takes that channel down
+          # with it. See release.config.mjs.
+          VSCE_PUBLISH: ${{ vars.VSCE_PUBLISH }}
         run: pnpm exec semantic-release
