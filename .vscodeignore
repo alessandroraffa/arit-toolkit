@@ -37,7 +37,7 @@ dist/**/*.map
 .markdownlint*
 .node-version
 .nvmrc
-.releaserc.json
+release.config.mjs
 .tangyr.jsonc
 .editorconfig
 .eslintignore
