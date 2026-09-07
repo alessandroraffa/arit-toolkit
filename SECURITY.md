@@ -45,4 +45,26 @@ This security policy applies to the Tangyr Workbench VS Code extension source co
 
 ## Dependencies
 
-This extension has zero runtime dependencies. All code is bundled at build time via esbuild. Development dependencies are monitored via `pnpm audit` in CI and automated dependency updates via Dependabot.
+The extension declares no runtime dependencies to be resolved on the user's
+machine: everything it needs is bundled at build time by esbuild. Two libraries
+are compiled into that bundle, both for offline token counting:
+
+- [`js-tiktoken`](https://www.npmjs.com/package/js-tiktoken)
+- [`@anthropic-ai/tokenizer`](https://www.npmjs.com/package/@anthropic-ai/tokenizer)
+
+Their vocabulary tables are static data and account for roughly 98% of the
+bundle's size; the extension's own compiled code is about 119 KB.
+
+Development dependencies are monitored by `pnpm audit` in CI, with automated
+updates through Dependabot.
+
+## Transparency of the published artifact
+
+The published bundle is **not minified**, and ships with a source map, so the
+JavaScript that runs on a user's machine can be read directly and traced back to
+the TypeScript in this repository. This is a deliberate trade of about 2% in
+package size against verifiability.
+
+The extension makes no network request, collects no telemetry, and executes no
+code from session content. [PRIVACY.md](PRIVACY.md) lists the exact paths it
+reads and gives commands that check these claims against the published `.vsix`.

@@ -90,7 +90,7 @@ Set `ignoreSessionsBefore` to a `YYYYMMDD` date to skip sessions created before 
 
 **Archive a source file:** Command Palette → "Tangyr: Archive Agent Session Source…"
 (also available in the status bar tooltip). Select any supported session source and
-then identify the assistant that created it. Tangyr sends the selected source through
+then identify the assistant that created it. Tangyr runs the selected source through
 the same parser, companion-data resolution, markdown rendering, size limiting, and
 `YYYY/MM` archive layout used by automatic discovery. Supported file sources are Claude
 Code `.jsonl` files (including Cowork sessions and their adjacent companion directory),
@@ -270,13 +270,25 @@ Command Palette → "Tangyr: Toggle Extension (Enable/Disable)" or "Tangyr: Chec
 
 - VS Code 1.109.0 or higher
 
+## Privacy
+
+**Nothing leaves your machine.** Tangyr Workbench makes no network request, and
+collects no telemetry, analytics, or usage data. It reads AI session files only
+to find the ones belonging to the open workspace, and writes only inside that
+workspace.
+
+The published bundle ships unminified and with a source map so these claims can
+be checked against the artifact rather than trusted. See [PRIVACY.md](PRIVACY.md)
+for the exact paths read, and for the commands that verify the claims yourself.
+
 ## Security
 
 To report a security vulnerability, please see [SECURITY.md](SECURITY.md) for responsible disclosure guidelines.
 
 ## Contributing
 
-This repository is private. Please contact the maintainer before proposing changes.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Changelog
 

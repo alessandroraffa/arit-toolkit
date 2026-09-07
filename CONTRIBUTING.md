@@ -1,6 +1,6 @@
 # Contributing to Tangyr Workbench
 
-Tangyr Workbench is developed in a private repository. Coordinate with the maintainer before opening issues, branches, or pull requests.
+Thanks for your interest in Tangyr Workbench. Issues and pull requests are welcome.
 
 ## Code of Conduct
 
