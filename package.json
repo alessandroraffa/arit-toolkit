@@ -299,7 +299,7 @@
     "@vitest/eslint-plugin": "^1.6.16",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.7.1",
+    "@vscode/vsce": "^3.9.2",
     "conventional-changelog-conventionalcommits": "^9.2.0",
     "esbuild": "^0.27.3",
     "eslint": "^10.4.0",
