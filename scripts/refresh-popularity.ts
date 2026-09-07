@@ -37,7 +37,7 @@ const DISCLAIMER =
   'This popularity order is derived from public signals (downloads, installs, stars) and is not an endorsement, recommendation, or quality judgment of any assistant.';
 
 /** Method pointer (mirrors METHOD_POINTER in popularityData.ts). */
-const METHOD_POINTER = 'docs/plans/PLAN-006-assistant-popularity-ranking.md';
+const METHOD_POINTER = 'docs/popularity-ranking-method.md';
 
 interface ReadmeRow {
   sessionLocation: string;
@@ -55,7 +55,7 @@ interface TargetDescriptor {
   readmeRow: ReadmeRow;
 }
 
-/** The eight supported targets with their verified source identifiers (PLAN-006 feasibility table). */
+/** The eight supported targets with their verified source identifiers (docs/popularity-ranking-method.md). */
 export const TARGETS: TargetDescriptor[] = [
   {
     canonicalName: 'Claude Code',
@@ -498,7 +498,7 @@ export function buildRegionTable(
 ${rows}
 
 > **Note:** ${data.disclaimer}
-> Method: [PLAN-006](${data.methodPointer})
+> Method: [how the order is computed](${data.methodPointer})
 > As of: ${data.refreshPeriod}
 `;
 }
@@ -837,7 +837,7 @@ async function run(): Promise<void> {
 
 Signals: npm monthly downloads, VS Code Marketplace installs, Open VSX downloads, GitHub stars.
 Aggregation: per-signal dense rank, normalized to pool-size-comparable position (best = 0), averaged ascending.
-See \`docs/plans/PLAN-006-assistant-popularity-ranking.md\`.`;
+See \`docs/popularity-ranking-method.md\`.`;
 
   console.log('\n--- PR Body ---');
   console.log(prBody);

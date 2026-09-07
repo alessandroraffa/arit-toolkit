@@ -123,7 +123,7 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: `Popularity ranking is overdue for refresh — ${month}`,
-                body: `The popularity ranking artifact was last refreshed on **${refreshedAt}** and has not been updated in more than two months.\n\nTo refresh: \`pnpm run refresh:popularity\`\n\nSee [PLAN-006](../../blob/main/docs/plans/PLAN-006-assistant-popularity-ranking.md) for maintenance instructions.`,
+                body: `The popularity ranking artifact was last refreshed on **${refreshedAt}** and has not been updated in more than two months.\n\nTo refresh: \`pnpm run refresh:popularity\`\n\nSee [the method](../../blob/main/docs/popularity-ranking-method.md) for maintenance instructions.`,
                 labels: ['maintenance'],
               });
               console.log(`Staleness issue opened — last refresh: ${refreshedAt}`);

@@ -1,7 +1,7 @@
 /**
  * Pure popularity scoring and ordering component.
  *
- * Normalization formula (PLAN-006 Decision 1, Alternative A):
+ * Normalization formula (see docs/popularity-ranking-method.md):
  *   position = maxDenseRank > 1 ? (denseRank - 1) / (maxDenseRank - 1) : 0
  * Best end is 0 (most popular), worst end is 1, sole possessor maps to 0.
  *

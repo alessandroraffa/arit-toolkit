@@ -22,13 +22,24 @@ const esbuildProblemMatcherPlugin = {
   },
 };
 
-/** @type {esbuild.BuildOptions} */
+/**
+ * The published bundle is deliberately NOT minified, and ships a source map.
+ *
+ * A minified bundle is indistinguishable from an obfuscated one to a static
+ * scanner, and Marketplace review guidance treats obfuscation as a suspicion
+ * signal. Minification buys almost nothing here: roughly 98% of the bundle is
+ * tokenizer vocabulary data (js-tiktoken and @anthropic-ai/tokenizer), and the
+ * extension's own code is about 119 KB. Skipping minification costs ~2% of the
+ * bundle size and makes the shipped code readable line by line.
+ *
+ * @type {esbuild.BuildOptions}
+ */
 const buildOptions = {
   entryPoints: ['src/extension.ts'],
   bundle: true,
   format: 'cjs',
-  minify: production,
-  sourcemap: !production,
+  minify: false,
+  sourcemap: true,
   sourcesContent: false,
   platform: 'node',
   outfile: 'dist/extension.js',

@@ -28,6 +28,11 @@ coverage/**
 dist/**/*.map
 *.log
 
+# The bundle's source map ships deliberately, so the published JavaScript can
+# be traced back to the TypeScript in the public repository. Keep this after
+# the *.map exclusions above: later patterns win.
+!dist/extension.js.map
+
 # Tooling and repo configuration
 .markdownlint*
 .node-version

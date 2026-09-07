@@ -877,7 +877,7 @@ export class AgentSessionArchiveService implements vscode.Disposable {
         );
       } else {
         const action = await vscode.window.showWarningMessage(
-          `Tangyr: some archives remain at ${HISTORICAL_DEFAULT_ARCHIVE_PATH} — see docs/operations/runbooks/agent-session-archiving-verification.md for reconciliation steps.`,
+          `Tangyr: some archives remain at ${HISTORICAL_DEFAULT_ARCHIVE_PATH} — open the log for the files that could not be moved.`,
           'View Log'
         );
         if (action === 'View Log') {
