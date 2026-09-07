@@ -6,6 +6,7 @@
 
 # Tangyr `▏▎▍▌▍▎▏` Workbench
 
+[![Open VSX](https://img.shields.io/open-vsx/v/alessandroraffa/tangyr)](https://open-vsx.org/extension/alessandroraffa/tangyr)
 [![Latest release](https://img.shields.io/github/v/release/alessandroraffa/tangyr-vscode)](https://github.com/alessandroraffa/tangyr-vscode/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/alessandroraffa/tangyr-vscode/total)](https://github.com/alessandroraffa/tangyr-vscode/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -16,11 +17,13 @@
 >
 > If you already have it installed, it keeps working and needs nothing from you.
 >
-> In the meantime it installs from the `.vsix` attached to each release here,
-> using VS Code's built-in **Install from VSIX** command. See
-> [Installation](#installation) below, including how to check what you download.
+> It is published on the **Open VSX Registry**, which VSCodium, Cursor, Windsurf
+> and Gitpod resolve against, so on those editors it installs and updates
+> normally. On Visual Studio Code it installs from the `.vsix` attached to each
+> release here, through the built-in **Install from VSIX** command. Both routes
+> are under [Installation](#installation).
 >
-> This notice will be removed when the listing is available again.
+> This notice will be removed when the Marketplace listing is available again.
 
 Tangyr Workbench is the VS Code companion for agentic coding and vibe coding — turning AI coding sessions, decision logs, and prompt artifacts into versioned project material.
 
@@ -264,10 +267,33 @@ Command Palette → "Tangyr: Toggle Extension (Enable/Disable)" or "Tangyr: Chec
 
 ## Installation
 
+### From the Open VSX Registry
+
+VSCodium, Cursor, Windsurf, Gitpod and other VS Code derivatives resolve against
+Open VSX by default, so on those editors this is an ordinary install, with
+ordinary updates:
+
+```text
+ext install alessandroraffa.tangyr
+```
+
+Or search for "Tangyr Workbench" in the Extensions view. The extension page is
+<https://open-vsx.org/extension/alessandroraffa/tangyr>.
+
+Open VSX signs the packages it serves, so an install from there is verified the
+same way a registry install normally is.
+
+The namespace currently shows as unverified, and the extension page says so.
+That is a statement about namespace ownership, which is [being
+claimed](https://github.com/EclipseFdn/open-vsx.org/issues/13070), and not about
+the package: ownership is granted by the Eclipse Foundation on request and is
+not required in order to publish.
+
 ### From a release
 
-This is the current method. It uses VS Code's own installer — no third-party
-tool, and no change to any VS Code setting.
+Use this on Visual Studio Code itself, which does not resolve against Open VSX.
+It uses VS Code's own installer — no third-party tool, and no change to any VS
+Code setting.
 
 1. Download `tangyr-<version>.vsix` from the
    [Releases page](https://github.com/alessandroraffa/tangyr-vscode/releases).
@@ -293,11 +319,12 @@ tool, and no change to any VS Code setting.
 An extension installed this way does not update itself. Watch this repository
 for releases to hear about new versions.
 
-One difference worth knowing: extensions installed from the Marketplace carry a
-repository signature that VS Code verifies at install time. That signature is
-applied by the Marketplace, so a `.vsix` installed from a file does not have one
-and VS Code does not check for it. The `.sha256` above is what establishes that
-the file you have is the file that was published.
+One difference worth knowing: extensions installed from a registry carry a
+signature applied by that registry, which the editor verifies at install time.
+Open VSX signs, so installs from there are covered. A `.vsix` installed from a
+file is not: no signature is attached and VS Code does not look for one. The
+`.sha256` above is what establishes that the file you have is the file that was
+published.
 
 The source in this repository is the source that is published: the bundle ships
 unminified and with a source map, so the code that runs can be read directly.
