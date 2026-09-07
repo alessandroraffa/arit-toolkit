@@ -1,3 +1,9 @@
+## [2.11.3](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.11.2...v2.11.3) (2026-09-07)
+
+### Bug Fixes
+
+* **scripts:** stop impersonating a browser when probing the marketplace ([#109](https://github.com/alessandroraffa/tangyr-vscode/issues/109)) ([f49d19e](https://github.com/alessandroraffa/tangyr-vscode/commit/f49d19ec24026adf7510f580fbbf3f18abfbd1a8))
+
 ## [2.11.2](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.11.1...v2.11.2) (2026-09-07)
 
 ### Bug Fixes
