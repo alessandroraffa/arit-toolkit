@@ -46,11 +46,14 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-          # Marketplace publishing is opt-in: set the repository variable
-          # VSCE_PUBLISH to "true" to enable it. While it is unset, releases
-          # still produce the tag, the GitHub release, the .vsix and its
-          # checksum - a Marketplace problem no longer takes that channel down
-          # with it. See release.config.mjs.
-          VSCE_PUBLISH: ${{ vars.VSCE_PUBLISH }}
+          # Each registry is enabled by the presence of its token, which is how
+          # semantic-release-vsce itself decides. VSCE_PAT is therefore passed
+          # only when the repository variable VSCE_PUBLISH is the string "true":
+          # while the Marketplace listing is unavailable, passing the token would
+          # make the plugin verify it, fail, and abort the whole release before
+          # any commit is analysed - taking the GitHub and Open VSX channels down
+          # with it. Blanking it makes the Marketplace be skipped instead.
+          VSCE_PAT: ${{ vars.VSCE_PUBLISH == 'true' && secrets.VSCE_PAT || '' }}
+          # Open VSX publishes whenever the secret exists. Absent, it is skipped.
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
         run: pnpm exec semantic-release
