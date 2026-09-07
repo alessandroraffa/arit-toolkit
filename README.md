@@ -298,6 +298,9 @@ See [CHANGELOG.md](CHANGELOG.md) for a list of changes.
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
+Two third-party libraries are compiled into the published bundle, and their
+licenses are reproduced in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
 ## About
 
 Tangyr Workbench is built for developers who collaborate with AI coding assistants — across agentic flows where autonomous agents drive multi-step tasks, and vibe coding sessions where humans and models iterate quickly side by side. The extension complements the editor with session archiving, timestamped artifacts, and real-time text metrics so that AI-assisted work becomes versioned, reviewable project material.

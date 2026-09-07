@@ -53,7 +53,8 @@ are compiled into that bundle, both for offline token counting:
 - [`@anthropic-ai/tokenizer`](https://www.npmjs.com/package/@anthropic-ai/tokenizer)
 
 Their vocabulary tables are static data and account for roughly 98% of the
-bundle's size; the extension's own compiled code is about 119 KB.
+bundle's size; the extension's own compiled code is about 119 KB. Both
+licenses are reproduced in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 Development dependencies are monitored by `pnpm audit` in CI, with automated
 updates through Dependabot.
