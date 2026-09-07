@@ -16,14 +16,34 @@
  * publish step returns early after packaging. The .vsix is still built and still
  * uploaded to the GitHub release by @semantic-release/github.
  *
- * Marketplace publishing is therefore opt-in through the VSCE_PUBLISH
- * environment variable, wired in .github/workflows/release.yml to the
- * repository variable of the same name. Set it to the string "true" to publish
- * to the Marketplace again; leave it unset and releases keep flowing to GitHub
- * only.
+ * Which registries a release goes to is decided the way the plugin itself
+ * decides it: by whether that registry's token is present in the environment.
+ * `isVscePublishEnabled()` is `!!VSCE_PAT` and `isOvsxPublishEnabled()` is
+ * `!!OVSX_PAT`, both read straight from the environment, so mirroring that rule
+ * here is the only way the master switch below cannot disagree with the
+ * plugin's own per-registry decision.
+ *
+ * .github/workflows/release.yml passes VSCE_PAT only when the repository
+ * variable VSCE_PUBLISH is the string "true", and passes OVSX_PAT whenever the
+ * secret exists. So:
+ *
+ *   neither token   -> package only; tag, GitHub release, .vsix and checksum
+ *   OVSX_PAT only   -> also publishes to Open VSX; the Marketplace is skipped
+ *                      with a log line, not attempted and failed
+ *   both            -> publishes to both
+ *
+ * The Publisher Agreement anticipates this: section 14(d), "No Exclusivity",
+ * says nothing in it restricts the publisher "from entering into other, similar
+ * agreements with other marketplaces", and section 3(b) records that the
+ * publisher, not Microsoft, is the distributor.
+ *
+ * Note that `publish` must be false when no token at all is present: the
+ * plugin throws ENOPAT if publishing is enabled and it finds neither.
  */
 
-const marketplacePublishEnabled = process.env.VSCE_PUBLISH === 'true';
+const marketplacePublishEnabled = Boolean(process.env.VSCE_PAT);
+const openVsxPublishEnabled = Boolean(process.env.OVSX_PAT);
+const publishEnabled = marketplacePublishEnabled || openVsxPublishEnabled;
 
 export default {
   branches: ['main'],
@@ -80,7 +100,7 @@ export default {
       'semantic-release-vsce',
       {
         packageVsix: true,
-        publish: marketplacePublishEnabled,
+        publish: publishEnabled,
       },
     ],
     [
