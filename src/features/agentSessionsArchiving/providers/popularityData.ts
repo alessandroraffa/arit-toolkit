@@ -48,7 +48,7 @@ export const DISCLAIMER =
   'This popularity order is derived from public signals (downloads, installs, stars) and is not an endorsement, recommendation, or quality judgment of any assistant.';
 
 /** Repository-relative path to the documented aggregation method. */
-export const METHOD_POINTER = 'docs/plans/PLAN-006-assistant-popularity-ranking.md';
+export const METHOD_POINTER = 'docs/popularity-ranking-method.md';
 
 const RESOLVED_ORDER: readonly string[] = Object.freeze([
   'Claude Code',

@@ -12,4 +12,4 @@
 
 Signals: npm monthly downloads, VS Code Marketplace installs, Open VSX downloads, GitHub stars.
 Aggregation: per-signal dense rank, normalized to pool-size-comparable position (best = 0), averaged ascending.
-See `docs/plans/PLAN-006-assistant-popularity-ranking.md`.
+See `docs/popularity-ranking-method.md`.
