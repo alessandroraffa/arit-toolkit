@@ -1,3 +1,10 @@
+## [2.11.2](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.11.1...v2.11.2) (2026-09-07)
+
+### Bug Fixes
+
+* **archiving:** convert sessions with non-string tool payloads ([7396304](https://github.com/alessandroraffa/tangyr-vscode/commit/73963042ea7f92a5a3524e1aacbc7c321ddbb9a9))
+* **archiving:** render large sessions without overflowing the stack ([ae301f1](https://github.com/alessandroraffa/tangyr-vscode/commit/ae301f12803190f3a8868550a32f53549b5af563))
+
 ## [2.11.1](https://github.com/alessandroraffa/tangyr-vscode/compare/v2.11.0...v2.11.1) (2026-09-04)
 
 ### Bug Fixes
